@@ -1,0 +1,733 @@
+---
+title: "Environmental Noise and Ross-Macdonald Transmission Models"
+author: "Karin Ebey, John Vinson and Kyle Dahlin"
+date: "`r Sys.Date()`"
+link-citations: yes
+csl: proceedings-of-the-royal-society-b.csl
+bibliography: bibliography.bib
+output:
+  pdf_document: 
+    extra_dependencies: ["float"]
+    keep_tex: yes
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "doc") })
+---
+
+```{r setup, include=FALSE}
+
+# Load libraries (trim this list down to the essentials)
+library(ggplot2)
+library(tidyverse)
+library(cowplot)
+library(viridis)
+library(latex2exp)
+
+# # Parallelization settings
+# n_cores <- floor((detectCores() - 1) / 2)
+# registerDoParallel(cores = n_cores)
+
+# Knitr settings (hides all chunk outputs besides figures and centers figures)
+knitr::opts_chunk$set(
+  echo = FALSE, cache = FALSE, warning = FALSE, message = FALSE, fig.pos = "H",
+  dev = c('pdf', 'png'),
+  out.extra = ""
+)
+
+```
+
+```{r Load and format data from Julia}
+
+#results from 1000 runs of 100 iterations 
+#jop_results <- read.csv("julia_oprob_results1.csv")
+# jop_results$R0 <- jop_results$Tvh
+# jop_results$R0 <- replace(jop_results$R0, jop_results$R0==0.0125, 'R0=0.75')
+# jop_results$R0  <- replace(jop_results$R0, jop_results$R0==0.02005556, 'R0=0.95')
+# jop_results$R0  <- replace(jop_results$R0, jop_results$R0==0.0245, 'R0=1.05')
+# jop_results$R0  <- replace(jop_results$R0, jop_results$R0==0.35555556, 'R0=4')
+
+```
+
+
+# Outbreak probability
+```{r oprob_boxplot, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEproboutbreak} Probability of an outbreak by sigma and R0 based on 1000 runs of 100 iterations.'}
+
+# ggplot(data = jop_results , mapping = aes(x = as.factor(sigma), y = oprob_mean)) +
+#   geom_boxplot()+facet_wrap(~as.factor(R0), ncol = 1)+ylim(0,1)+theme_cowplot()+ylab('Probability of an outbreak')+
+#   xlab('sigma')
+# 
+# p1 = ggplot(data = jop_results , mapping = aes(x = as.factor(sigma), y = oprob_mean)) +
+#   geom_boxplot()+facet_wrap(~as.factor(R0), ncol = 1)+ylim(0,1)+theme_cowplot()+ylab('Probability of an outbreak')+
+#   xlab('sigma')
+
+# ggsave('oprob4.png')
+```
+
+```{r oprob_boxplot_allinone,  out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEproboutbreak_allinone} Probability of an outbreak by sigma and R0 based on 1000 runs of 100 iterations.'}
+
+# ggplot(data = jop_results , mapping = aes(x = as.factor(sigma), y = oprob_mean,  color=R0)) +
+#   geom_boxplot()+ylim(0,1)+theme_cowplot()+ylab('Probability of an outbreak')+
+#   xlab('sigma')
+# ggsave('oprob1.png')
+```
+
+
+# Number of cases
+```{r numcases_boxplot, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEnuminfected} Number of hosts infected at the end of simulation (only including simulations where the outbreak did not die out) by sigma and R0 based on 1000 runs of 100 iterations.'}
+
+# ggplot(data = jop_results[jop_results$oprob_mean !=0,], mapping = aes(x = as.factor(sigma), y = num_cases)) +
+#   geom_boxplot()+facet_wrap(~as.factor(R0), ncol = 1)+theme_cowplot()+ylab('Average number of hosts infected')+
+#   xlab('sigma')
+# ggsave('numcases4.png')
+```
+
+```{r numcases_boxplot_allinone, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEnuminfected_allinone} Number of hosts infected at the end of simulation (only including simulations where the outbreak did not die out) by sigma and R0 based on 1000 runs of 100 iterations.'}
+
+# ggplot(data = jop_results[jop_results$oprob_mean !=0,] , mapping = aes(x = as.factor(sigma), y = num_cases,  color=R0)) +
+#   geom_boxplot()+theme_cowplot()+ylab('Average number of hosts infected')+
+#   xlab('sigma')
+# ggsave('numcases1.png')
+```
+
+# Time to outbreak extinction
+```{r endtime_boxplot, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEendtime} Time that the outbreak died out (only including simulations where the outbreak did die out) by sigma and R0 based on 1000 runs of 100 iterations.'}
+
+# ggplot(data = jop_results[jop_results$oprob_mean !=1,] , mapping = aes(x = as.factor(sigma), y = end_time)) +
+#   geom_boxplot()+facet_wrap(~as.factor(R0), ncol = 1)+theme_cowplot()+ylab('Average time outbreak dies out')+
+#   xlab('sigma')
+# ggsave('endtime4.png')
+```
+
+```{r endtime_boxplot_allinone, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEendtime_allinone} Time that the outbreak died out (only including simulations where the outbreak did die out) by sigma and R0 based on 1000 runs of 100 iterations.'}
+
+# ggplot(data = jop_results[jop_results$oprob_mean !=1,] , mapping = aes(x = as.factor(sigma), y = end_time,  color=R0)) +
+#   geom_boxplot()+theme_cowplot()+ylab('Average time outbreak dies out')+
+#   xlab('sigma')
+# ggsave('endtime1.png')
+```
+
+
+#Results from Julia
+```{r}
+jop <- read.csv("julia_mean_test.csv")
+jop$R0 <- jop$Thv
+Thv_list <- unique(jop$Thv)
+jop$R0 <- replace(jop$R0, jop$R0==Thv_list[1], 0.75)
+jop$R0  <- replace(jop$R0, jop$R0==Thv_list[2], 0.95)
+jop$R0  <- replace(jop$R0, jop$R0==Thv_list[3], 1.05)
+jop$R0  <- replace(jop$R0, jop$R0==Thv_list[4], 1.25)
+jop$R0  <- replace(jop$R0, jop$R0==Thv_list[5], 2)
+jop$R0  <- replace(jop$R0, jop$R0==Thv_list[6], 4)
+jop$R0  <- replace(jop$R0, jop$R0==Thv_list[7], 6.5)
+```
+
+```{r prob_end, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_end} Probability of the disease becoming endemic by sigma and R0 based on 1000 runs of 100 iterations. Overall, increasing environmental noise strength cases the probability that the disease becomes endemic to decrease. For smaller R0 values (i.e. <1.25), there is a slight increase in endemic disease probability at high environmental noise levels. Above environmental noise strength of 0.4 (where there is up to 40% variation in parameter values), the probability of endemic disease goes to zero. There is a greater probability of the disease going endemic at higher values of R0.'}
+
+ggplot(jop, aes(x=sigma, y=prob_end_mean))+
+  geom_line(aes(color=as.factor(R0)))+
+  geom_point(aes(color=as.factor(R0)))+
+  geom_ribbon(aes(ymin=prob_end_25, ymax=prob_end_75,fill=as.factor(R0)), alpha=0.3)+
+  #scale_color_viridis(discrete=TRUE, guide = "legend")+
+  #scale_fill_viridis(discrete=TRUE)+
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ 
+  scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+
+  theme_cowplot()+
+  ylab('Probability disease becomes endemic')+
+  labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+
+  xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+
+ggsave('prob_end.png', height = 4, width = 7)
+```
+```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
+ggplot(jop, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+
+#scale_color_viridis(discrete=TRUE, guide = "legend")+
+#scale_fill_viridis(discrete=TRUE)+
+scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ 
+scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+
+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of outbreak > 10 hosts')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+ggsave('prob_out10.png', height = 4, width = 7)
+```
+```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out100} Probability of an outbreak (defined as 100 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. In general, for R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.25 and then decreases. R0=1.05 follows both patterns to some degree. There is a greater probability of an outbreak at higher values of R0.'}
+ggplot(jop, aes(x=sigma, y=prob_out100_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out100_25, ymax=prob_out100_75,fill=as.factor(R0)), alpha=0.3)+ylab('Probability of an outbreak > 100')+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+ggsave('prob_out100.png', height = 7, width = 7)
+```
+```{r max_cases_all, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
+ggplot(jop, aes(x=sigma, y=max_cases_all_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=max_cases_all_25, ymax=max_cases_all_75, fill=as.factor(R0)), alpha=0.3)+ylab('Peak number of cases')+
+  #scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ 
+scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+
+  theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('All simulations')+theme(text = element_text(size=20))
+ggsave('max_cases.png', height = 7, width = 7.6)
+```
+```{r max_cases_out, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations only including simulations where the outbreak died out. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
+ggplot(jop, aes(x=sigma, y=max_cases_out_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=max_cases_out_25, ymax=max_cases_out_75, fill=as.factor(R0)), alpha=0.3)+ylab('Peak number of cases')+
+  #scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ 
+scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+
+  theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('Only simulations where disease died out')+theme(text = element_text(size=20))
+ggsave('max_cases.png', height = 7, width = 7.6)
+```
+
+
+```{r end_time, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEend_time} Time that the outbreak dies out (or 10 years-end of simulation) by sigma and R0 based on 1000 runs of 100 iterations. This graph looks quite similar to that of the probability of disease going endemic, because if the disease does not go endemic, the disease goes extinct early on in the simulation.'}
+ggplot(jop, aes(x=sigma, y=end_time_mean/365))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=end_time_25/365, ymax=end_time_75/365, fill=as.factor(R0)), alpha=0.3)+ylab('Outbreak duration (years)')+
+  #scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ 
+scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+
+  theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('All simulations')+theme(text = element_text(size=20))
+ggsave('end_time.png', height = 7, width = 7.6)
+```
+```{r end_time_out, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEend_time} Time that the outbreak dies out (or 10 years-end of simulation) by sigma and R0 based on 1000 runs of 100 iterations. This graph looks quite similar to that of the probability of disease going endemic, because if the disease does not go endemic, the disease goes extinct early on in the simulation.'}
+ggplot(jop, aes(x=sigma, y=end_time_out_mean/365))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=end_time_out_25/365, ymax=end_time_out_75/365, fill=as.factor(R0)), alpha=0.3)+ylab('Outbreak duration (years)')+
+  #scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ 
+scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+
+  theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('Only simulations where disease died out')+theme(text = element_text(size=20))
+ggsave('end_time.png', height = 7, width = 7.6)
+```
+
+
+```{r time_max, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtime_max} Time when the maximum number of cases occured during the simulation by sigma and R0 based on 1000 runs of 100 iterations.'}
+ggplot(jop, aes(x=sigma, y=time_max_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=time_max_25, ymax=time_max_75, fill=as.factor(R0)), alpha=0.3)+ylab('Time of maximum number of cases')+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+```
+```{r num_cases, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEnum_cases} Number of host cases at the end of the simulation by sigma and R0 based on 1000 runs of 100 iterations. This graph looks similar to that of the probability of disease going endemic, because if the disease does not go endemic, then zero hosts are infected at the end. More hosts are infected at higher R0 values.'}
+ggplot(jop, aes(x=sigma, y=num_cases_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=num_cases_25, ymax=num_cases_75, fill=as.factor(R0)), alpha=0.3)+ylab('Number of cases at end')+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+```
+```{r num_cases, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEnum_cases} Number of host cases at the end of the simulation by sigma and R0 based on 1000 runs of 100 iterations. This graph looks similar to that of the probability of disease going endemic, because if the disease does not go endemic, then zero hosts are infected at the end. More hosts are infected at higher R0 values.'}
+ggplot(jop, aes(x=sigma, y=num_cases_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=num_cases_25, ymax=num_cases_75, fill=as.factor(R0)), alpha=0.3)+ylab('Number of cases at end')+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+```
+
+
+
+```{r}
+jop$R0_cond <- jop$R0
+jop$R0_cond <- replace(jop$R0_cond, jop$R0_cond<1, '<1')
+jop$R0_cond <- replace(jop$R0_cond, jop$R0_cond>1, '>1')
+jop$sig_cond <- jop$sigma
+jop$sig_cond <- replace(jop$sig_cond, jop$sig_cond==0| jop$sig_cond==0.02| jop$sig_cond==0.04| jop$sig_cond==0.06| jop$sig_cond==0.08|jop$sig_cond==0.1| jop$sig_cond==0.12, 'low')
+jop$sig_cond <- replace(jop$sig_cond, jop$sig_cond==0.14| jop$sig_cond==0.16| jop$sig_cond==0.18| jop$sig_cond==0.2| jop$sig_cond==0.22| jop$sig_cond==0.24| jop$sig_cond==0.26, 'med')
+jop$sig_cond <- replace(jop$sig_cond, jop$sig_cond==0.28| jop$sig_cond==0.3| jop$sig_cond==0.32| jop$sig_cond==0.34| jop$sig_cond==0.36| jop$sig_cond==0.38| jop$sig_cond==0.4, 'high')
+```
+
+```{r}
+ggplot(jop, aes(x=prob_end_mean, y=prob_out10_mean))+geom_point(aes(shape=R0_cond,color=sig_cond))+ylim(0, 1)+geom_line(aes(x=prob_end_mean,y=prob_end_mean))+scale_color_viridis(discrete=TRUE)+theme_cowplot()
+```
+```{r}
+ggplot(jop, aes(x=prob_end_mean, y=prob_out100_mean))+geom_point()+ylim(0, 1)+geom_line(aes(x=prob_end_mean,y=prob_end_mean))
+```
+
+
+#Max cases and end time endemic vs not exploration
+```{r}
+jopmt <- read.csv("max_case_end_time_expo.csv")
+jopmt$R0 <- jopmt$Thv
+Thv_list <- unique(jopmt$Thv)
+jopmt$R0 <- replace(jopmt$R0, jopmt$R0==Thv_list[1], 0.75)
+jopmt$R0  <- replace(jopmt$R0, jopmt$R0==Thv_list[2], 0.95)
+jopmt$R0  <- replace(jopmt$R0, jopmt$R0==Thv_list[3], 1.05)
+jopmt$R0  <- replace(jopmt$R0, jopmt$R0==Thv_list[4], 1.25)
+jopmt$R0  <- replace(jopmt$R0, jopmt$R0==Thv_list[5], 2)
+jopmt$R0  <- replace(jopmt$R0, jopmt$R0==Thv_list[6], 4)
+jopmt$R0  <- replace(jopmt$R0, jopmt$R0==Thv_list[7], 6.5)
+```
+```{r max_cases_all, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
+ggplot(jopmt, aes(x=sigma, y=max_cases_all_mean))+
+  geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+
+  geom_ribbon(data=jopmt, aes(x=sigma, ymin=max_cases_all_25, ymax=max_cases_all_75, fill=as.factor(R0)), alpha=0.3)+ylab('Peak number of cases')+
+  #scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ 
+scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+
+  theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+#ggsave('max_cases.png', height = 7, width = 7)
+```
+```{r max_cases_all, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
+ggplot(jopmt, aes(x=sigma, y=max_cases_end_mean))+
+  geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+
+  ylab('Maximum number of cases')+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+ggsave('max_cases_end.png', height = 7, width = 7)
+```
+```{r max_cases_all, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
+ggplot(jopmt, aes(x=sigma, y=max_cases_out_mean))+
+  geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+
+  ylab('Peak number of cases')+
+  #scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ 
+scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+
+  theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('Only simulations where disease dies out')
+ggsave('max_cases_out.png', height = 7, width = 7.6)
+```
+```{r end_time, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEend_time} Time that the outbreak dies out (or 10 years-end of simulation) by sigma and R0 based on 1000 runs of 100 iterations. This graph looks quite similar to that of the probability of disease going endemic, because if the disease does not go endemic, the disease goes extinct early on in the simulation.'}
+ggplot(jopmt, aes(x=sigma, y=end_time_mean/365))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=end_time_25/365, ymax=end_time_75/365, fill=as.factor(R0)), alpha=0.3)+ylab('Time outbreak dies out (years)')+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+ggsave('end_time.png', height = 7, width = 7)
+```
+
+
+```{r max_cases_all, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
+ggplot(jopmt, aes(x=sigma, y=end_time_out_mean/365))+
+  geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+
+  ylab('Outbreak duration (years)')+
+  #scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ 
+scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+
+  theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('Only simulations where disease dies out')
+ggsave('end_time_out.png', height = 7, width = 7.6)
+```
+
+
+
+
+
+
+
+#Trajectories Plot
+```{r}
+
+
+jtd <- read_csv('julia_trajectories_deterministic.csv')
+jts1 <- read_csv('traj_envstoc_1.csv')
+jts2 <- read_csv('traj_envstoc_2.csv')
+jts3 <- read_csv('traj_envstoc_3.csv')
+jts4 <- read_csv('traj_envstoc_4.csv')
+jts5 <- read_csv('traj_envstoc_5.csv')
+jts1$traj <- 1
+jts2$traj <- 5
+jts3$traj <- 3
+jts4$traj <- 4
+jts5$traj <- 2
+jtse <- rbind(jts1, jts2, jts3, jts4, jts5)
+jtse <- jtse[jtse$value2>=0,]
+jtse <- jtse[jtse$value1>=0,]
+
+
+# ats <- read_csv('avg_traj_stoc.csv')
+# ats <- ats[ats$M>=0,]
+# ats <- ats[ats$H>=0,]
+# ahs <- aggregate(ats$H, list(ats$t), FUN=mean)
+# 
+# atds <-read_csv('avg_traj_demstoc.csv')
+# atds <- atds[atds$M>=0,]
+# atds <- atds[atds$H>=0,]
+# ahds <- aggregate(atds$H, list(atds$t), FUN=mean)
+
+```
+```{r trajectories, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
+ggplot(jtd)+geom_line(data=jtse, aes(x=timestamp, y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (days)')+ylab('Number of hosts infected')+geom_line(aes(x=timestamp, y=value1),lwd=1.5)+theme(legend.position="none")+ylim(0,4500)#+geom_line(data=ahs, aes(x=Group.1, y=x), color='darkgrey', lwd=1.5)#+geom_line(data=ahds,aes(x=Group.1, y=x), color='grey', lwd=1.5)
+
+
+ggsave('trajectories-env.png', height = 7, width = 7)
+```
+```{r}
+jtd <- read_csv('julia_trajectories_deterministic.csv')
+jts1 <- read_csv('traj_detstoc_1.csv')
+jts2 <- read_csv('traj_detstoc_2.csv')
+jts3 <- read_csv('traj_detstoc_3.csv')
+jts4 <- read_csv('traj_detstoc_4.csv')
+jts5 <- read_csv('traj_detstoc_5.csv')
+jts1$traj <- 1
+jts2$traj <- 4
+jts3$traj <- 3
+jts4$traj <- 2
+jts5$traj <- 5
+jtsd <- rbind(jts1, jts2, jts3, jts4, jts5)
+jtsd <- jtsd[jtsd$value2>=0,]
+jtsd <- jtsd[jtsd$value1>=0,]
+
+```
+```{r trajectories, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
+ggplot(jtd)+geom_line(data=jtsd, aes(x=timestamp, y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (days)')+ylab('Number of hosts infected')+geom_line(aes(x=timestamp, y=value1),lwd=1.5)+ylim(0, 4500)+theme(legend.position="none")#+geom_line(data=ahs, aes(x=Group.1, y=x), color='darkgrey', lwd=1.5)#+geom_line(data=ahds,aes(x=Group.1, y=x), color='grey', lwd=1.5)
+
+
+ggsave('trajectories-det.png', height = 7, width = 7)
+```
+
+
+
+
+
+```{r trajectories-2, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories-2} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
+library(ggnewscale)
+
+ggplot(jtd)+ylab('Number of hosts infected')+ylim(0,4500)+geom_line(data=jtse, aes(x=timestamp, y=value1, alpha=0.5, color=as.factor(traj)))+scale_color_manual(values=c('orange', 'darkorange', 'chocolate2','tan1','darkorange2'))+new_scale_colour()+geom_line(data=jtsd, aes(x=timestamp, y=value1, alpha=0.5, color=as.factor(traj)))+scale_color_manual(values=c('darkgreen', 'green', 'darkolivegreen2','green3', 'olivedrab'))+ new_scale_colour()+theme_cowplot()+xlab('Time (days)')+theme(legend.position="none")+geom_line(aes(x=timestamp, y=value1),lwd=1)
+
+ggsave('trajectories-combined.png', height = 3, width = 7)
+```
+```{r}
+
+jtd <- read_csv('julia_trajectories_6.5deterministic.csv')
+jts1 <- read_csv('traj_6.5envstoc_1.csv')
+jts2 <- read_csv('traj_6.5envstoc_2.csv')
+jts3 <- read_csv('traj_6.5envstoc_3.csv')
+jts4 <- read_csv('traj_6.5envstoc_4.csv')
+jts5 <- read_csv('traj_6.5envstoc_5.csv')
+jts1$traj <- 1
+jts2$traj <- 2
+jts3$traj <- 4
+jts4$traj <- 3
+jts5$traj <- 5
+jtse <- rbind(jts1, jts2, jts3, jts4, jts5)
+jtse <- jtse[jtse$value2>=0,]
+jtse <- jtse[jtse$value1>=0,]
+jtse <- jtse[jtse$value2<=100000,]
+jtse <- jtse[jtse$value1<=10000,]
+
+```
+```{r trajectories, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
+ggplot(jtd)+geom_line(data=jtse, aes(x=(timestamp/365), y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (years)')+ylab('Number of hosts infected')+geom_line(aes(x=(timestamp/365), y=value1),lwd=1.5)#+theme(legend.position="none")#+geom_line(data=ahs, aes(x=Group.1, y=x), color='darkgrey', lwd=1.5)#+geom_line(data=ahds,aes(x=Group.1, y=x), color='grey', lwd=1.5)
+
+
+ggsave('trajectories-env.png', height = 7, width = 7)
+```
+
+
+
+#Start of Alpha tests
+1. only biting rate noise turned on
+```{r}
+jopab <- read.csv("alpha_test_b_on.csv")
+jopab$R0 <- jopab$Thv
+Thv_list <- unique(jopab$Thv)
+jopab$R0 <- replace(jopab$R0, jopab$R0==Thv_list[1], 0.75)
+jopab$R0  <- replace(jopab$R0, jopab$R0==Thv_list[2], 0.95)
+jopab$R0  <- replace(jopab$R0, jopab$R0==Thv_list[3], 1.05)
+jopab$R0  <- replace(jopab$R0, jopab$R0==Thv_list[4], 1.25)
+jopab$R0  <- replace(jopab$R0, jopab$R0==Thv_list[5], 2)
+jopab$R0  <- replace(jopab$R0, jopab$R0==Thv_list[6], 4)
+jopab$R0  <- replace(jopab$R0, jopab$R0==Thv_list[7], 6.5)
+```
+
+```{r prob_end, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_end} Probability of the disease becoming endemic by sigma and R0 based on 1000 runs of 100 iterations. Overall, increasing environmental noise strength cases the probability that the disease becomes endemic to decrease. For smaller R0 values (i.e. <1.25), there is a slight increase in endemic disease probability at high environmental noise levels. Above environmental noise strength of 0.4 (where there is up to 40% variation in parameter values), the probability of endemic disease goes to zero. There is a greater probability of the disease going endemic at higher values of R0.'}
+
+ggplot(jopab, aes(x=sigma, y=prob_end_mean))+
+  geom_line(aes(color=as.factor(R0)))+
+  geom_point(aes(color=as.factor(R0)))+
+  geom_ribbon(aes(ymin=prob_end_25, ymax=prob_end_75,fill=as.factor(R0)), alpha=0.3)+
+  scale_color_viridis(discrete=TRUE, guide = "legend")+
+  scale_fill_viridis(discrete=TRUE)+
+  theme_cowplot()+ggtitle("biting rate noise on")+
+  ylab('Probability outbreak becomes endemic')+
+  labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+
+  xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+```
+
+```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
+ggplot(jopab, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("biting rate noise on")
+```
+
+```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
+ggplot(jopab, aes(x=sigma, y=prob_out100_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out100_25, ymax=prob_out100_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 100')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("biting rate noise on")
+```
+2. only transmission probability from mosquitoes to hosts turned on for nosie
+```{r}
+jopat <- read.csv("alpha_test_t1_on.csv")
+jopat$R0 <- jopat$Thv
+Thv_list <- unique(jopat$Thv)
+jopat$R0 <- replace(jopat$R0, jopat$R0==Thv_list[1], 0.75)
+jopat$R0  <- replace(jopat$R0, jopat$R0==Thv_list[2], 0.95)
+jopat$R0  <- replace(jopat$R0, jopat$R0==Thv_list[3], 1.05)
+jopat$R0  <- replace(jopat$R0, jopat$R0==Thv_list[4], 1.25)
+jopat$R0  <- replace(jopat$R0, jopat$R0==Thv_list[5], 2)
+jopat$R0  <- replace(jopat$R0, jopat$R0==Thv_list[6], 4)
+jopat$R0  <- replace(jopat$R0, jopat$R0==Thv_list[7], 6.5)
+```
+
+```{r prob_end, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_end} Probability of the disease becoming endemic by sigma and R0 based on 1000 runs of 100 iterations. Overall, increasing environmental noise strength cases the probability that the disease becomes endemic to decrease. For smaller R0 values (i.e. <1.25), there is a slight increase in endemic disease probability at high environmental noise levels. Above environmental noise strength of 0.4 (where there is up to 40% variation in parameter values), the probability of endemic disease goes to zero. There is a greater probability of the disease going endemic at higher values of R0.'}
+
+ggplot(jopat, aes(x=sigma, y=prob_end_mean))+
+  geom_line(aes(color=as.factor(R0)))+
+  geom_point(aes(color=as.factor(R0)))+
+  geom_ribbon(aes(ymin=prob_end_25, ymax=prob_end_75,fill=as.factor(R0)), alpha=0.3)+
+  scale_color_viridis(discrete=TRUE, guide = "legend")+
+  scale_fill_viridis(discrete=TRUE)+
+  theme_cowplot()+ggtitle("M to H transmission rate noise on")+
+  ylab('Probability outbreak becomes endemic')+
+  labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+
+  xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+```
+
+```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
+ggplot(jopat, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("M to H transmission rate noise on")
+```
+
+```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
+ggplot(jopat, aes(x=sigma, y=prob_out100_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out100_25, ymax=prob_out100_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 100')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("M to H transmission rate noise on")
+```
+
+
+
+3. only mortality rate noise turned on
+
+```{r}
+jopam <- read.csv("alpha_test_m_on.csv")
+jopam$R0 <- jopam$Thv
+Thv_list <- unique(jopam$Thv)
+jopam$R0 <- replace(jopam$R0, jopam$R0==Thv_list[1], 0.75)
+jopam$R0  <- replace(jopam$R0, jopam$R0==Thv_list[2], 0.95)
+jopam$R0  <- replace(jopam$R0, jopam$R0==Thv_list[3], 1.05)
+jopam$R0  <- replace(jopam$R0, jopam$R0==Thv_list[4], 1.25)
+jopam$R0  <- replace(jopam$R0, jopam$R0==Thv_list[5], 2)
+jopam$R0  <- replace(jopam$R0, jopam$R0==Thv_list[6], 4)
+jopam$R0  <- replace(jopam$R0, jopam$R0==Thv_list[7], 6.5)
+```
+
+```{r prob_end, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_end} Probability of the disease becoming endemic by sigma and R0 based on 1000 runs of 100 iterations. Overall, increasing environmental noise strength cases the probability that the disease becomes endemic to decrease. For smaller R0 values (i.e. <1.25), there is a slight increase in endemic disease probability at high environmental noise levels. Above environmental noise strength of 0.4 (where there is up to 40% variation in parameter values), the probability of endemic disease goes to zero. There is a greater probability of the disease going endemic at higher values of R0.'}
+
+ggplot(jopam, aes(x=sigma, y=prob_end_mean))+
+  geom_line(aes(color=as.factor(R0)))+
+  geom_point(aes(color=as.factor(R0)))+
+  geom_ribbon(aes(ymin=prob_end_25, ymax=prob_end_75,fill=as.factor(R0)), alpha=0.3)+
+  scale_color_viridis(discrete=TRUE, guide = "legend")+
+  scale_fill_viridis(discrete=TRUE)+
+  theme_cowplot()+ggtitle("mortality rate noise on")+
+  ylab('Probability outbreak becomes endemic')+
+  labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+
+  xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+```
+
+```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
+ggplot(jopam, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("mortality rate noise on")
+```
+
+```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
+ggplot(jopam, aes(x=sigma, y=prob_out100_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out100_25, ymax=prob_out100_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 100')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("mortality rate noise on")
+```
+
+
+
+
+4. One parameter turned off for noise at a time
+```{r}
+jopabt <- read.csv("alpha_test_bt_on.csv")
+jopabt$R0 <- jopabt$Thv
+Thv_list <- unique(jopabt$Thv)
+jopabt$R0 <- replace(jopabt$R0, jopabt$R0==Thv_list[1], 0.75)
+jopabt$R0  <- replace(jopabt$R0, jopabt$R0==Thv_list[2], 0.95)
+jopabt$R0  <- replace(jopabt$R0, jopabt$R0==Thv_list[3], 1.05)
+jopabt$R0  <- replace(jopabt$R0, jopabt$R0==Thv_list[4], 1.25)
+jopabt$R0  <- replace(jopabt$R0, jopabt$R0==Thv_list[5], 2)
+jopabt$R0  <- replace(jopabt$R0, jopabt$R0==Thv_list[6], 4)
+jopabt$R0  <- replace(jopabt$R0, jopabt$R0==Thv_list[7], 6.5)
+```
+
+```{r prob_end, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_end} Probability of the disease becoming endemic by sigma and R0 based on 1000 runs of 100 iterations. Overall, increasing environmental noise strength cases the probability that the disease becomes endemic to decrease. For smaller R0 values (i.e. <1.25), there is a slight increase in endemic disease probability at high environmental noise levels. Above environmental noise strength of 0.4 (where there is up to 40% variation in parameter values), the probability of endemic disease goes to zero. There is a greater probability of the disease going endemic at higher values of R0.'}
+
+ggplot(jopabt, aes(x=sigma, y=prob_end_mean))+
+  geom_line(aes(color=as.factor(R0)))+
+  geom_point(aes(color=as.factor(R0)))+
+  geom_ribbon(aes(ymin=prob_end_25, ymax=prob_end_75,fill=as.factor(R0)), alpha=0.3)+
+  scale_color_viridis(discrete=TRUE, guide = "legend")+
+  scale_fill_viridis(discrete=TRUE)+
+  theme_cowplot()+ggtitle("b t noise on")+
+  ylab('Probability outbreak becomes endemic')+
+  labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+
+  xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+```
+```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
+ggplot(jopabt, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("b t noise on")
+```
+```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
+ggplot(jopabt, aes(x=sigma, y=prob_out100_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out100_25, ymax=prob_out100_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 100')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("b t noise on")
+```
+
+
+```{r}
+jopabm <- read.csv("alpha_test_bm_on.csv")
+jopabm$R0 <- jopabm$Thv
+Thv_list <- unique(jopabm$Thv)
+jopabm$R0 <- replace(jopabm$R0, jopabm$R0==Thv_list[1], 0.75)
+jopabm$R0  <- replace(jopabm$R0, jopabm$R0==Thv_list[2], 0.95)
+jopabm$R0  <- replace(jopabm$R0, jopabm$R0==Thv_list[3], 1.05)
+jopabm$R0  <- replace(jopabm$R0, jopabm$R0==Thv_list[4], 1.25)
+jopabm$R0  <- replace(jopabm$R0, jopabm$R0==Thv_list[5], 2)
+jopabm$R0  <- replace(jopabm$R0, jopabm$R0==Thv_list[6], 4)
+jopabm$R0  <- replace(jopabm$R0, jopabm$R0==Thv_list[7], 6.5)
+```
+
+```{r prob_end, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_end} Probability of the disease becoming endemic by sigma and R0 based on 1000 runs of 100 iterations. Overall, increasing environmental noise strength cases the probability that the disease becomes endemic to decrease. For smaller R0 values (i.e. <1.25), there is a slight increase in endemic disease probability at high environmental noise levels. Above environmental noise strength of 0.4 (where there is up to 40% variation in parameter values), the probability of endemic disease goes to zero. There is a greater probability of the disease going endemic at higher values of R0.'}
+
+ggplot(jopabm, aes(x=sigma, y=prob_end_mean))+
+  geom_line(aes(color=as.factor(R0)))+
+  geom_point(aes(color=as.factor(R0)))+
+  geom_ribbon(aes(ymin=prob_end_25, ymax=prob_end_75,fill=as.factor(R0)), alpha=0.3)+
+  scale_color_viridis(discrete=TRUE, guide = "legend")+
+  scale_fill_viridis(discrete=TRUE)+
+  theme_cowplot()+ggtitle("b m noise on")+
+  ylab('Probability outbreak becomes endemic')+
+  labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+
+  xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+```
+```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
+ggplot(jopabm, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("b m noise on")
+```
+```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
+ggplot(jopabm, aes(x=sigma, y=prob_out100_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out100_25, ymax=prob_out100_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 100')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("b m noise on")
+```
+
+
+```{r}
+jopatm <- read.csv("alpha_test_tm_on.csv")
+jopatm$R0 <- jopatm$Thv
+Thv_list <- unique(jopatm$Thv)
+jopatm$R0 <- replace(jopatm$R0, jopatm$R0==Thv_list[1], 0.75)
+jopatm$R0  <- replace(jopatm$R0, jopatm$R0==Thv_list[2], 0.95)
+jopatm$R0  <- replace(jopatm$R0, jopatm$R0==Thv_list[3], 1.05)
+jopatm$R0  <- replace(jopatm$R0, jopatm$R0==Thv_list[4], 1.25)
+jopatm$R0  <- replace(jopatm$R0, jopatm$R0==Thv_list[5], 2)
+jopatm$R0  <- replace(jopatm$R0, jopatm$R0==Thv_list[6], 4)
+jopatm$R0  <- replace(jopatm$R0, jopatm$R0==Thv_list[7], 6.5)
+```
+
+```{r prob_end, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_end} Probability of the disease becoming endemic by sigma and R0 based on 1000 runs of 100 iterations. Overall, increasing environmental noise strength cases the probability that the disease becomes endemic to decrease. For smaller R0 values (i.e. <1.25), there is a slight increase in endemic disease probability at high environmental noise levels. Above environmental noise strength of 0.4 (where there is up to 40% variation in parameter values), the probability of endemic disease goes to zero. There is a greater probability of the disease going endemic at higher values of R0.'}
+
+ggplot(jopatm, aes(x=sigma, y=prob_end_mean))+
+  geom_line(aes(color=as.factor(R0)))+
+  geom_point(aes(color=as.factor(R0)))+
+  geom_ribbon(aes(ymin=prob_end_25, ymax=prob_end_75,fill=as.factor(R0)), alpha=0.3)+
+  scale_color_viridis(discrete=TRUE, guide = "legend")+
+  scale_fill_viridis(discrete=TRUE)+
+  theme_cowplot()+ggtitle("t m noise on")+
+  ylab('Probability outbreak becomes endemic')+
+  labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+
+  xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+```
+```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
+ggplot(jopatm, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("t m noise on")
+```
+```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
+ggplot(jopatm, aes(x=sigma, y=prob_out100_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out100_25, ymax=prob_out100_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 100')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("t m noise on")
+```
+
+
+
+
+
+
+
+#Results from R0 controlled by gamma
+```{r}
+jopg <- read.csv("R0_controlled_by_gamma_1.csv")
+jopg$R0 <- jopg$gamma
+gamma_list <- unique(jopg$gamma)
+jopg$R0 <- replace(jopg$R0, jopg$R0==gamma_list[1], 0.75)
+jopg$R0  <- replace(jopg$R0, jopg$R0==gamma_list[2], 0.95)
+jopg$R0  <- replace(jopg$R0, jopg$R0==gamma_list[3], 1.05)
+jopg$R0  <- replace(jopg$R0, jopg$R0==gamma_list[4], 1.25)
+jopg$R0  <- replace(jopg$R0, jopg$R0==gamma_list[5], 2)
+jopg$R0  <- replace(jopg$R0, jopg$R0==gamma_list[6], 4)
+jopg$R0  <- replace(jopg$R0, jopg$R0==gamma_list[7], 6.5)
+```
+
+```{r prob_end, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_end} Probability of the disease becoming endemic by sigma and R0 based on 1000 runs of 100 iterations. Overall, increasing environmental noise strength cases the probability that the disease becomes endemic to decrease. For smaller R0 values (i.e. <1.25), there is a slight increase in endemic disease probability at high environmental noise levels. Above environmental noise strength of 0.4 (where there is up to 40% variation in parameter values), the probability of endemic disease goes to zero. There is a greater probability of the disease going endemic at higher values of R0.'}
+
+ggplot(jopg[jopg$R0>1.5,], aes(x=sigma, y=prob_end_mean))+
+  geom_line(aes(color=as.factor(R0)))+
+  geom_point(aes(color=as.factor(R0)))+
+  geom_ribbon(aes(ymin=prob_end_25, ymax=prob_end_75,fill=as.factor(R0)), alpha=0.3)+
+  scale_color_viridis(discrete=TRUE, guide = "legend")+
+  scale_fill_viridis(discrete=TRUE)+
+  theme_cowplot()+
+  ylab('Probability outbreak becomes endemic')+
+  labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+
+  xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+
+ggsave('prob_end.png', height = 4, width = 7)
+```
+
+
+```{r}
+jopost <- read.csv("out_stats_test.csv")
+```
+
+#Julia Final Results
+```{r}
+jop1 <- read.csv("julia_mean_1.csv")
+jop2 <- read.csv("julia_mean_2.csv")
+jop3 <- read.csv("julia_mean_3.csv")
+jop4 <- read.csv("julia_mean_4.csv")
+jop5 <- read.csv("julia_mean_5.csv")
+jop6 <- read.csv("julia_mean_6.csv")
+jop7 <- read.csv("julia_mean_7.csv")
+
+jop <- rbind(jop1, jop2, jop3, jop4, jop5, jop6, jop7)
+jop$R0 <- jop$Thv
+Thv_list <- unique(jop$Thv)
+jop$R0 <- replace(jop$R0, jop$R0==Thv_list[1], 0.75)
+jop$R0  <- replace(jop$R0, jop$R0==Thv_list[2], 0.95)
+jop$R0  <- replace(jop$R0, jop$R0==Thv_list[3], 1.05)
+jop$R0  <- replace(jop$R0, jop$R0==Thv_list[4], 1.25)
+jop$R0  <- replace(jop$R0, jop$R0==Thv_list[5], 2)
+jop$R0  <- replace(jop$R0, jop$R0==Thv_list[6], 4)
+jop$R0  <- replace(jop$R0, jop$R0==Thv_list[7], 6.5)
+```
+
+```{r prob_end, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_end} Probability of the disease becoming endemic by sigma and R0 based on 1000 runs of 100 iterations. Overall, increasing environmental noise strength cases the probability that the disease becomes endemic to decrease. For smaller R0 values (i.e. <1.25), there is a slight increase in endemic disease probability at high environmental noise levels. Above environmental noise strength of 0.4 (where there is up to 40% variation in parameter values), the probability of endemic disease goes to zero. There is a greater probability of the disease going endemic at higher values of R0.'}
+
+ggplot(jop, aes(x=sigma, y=prob_end_mean))+
+  geom_line(aes(color=as.factor(R0)))+
+  geom_point(aes(color=as.factor(R0)))+
+  geom_ribbon(aes(ymin=prob_end_25, ymax=prob_end_75,fill=as.factor(R0)), alpha=0.3)+
+  #scale_color_viridis(discrete=TRUE, guide = "legend")+
+  #scale_fill_viridis(discrete=TRUE)+
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ 
+  scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+
+  theme_cowplot()+
+  ylab('Probability of endemic disease')+
+  labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+
+  xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+
+ggsave('prob_end.png', height = 3.5, width = 7)
+```
+```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
+ggplot(jop, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+
+#scale_color_viridis(discrete=TRUE, guide = "legend")+
+#scale_fill_viridis(discrete=TRUE)+
+scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ 
+scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+
+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of outbreak > 10 hosts')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+ggsave('prob_out10.png', height = 3.5, width = 7)
+```
+```{r max_cases_all, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
+ggplot(jop, aes(x=sigma, y=max_cases_all_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=max_cases_all_25, ymax=max_cases_all_75, fill=as.factor(R0)), alpha=0.3)+ylab('Peak number of cases')+
+  #scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ 
+scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+
+  theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('All simulations')+theme(text = element_text(size=20))
+ggsave('max_cases.png', height = 7, width = 7.6)
+```
+```{r max_cases_out, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations only including simulations where the outbreak died out. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
+ggplot(jop, aes(x=sigma, y=max_cases_out_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=max_cases_out_25, ymax=max_cases_out_75, fill=as.factor(R0)), alpha=0.3)+ylab('Peak number of cases')+
+  #scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ 
+scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+
+  theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('Simulations where disease died out')+theme(text = element_text(size=20))
+ggsave('max_cases_out.png', height = 7, width = 7.6)
+```
+```{r end_time, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEend_time} Time that the outbreak dies out (or 10 years-end of simulation) by sigma and R0 based on 1000 runs of 100 iterations. This graph looks quite similar to that of the probability of disease going endemic, because if the disease does not go endemic, the disease goes extinct early on in the simulation.'}
+ggplot(jop, aes(x=sigma, y=end_time_mean/365))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=end_time_25/365, ymax=end_time_75/365, fill=as.factor(R0)), alpha=0.3)+ylab('Outbreak duration (years)')+
+  #scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ 
+scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+
+  theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('All simulations')+theme(text = element_text(size=20))
+ggsave('end_time.png', height = 7, width = 7.6)
+```
+```{r end_time_out, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEend_time} Time that the outbreak dies out (or 10 years-end of simulation) by sigma and R0 based on 1000 runs of 100 iterations. This graph looks quite similar to that of the probability of disease going endemic, because if the disease does not go endemic, the disease goes extinct early on in the simulation.'}
+ggplot(jop, aes(x=sigma, y=end_time_out_mean/365))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=end_time_out_25/365, ymax=end_time_out_75/365, fill=as.factor(R0)), alpha=0.3)+ylab('Outbreak duration (years)')+
+  #scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ 
+scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+
+  theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('Simulations where disease died out')+theme(text = element_text(size=20))
+ggsave('end_time_out.png', height = 7, width = 7.6)
+```
+
+
+#sensitivity analysis
+```{r}
+sa <- read.csv("sensitivity_analysis_1000x100.csv")
+
+```
+```{r sa_oprob, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEend_time} Sensitivity analysis of parameters on outbreak probability based on 1000 runs of 100 iterations.'}
+ggplot(sa, aes(x=sigma, y=PRCC_b_oprob))+geom_line(color='green')+geom_point(color='green')+geom_line(aes(x=sigma, y=PRCC_muv_oprob), color='orange')+geom_point(aes(x=sigma, y=PRCC_muv_oprob), color='orange')+geom_line(aes(x=sigma, y=PRCC_tvh_oprob), color='purple')+geom_point(aes(x=sigma, y=PRCC_tvh_oprob), color='purple')+geom_line(aes(x=sigma, y=PRCC_fake_oprob), color='black')+geom_point(aes(x=sigma, y=PRCC_fake_oprob), color='black')+geom_ribbon(aes(ymin=-PRCC_fake_oprob, ymax=PRCC_fake_oprob), fill='darkgrey', alpha=0.3)+ylab('PRCC')+theme_cowplot()+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('Sensitivity of outbreak probability')+theme(text = element_text(size=20))
+ggsave('sa_oprob.png', height = 7, width = 7.6)
+```
+```{r sa_eprob, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEend_time} Sensitivity analysis of parameters on outbreak probability based on 1000 runs of 100 iterations.'}
+ggplot(sa, aes(x=sigma, y=PRCC_b_eprob))+geom_line(color='green')+geom_point(color='green')+geom_line(aes(x=sigma, y=PRCC_muv_eprob), color='orange')+geom_point(aes(x=sigma, y=PRCC_muv_eprob), color='orange')+geom_line(aes(x=sigma, y=PRCC_tvh_eprob), color='purple')+geom_point(aes(x=sigma, y=PRCC_tvh_eprob), color='purple')+geom_line(aes(x=sigma, y=PRCC_fake_eprob), color='black')+geom_point(aes(x=sigma, y=PRCC_fake_eprob), color='black')+geom_ribbon(aes(ymin=-PRCC_fake_eprob, ymax=PRCC_fake_eprob), fill='darkgrey', alpha=0.3)+ylab('PRCC')+theme_cowplot()+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('Sensitivity of endemic disease probability')+theme(text = element_text(size=20))
+ggsave('sa_eprob.png', height = 7, width = 7.6)
+```

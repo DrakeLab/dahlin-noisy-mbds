@@ -1,0 +1,1667 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass amsart
+\use_default_options true
+\begin_modules
+theorems-ams
+eqs-within-sections
+figs-within-sections
+\end_modules
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Environmental Noise and Ross-Macdonald Transmission: Notes
+\end_layout
+
+\begin_layout Author
+Karin Ebey, John Vinson, and Kyle Dahlin
+\end_layout
+
+\begin_layout Section
+Base Model
+\end_layout
+
+\begin_layout Standard
+Our base model is a simple version of the Ross-Macdonald model.
+ Let 
+\begin_inset Formula $N_{H}$
+\end_inset
+
+ be the total host population size, 
+\begin_inset Formula $N_{V}$
+\end_inset
+
+ the total mosquito population size, 
+\begin_inset Formula $H$
+\end_inset
+
+ the number of infectious human hosts, and 
+\begin_inset Formula $V$
+\end_inset
+
+ the number of infectious mosquitoes.
+ We assume that 
+\begin_inset Formula $N_{H}$
+\end_inset
+
+ and 
+\begin_inset Formula $N_{V}$
+\end_inset
+
+ are constant.
+ Hosts recover from infection after 
+\begin_inset Formula $\frac{1}{\gamma_{H}}$
+\end_inset
+
+ days on average while mosquitoes remain infectious for life.
+ The transmission of the mosquito-borne pathogen can then be described by
+ the following system of equations:
+\begin_inset Formula 
+\begin{align}
+\frac{dH}{dt} & =\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)-\gamma_{H}H,\nonumber \\
+\frac{dV}{dt} & =\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)-\mu_{V}V.\label{eq:ODEs}
+\end{align}
+
+\end_inset
+
+The basic reproduction number of this model is given by 
+\begin_inset Formula $\mathcal{R}_{0}=\sqrt{\frac{b^{2}\tau_{HV}\tau_{VH}N_{V}}{\mu_{V}\gamma_{H}N_{H}}}$
+\end_inset
+
+ and the unique endemic equilibrium by
+\begin_inset Formula 
+\begin{align}
+H^{*} & =N_{H}\left(\frac{\frac{b\tau_{HV}N_{V}}{\gamma_{H}N_{H}}}{\frac{b\tau_{HV}N_{V}}{\gamma_{H}N_{H}}+1}\right)\left(\frac{\mathcal{R}_{0}^{2}-1}{\mathcal{R}_{0}^{2}}\right)\nonumber \\
+V^{*} & =N_{V}\left(\frac{\frac{b\tau_{VH}}{\mu_{V}}}{\frac{b\tau_{VH}}{\mu_{V}}+1}\right)\left(\frac{\mathcal{R}_{0}^{2}-1}{\mathcal{R}_{0}^{2}}\right)\label{eq:EndemicEquilibrium}
+\end{align}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\paragraph_spacing double
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="12" columns="6">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Parameter
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Definition
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Standard value
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Range
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Units
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Notes
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $b$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Biting rate
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.3$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left[\frac{1}{15},\frac{1}{3}\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+bites per mosquito per day
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\tau_{HV}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Host susceptibility
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.5$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left[0,1\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+probability
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\tau_{VH}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Vector competence
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.5$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left[0,1\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+probability
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\gamma_{H}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Host recovery rate
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.1$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left[\frac{1}{3},\frac{1}{31}\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+per day
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+inverse of recovery period length
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mu_{V}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Vector mortality rate
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.1$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left[\frac{1}{7},\frac{1}{21}\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+per day
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+inverse of lifespan
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $N_{H}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Host population size
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1000$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left[100,10000\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+individuals
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $N_{V}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Vector population size
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $10000$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left[1000,100000\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+individuals
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Intensity of demographic noise
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0.05$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left[0,1\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+n/a
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\alpha_{b}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Biting rate relative noise intensity
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left[0,1\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+n/a
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\alpha_{\tau}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Vector competence relative noise intensity
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left[0,1\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+n/a
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\alpha_{\mu}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Vector mortality relative noise intensity
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left[0,1\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+n/a
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Stochastic Version of the Model
+\end_layout
+
+\begin_layout Standard
+Here we follow the methods in O'Regan et al., 2016 which are derived from
+ the Allen, 2010 textbook.
+ (This will be almost word-for-word from the Appendix A of O'Regan et al.,
+ 2016, so do not use for publication purposes.)
+\end_layout
+
+\begin_layout Subsection
+Demographic stochasticity
+\end_layout
+
+\begin_layout Standard
+To being we write down a discrete stochastic process version of the model,
+ listing each event that can occur and its corresponding transition probability.
+ Let 
+\begin_inset Formula $X\left(t\right)=\left(H\left(t\right),V\left(t\right)\right)^{T}$
+\end_inset
+
+.
+ To apply the diffusion approximation, we calculate the expectation vector
+ and the covariance matrix for the change in state vector, 
+\begin_inset Formula $\Delta X=\left(\Delta H,\Delta V\right)^{T}$
+\end_inset
+
+ where 
+\begin_inset Formula $\Delta H=H\left(t+\Delta t\right)-H\left(t\right)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+We first build a table of transitions.
+\end_layout
+
+\begin_layout Standard
+\paragraph_spacing double
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="6" columns="4">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $i$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Process
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Change, 
+\begin_inset Formula $\left(\Delta X\right)_{i}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Probability, 
+\begin_inset Formula $p_{i}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+New host infection
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(1,0\right)^{T}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)\Delta t$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $2$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Host recovery
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(-1,0\right)^{T}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\gamma_{H}H\Delta t$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $3$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+New vector infection
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(0,1\right)^{T}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)\Delta t$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $4$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Vector recovery
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(0,-1\right)^{T}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mu_{V}V\Delta t$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $5$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+No change
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(0,0\right)^{T}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left[1-\sum_{i=1}^{4}p_{i}\right]\Delta t$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+From this table, we can derive the expectation as 
+\begin_inset Formula $E\left(\Delta X\right)=\sum_{i=1}^{5}p_{i}\left(\Delta X\right)_{i}$
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+E\left(\Delta X\right) & =\sum_{i=1}^{5}p_{i}\left(\Delta X\right)_{i}\\
+ & =p_{1}\left(\Delta X\right)_{1}+p_{2}\left(\Delta X\right)_{2}+p_{3}\left(\Delta X\right)_{3}+p_{4}\left(\Delta X\right)_{4}+p_{5}\left(\Delta X\right)_{5}\\
+ & =p_{1}\begin{pmatrix}1\\
+0
+\end{pmatrix}+p_{2}\begin{pmatrix}-1\\
+0
+\end{pmatrix}+p_{3}\begin{pmatrix}0\\
+1
+\end{pmatrix}+p_{4}\begin{pmatrix}0\\
+-1
+\end{pmatrix}+p_{5}\begin{pmatrix}0\\
+0
+\end{pmatrix}\\
+ & =\begin{pmatrix}\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)\Delta t\\
+0
+\end{pmatrix}+\begin{pmatrix}-\gamma_{H}H\Delta t\\
+0
+\end{pmatrix}+\begin{pmatrix}0\\
+\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)\Delta t
+\end{pmatrix}+\begin{pmatrix}0\\
+-\mu_{V}V\Delta t
+\end{pmatrix}+p_{5}\begin{pmatrix}0\\
+0
+\end{pmatrix}\\
+ & =\begin{pmatrix}\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)-\gamma_{H}H\\
+\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)-\mu_{V}V
+\end{pmatrix}\Delta t\\
+ & =\mu\Delta t
+\end{align*}
+
+\end_inset
+
+The covariance matrix associated with these changes is a 
+\begin_inset Formula $2$
+\end_inset
+
+ by 
+\begin_inset Formula $2$
+\end_inset
+
+ matrix given by 
+\begin_inset Formula $\Sigma\left(\Delta X\right)=E\left(\left[\Delta X\right]\left[\Delta X\right]^{T}\right)-E\left(\Delta X\right)E\left(\Delta X\right)^{T}$
+\end_inset
+
+.
+ The covariance matrix can be approximated to order 
+\begin_inset Formula $\Delta t$
+\end_inset
+
+ by 
+\begin_inset Formula $\Sigma\left(\Delta X\right)\approx E\left(\left[\Delta X\right]\left[\Delta X\right]^{T}\right)=M\left(t\right)\Delta t$
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{align*}
+E\left(\left[\Delta X\right]\left[\Delta X\right]^{T}\right) & =\sum_{i=1}^{5}p_{i}\left(\Delta X\right)_{i}\left(\Delta X\right)_{i}^{T}\\
+ & =p_{1}\left(\Delta X\right)_{1}\left(\Delta X\right)_{1}^{T}+p_{2}\left(\Delta X\right)_{2}\left(\Delta X\right)_{2}^{T}+p_{3}\left(\Delta X\right)_{3}\left(\Delta X\right)_{3}^{T}+p_{4}\left(\Delta X\right)_{4}\left(\Delta X\right)_{4}^{T}+p_{5}\left(\Delta X\right)_{5}\left(\Delta X\right)_{5}^{T}\\
+ & =p_{1}\begin{pmatrix}1\\
+0
+\end{pmatrix}\begin{pmatrix}1 & 0\end{pmatrix}+p_{2}\begin{pmatrix}-1\\
+0
+\end{pmatrix}\begin{pmatrix}-1 & 0\end{pmatrix}+p_{3}\begin{pmatrix}0\\
+1
+\end{pmatrix}\begin{pmatrix}0 & 1\end{pmatrix}+p_{4}\begin{pmatrix}0\\
+-1
+\end{pmatrix}\begin{pmatrix}0 & -1\end{pmatrix}+p_{5}\begin{pmatrix}0\\
+0
+\end{pmatrix}\begin{pmatrix}0 & 0\end{pmatrix}\\
+ & =p_{1}\begin{pmatrix}1 & 0\\
+0 & 0
+\end{pmatrix}+p_{2}\begin{pmatrix}1 & 0\\
+0 & 0
+\end{pmatrix}+p_{3}\begin{pmatrix}0 & 0\\
+0 & 1
+\end{pmatrix}+p_{4}\begin{pmatrix}0 & 0\\
+0 & 1
+\end{pmatrix}\\
+ & =\begin{pmatrix}\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)+\gamma_{H}H & 0\\
+0 & \frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)+\mu_{V}V
+\end{pmatrix}\Delta t\\
+ & =M\left(t\right)\Delta t
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Now let 
+\begin_inset Formula $B\left(t\right)=\sqrt{M\left(t\right)}$
+\end_inset
+
+.
+ Since 
+\begin_inset Formula $M\left(t\right)$
+\end_inset
+
+ is diagonal, computing its square root is straight-forward:
+\begin_inset Formula 
+\[
+B\left(t\right)=\begin{pmatrix}\sqrt{\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)+\gamma_{H}H} & 0\\
+0 & \sqrt{\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)+\mu_{V}V}
+\end{pmatrix}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The probability distribution of solutions to the discrete-valued continuous
+ process satisfying the appropriate forward Kolmogorov equation is identical
+ to the distribution of solutions to the following system of stochastic
+ differential equations:
+\begin_inset Formula 
+\begin{align*}
+dH & =\mu_{1}dt+B_{11}dW_{1},\\
+dV & =\mu_{2}dt+B_{22}dW_{2},
+\end{align*}
+
+\end_inset
+
+where 
+\begin_inset Formula $dW_{i}$
+\end_inset
+
+ are independent standard Wiener processes.
+ Plugging in all the symbols, we get:
+\begin_inset Formula 
+\begin{align}
+dH & =\left(\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)-\gamma_{H}H\right)dt+\sqrt{\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)+\gamma_{H}H}dW_{1},\nonumber \\
+dV & =\left(\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)-\mu_{V}V\right)dt+\sqrt{\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)+\mu_{V}V}dW_{2}.\label{eq:SDEs}
+\end{align}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Environmental stochasticity
+\end_layout
+
+\begin_layout Standard
+To add environmental variation, we add environmental perturbation to system
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:SDEs"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ which scales with the parameter/rate that we are assuming is altered by
+ the environment.
+ We assume that the stochastic process obtained from the diffusion approximation
+ is perturbed by an additional environmental noise term that scales with
+ the mean level of the rate impacted by the environment at time 
+\begin_inset Formula $t$
+\end_inset
+
+.
+ Specifically, in a small time interval 
+\begin_inset Formula $\Delta t$
+\end_inset
+
+, we assume each relevant parameter 
+\begin_inset Formula $g$
+\end_inset
+
+ is subject to environmental stochasticity as follow
+\begin_inset Formula 
+\[
+g\left(t\right)\Delta t=g_{0}\Delta t+\sigma\eta\sqrt{\Delta t}
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\eta$
+\end_inset
+
+ is a normal random variable with mean zero and unit variance and 
+\begin_inset Formula $\sigma$
+\end_inset
+
+ denotes the strength of the environmental noise.
+ 
+\end_layout
+
+\begin_layout Standard
+We modify system 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:SDEs"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ as follows:
+\begin_inset Formula 
+\begin{align*}
+dH & =\mu_{1}dt+G_{11}dW_{1}+G_{13}dW_{3},\\
+dV & =\mu_{2}dt+G_{22}dW_{2}+G_{23}dW_{3},
+\end{align*}
+
+\end_inset
+
+where 
+\begin_inset Formula $G=\begin{pmatrix}B_{11} & 0 & G_{13}\\
+0 & B_{22} & G_{23}
+\end{pmatrix}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+If we just focus on the effect of environmental variability on mosquito
+ traits, we only need to look at the following parameters: 
+\begin_inset Formula $b,\tau_{VH},$
+\end_inset
+
+ and 
+\begin_inset Formula $\mu_{V}$
+\end_inset
+
+.
+ For these parameters, we get the following matrices for 
+\begin_inset Formula $G$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+G_{b}=\begin{pmatrix}B_{11} & 0 & \sigma\frac{\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)\\
+0 & B_{22} & \sigma\frac{\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)
+\end{pmatrix}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+G_{\tau_{VH}}=\begin{pmatrix}B_{11} & 0 & 0\\
+0 & B_{22} & \sigma\frac{b}{N_{H}}H\left(N_{V}-V\right)
+\end{pmatrix}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+G_{\mu_{V}}=\begin{pmatrix}B_{11} & 0 & 0\\
+0 & B_{22} & \sigma V
+\end{pmatrix}
+\]
+
+\end_inset
+
+The level of environmental noise is controlled by 
+\begin_inset Formula $\sigma$
+\end_inset
+
+.
+ For convenience, I'll write out the full models for each of these cases
+ below.
+\end_layout
+
+\begin_layout Subsubsection
+Environmental variation affects biting rate, 
+\begin_inset Formula $b$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+dH & =\left(\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)-\gamma_{H}H\right)dt+\sqrt{\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)+\gamma_{H}H}dW_{1}+\sigma\frac{\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)dW_{3},\\
+dV & =\left(\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)-\mu_{V}V\right)dt+\sqrt{\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)+\mu_{V}V}dW_{2}+\sigma\frac{\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)dW_{3}.
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Environmental variation affects mosquito competence, 
+\begin_inset Formula $\tau_{VH}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+dH & =\left(\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)-\gamma_{H}H\right)dt+\sqrt{\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)+\gamma_{H}H}dW_{1},\\
+dV & =\left(\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)-\mu_{V}V\right)dt+\sqrt{\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)+\mu_{V}V}dW_{2}+\sigma\frac{b}{N_{H}}H\left(N_{V}-V\right)dW_{3}.
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Environmental variation affects mosquito mortality, 
+\begin_inset Formula $\mu_{V}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+dH & =\left(\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)-\gamma_{H}H\right)dt+\sqrt{\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)+\gamma_{H}H}dW_{1},\\
+dV & =\left(\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)-\mu_{V}V\right)dt+\sqrt{\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)+\mu_{V}V}dW_{2}+\sigma VdW_{3}.
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Environmental variation affects all relevant mosquito traits, 
+\begin_inset Formula $b,\tau_{VH},\mu_{V}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+dH & =\left(\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)-\gamma_{H}H\right)dt+\sqrt{\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)+\gamma_{H}H}dW_{1}+\sigma\alpha_{b}\frac{\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)dW_{3},\\
+dV & =\left(\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)-\mu_{V}V\right)dt+\sqrt{\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)+\mu_{V}V}dW_{2}+\ldots\\
+ & \ldots+\sigma\left(\alpha_{b}\frac{\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)+\alpha_{\tau}\frac{b}{N_{H}}H\left(N_{V}-V\right)+\alpha_{\mu}V\right)dW_{3}.
+\end{align*}
+
+\end_inset
+
+where the 
+\begin_inset Formula $\alpha_{g}$
+\end_inset
+
+'s represent the relative impact of environmental variation on mosquito
+ trait 
+\begin_inset Formula $g$
+\end_inset
+
+.
+\end_layout
+
+\end_body
+\end_document
