@@ -62,7 +62,7 @@ function tHV_from_R0(p, R0)
 end
 
 #Parameters: biting rate, THV, TVH, NH, NV, recovery, mortality, sigma, alphab, alphat, alpham
-p = [0.3, 0, 0.5, 10000, 100000, 0.1, 0.1, 0, 1.0, 1.0, 1.0]
+p = [0.3, 0, 0.5, 10000, 100000, 0.1, 0.1, 0, 1.0, 0.0, 0.0]
 
 
 #environmental noise strength parameter 
@@ -279,13 +279,13 @@ num_trajectories = 100
 
 #init = false
 #if init
-save_df = DataFrame([Float64[],Float64[],Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[],
-Float64[],Float64[],Float64[], Float64[], Float64[], Float64[],
- Float64[],Float64[],Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[]], 
- ["Thv", "sigma","prob_end_mean", "prob_end_25", "prob_end_75", "prob_out10_mean","prob_out10_25", "prob_out10_75", "prob_out100_mean","prob_out100_25", "prob_out100_75","max_cases_all_mean", 
- "max_cases_all_25", "max_cases_all_75",  "max_cases_out_mean", "max_cases_out_25", "max_cases_out_75", "num_cases_mean", "num_cases_25", "num_cases_75", 
- "end_time_mean", "end_time_25", "end_time_75", "end_time_out_mean", "end_time_out_25", "end_time_out_75",
- "time_max_mean", "time_max_25", "time_max_75"])
+#save_df = DataFrame([Float64[],Float64[],Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[],
+#Float64[],Float64[],Float64[], Float64[], Float64[], Float64[],
+# Float64[],Float64[],Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[]], 
+ #["Thv", "sigma","prob_end_mean", "prob_end_25", "prob_end_75", "prob_out10_mean","prob_out10_25", "prob_out10_75", "prob_out100_mean","prob_out100_25", "prob_out100_75","max_cases_all_mean", 
+ #"max_cases_all_25", "max_cases_all_75",  "max_cases_out_mean", "max_cases_out_25", "max_cases_out_75", "num_cases_mean", "num_cases_25", "num_cases_75", 
+ #"end_time_mean", "end_time_25", "end_time_75", "end_time_out_mean", "end_time_out_25", "end_time_out_75",
+ #"time_max_mean", "time_max_25", "time_max_75"])
 #CSV.write("julia_mean_test.csv", save_df)
 #end
 
@@ -317,8 +317,8 @@ Float64[],Float64[],Float64[], Float64[], Float64[], Float64[],
 #print(["Jobs done. i  = ", i])
 
 
-cd("/Users/karinebey/Documents/GitHub/NoisyMBDs") do
- CSV.write("julia_mean_7.csv", save_df, transform = (col,val) -> something(val, missing))
+cd("/Users/karinebey/Documents/GitHub/dahlin-noisy-mbds/") do
+ CSV.write("alpha_test_b_on.csv", df_oprob, transform = (col,val) -> something(val, missing))
 end
 
 # cd("results") do
