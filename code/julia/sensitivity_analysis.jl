@@ -117,7 +117,7 @@ end
 #I will randomly choose R0=1.25 for Thv value
 #I added a fake variable to the end to use for determining the significance of prcc values
 p = [0, 0.03472222, 0, 10000, 100000, 0.1, 0, 0.0, 1.0, 1.0, 1.0, 0]
-sigmas=collect(0:0.02:0.4)
+const sigmas=collect(0:0.02:0.4)
 const u0 = [0.0, 10.0, 0]
 #10 year simulation with time step of 1 day
 const tspan = [0.0, 10*365]
@@ -129,14 +129,17 @@ const timer_output = TimerOutput()
 function SDE_PRCC_func(par_list, num_runs, num_trajectories)
     #this makes an empty dataframe to fill with the final data
     
-    df_prcc_results = DataFrame([Float64[], Float64[],Float64[],Float64[],Float64[], Float64[], Float64[], Float64[],Float64[]], 
-  ["sigma", "PRCC_b_oprob", "PRCC_muv_oprob", "PRCC_tvh_oprob", "PRCC_fake_oprob","PRCC_b_eprob", "PRCC_muv_eprob", "PRCC_tvh_eprob", "PRCC_fake_eprob"])
+    df_prcc_results = DataFrame([Float64[], Float64[],Float64[],Float64[],Float64[], Float64[], Float64[], Float64[],Float64[], Float64[], Float64[],Float64[],Float64[],
+    Float64[], Float64[],Float64[],Float64[], Float64[], Float64[],Float64[],Float64[]], 
+  ["sigma", "PRCC_b_o10prob", "PRCC_muv_o10prob", "PRCC_tvh_o10prob", "PRCC_fake_o10prob", "PRCC_b_o100prob", "PRCC_muv_o100prob", "PRCC_tvh_o100prob",
+  "PRCC_fake_o100prob","PRCC_b_eprob", "PRCC_muv_eprob", "PRCC_tvh_eprob", "PRCC_fake_eprob", "PRCC_b_peak", "PRCC_muv_peak", "PRCC_tvh_peak", "PRCC_fake_peak",
+  "PRCC_b_dur", "PRCC_muv_dur", "PRCC_tvh_dur", "PRCC_fake_dur"])
       
   #Run over the 21 different sigma values
     for q in 1:21
 #initialize a temporary data frame for each sigma value run
-      df_oprob = DataFrame([Float64[], Float64[], Float64[],Float64[],Float64[], Float64[], Float64[], Float64[], Float64[]], 
-    ["sigma", "b", "muv", "tvh", "fake", "eprob", "oprob", "peak_cases", "duration"])
+      df_oprob = DataFrame([Float64[], Float64[], Float64[],Float64[],Float64[], Float64[], Float64[], Float64[], Float64[], Float64[]], 
+    ["sigma", "b", "muv", "tvh", "fake", "eprob", "o10prob", "o100prob","peak_cases", "duration"])
 
       p[8] = sigmas[q]
 
@@ -174,9 +177,13 @@ function SDE_PRCC_func(par_list, num_runs, num_trajectories)
             temp_df.eprob .= ifelse.(temp_df.eprob .== 3650, 1, temp_df.eprob)
   
             #for each iteration determine whether an outbreak occured (defined as > 10 hosts infected at one time point)
-            temp_df.oprob = temp_df.peak_cases
-            temp_df.oprob .= ifelse.(temp_df.oprob .< 11, 0, temp_df.oprob)
-            temp_df.oprob .= ifelse.(temp_df.oprob .> 10, 1, temp_df.oprob)
+            temp_df.o10prob = temp_df.peak_cases
+            temp_df.o10prob .= ifelse.(temp_df.o10prob .< 11, 0, temp_df.o10prob)
+            temp_df.o10prob .= ifelse.(temp_df.o10prob .> 10, 1, temp_df.o10prob)
+
+            temp_df.o100prob = temp_df.peak_cases
+            temp_df.o100prob .= ifelse.(temp_df.o100prob .< 11, 0, temp_df.o100prob)
+            temp_df.o100prob .= ifelse.(temp_df.o100prob .> 10, 1, temp_df.o100prob)
 
             temp_df[!, :b] .= p[1]
             temp_df[!, :muv] .= p[7]
@@ -198,13 +205,30 @@ function SDE_PRCC_func(par_list, num_runs, num_trajectories)
 
       ranked_temp_df = combine(df_oprob, All() .=> ordinalrank; renamecols = false)
 #calculate the prccs for each parameter for each of the two metrics
-      df_prcc_results = vcat(df_prcc_results, (DataFrame([[p[8]],[partialcor(ranked_temp_df.b, ranked_temp_df.oprob, Matrix(select(ranked_temp_df, [:muv, :tvh, :fake])))],
-    [partialcor(ranked_temp_df.muv, ranked_temp_df.oprob, Matrix(select(ranked_temp_df, [:b, :tvh, :fake])))], [partialcor(ranked_temp_df.tvh, ranked_temp_df.oprob, Matrix(select(ranked_temp_df, [:b, :muv, :fake])))], 
-    [partialcor(ranked_temp_df.fake, ranked_temp_df.oprob, Matrix(select(ranked_temp_df, [:b, :muv, :tvh])))],
+      df_prcc_results = vcat(df_prcc_results, (DataFrame([[p[8]],
+    [partialcor(ranked_temp_df.b, ranked_temp_df.o10prob, Matrix(select(ranked_temp_df, [:muv, :tvh, :fake])))],
+    [partialcor(ranked_temp_df.muv, ranked_temp_df.o10prob, Matrix(select(ranked_temp_df, [:b, :tvh, :fake])))], 
+    [partialcor(ranked_temp_df.tvh, ranked_temp_df.o10prob, Matrix(select(ranked_temp_df, [:b, :muv, :fake])))], 
+    [partialcor(ranked_temp_df.fake, ranked_temp_df.o10prob, Matrix(select(ranked_temp_df, [:b, :muv, :tvh])))],
+    [partialcor(ranked_temp_df.b, ranked_temp_df.o100prob, Matrix(select(ranked_temp_df, [:muv, :tvh, :fake])))],
+    [partialcor(ranked_temp_df.muv, ranked_temp_df.o100prob, Matrix(select(ranked_temp_df, [:b, :tvh, :fake])))], 
+    [partialcor(ranked_temp_df.tvh, ranked_temp_df.o100prob, Matrix(select(ranked_temp_df, [:b, :muv, :fake])))], 
+    [partialcor(ranked_temp_df.fake, ranked_temp_df.o100prob, Matrix(select(ranked_temp_df, [:b, :muv, :tvh])))],
     [partialcor(ranked_temp_df.b, ranked_temp_df.eprob, Matrix(select(ranked_temp_df, [:muv, :tvh,:fake])))],
-    [partialcor(ranked_temp_df.muv, ranked_temp_df.eprob, Matrix(select(ranked_temp_df, [:b, :tvh, :fake])))], [partialcor(ranked_temp_df.tvh, ranked_temp_df.eprob, Matrix(select(ranked_temp_df, [:b, :muv, :fake])))],
-    [partialcor(ranked_temp_df.fake, ranked_temp_df.eprob, Matrix(select(ranked_temp_df, [:b, :muv, :tvh])))]], 
-          ["sigma", "PRCC_b_oprob", "PRCC_muv_oprob", "PRCC_tvh_oprob", "PRCC_fake_oprob","PRCC_b_eprob", "PRCC_muv_eprob", "PRCC_tvh_eprob", "PRCC_fake_eprob"])))
+    [partialcor(ranked_temp_df.muv, ranked_temp_df.eprob, Matrix(select(ranked_temp_df, [:b, :tvh, :fake])))], 
+    [partialcor(ranked_temp_df.tvh, ranked_temp_df.eprob, Matrix(select(ranked_temp_df, [:b, :muv, :fake])))],
+    [partialcor(ranked_temp_df.fake, ranked_temp_df.eprob, Matrix(select(ranked_temp_df, [:b, :muv, :tvh])))],
+    [partialcor(ranked_temp_df.b, ranked_temp_df.peak_cases, Matrix(select(ranked_temp_df, [:muv, :tvh, :fake])))],
+    [partialcor(ranked_temp_df.muv, ranked_temp_df.peak_cases, Matrix(select(ranked_temp_df, [:b, :tvh, :fake])))], 
+    [partialcor(ranked_temp_df.tvh, ranked_temp_df.peak_cases, Matrix(select(ranked_temp_df, [:b, :muv, :fake])))], 
+    [partialcor(ranked_temp_df.fake, ranked_temp_df.peak_cases, Matrix(select(ranked_temp_df, [:b, :muv, :tvh])))],
+    [partialcor(ranked_temp_df.b, ranked_temp_df.duration, Matrix(select(ranked_temp_df, [:muv, :tvh, :fake])))],
+    [partialcor(ranked_temp_df.muv, ranked_temp_df.duration, Matrix(select(ranked_temp_df, [:b, :tvh, :fake])))], 
+    [partialcor(ranked_temp_df.tvh, ranked_temp_df.duration, Matrix(select(ranked_temp_df, [:b, :muv, :fake])))], 
+    [partialcor(ranked_temp_df.fake, ranked_temp_df.duration, Matrix(select(ranked_temp_df, [:b, :muv, :tvh])))]], 
+    ["sigma", "PRCC_b_o10prob", "PRCC_muv_o10prob", "PRCC_tvh_o10prob", "PRCC_fake_o10prob", "PRCC_b_o100prob", "PRCC_muv_o100prob", "PRCC_tvh_o100prob",
+    "PRCC_fake_o100prob","PRCC_b_eprob", "PRCC_muv_eprob", "PRCC_tvh_eprob", "PRCC_fake_eprob", "PRCC_b_peak", "PRCC_muv_peak", "PRCC_tvh_peak", "PRCC_fake_peak",
+    "PRCC_b_dur", "PRCC_muv_dur", "PRCC_tvh_dur", "PRCC_fake_dur"])))
 
       df_oprob = 0
       ranked_temp_df = 0
@@ -249,11 +273,15 @@ num_trajectories=100
 
 df_prcc_results = SDE_PRCC_func(LHSamples, num_runs, num_trajectories)
 
-plot(df_prcc_results.sigma, [df_prcc_results.PRCC_b_oprob,df_prcc_results.PRCC_muv_oprob, df_prcc_results.PRCC_tvh_oprob, df_prcc_results.PRCC_fake_oprob], label=["b" "muv" "tvh" "fake"])
+plot(df_prcc_results.sigma, [df_prcc_results.PRCC_b_o10prob,df_prcc_results.PRCC_muv_o10prob, df_prcc_results.PRCC_tvh_o10prob, df_prcc_results.PRCC_fake_o10prob], label=["b" "muv" "tvh" "fake"])
+plot(df_prcc_results.sigma, [df_prcc_results.PRCC_b_o100prob,df_prcc_results.PRCC_muv_o100prob, df_prcc_results.PRCC_tvh_o100prob, df_prcc_results.PRCC_fake_o100prob], label=["b" "muv" "tvh" "fake"])
 plot(df_prcc_results.sigma, [df_prcc_results.PRCC_b_eprob,df_prcc_results.PRCC_muv_eprob, df_prcc_results.PRCC_tvh_eprob, df_prcc_results.PRCC_fake_eprob], label=["b" "muv" "tvh" "fake"])
+plot(df_prcc_results.sigma, [df_prcc_results.PRCC_b_peak,df_prcc_results.PRCC_muv_peak, df_prcc_results.PRCC_tvh_peak, df_prcc_results.PRCC_fake_peak], label=["b" "muv" "tvh" "fake"])
+plot(df_prcc_results.sigma, [df_prcc_results.PRCC_b_dur,df_prcc_results.PRCC_muv_dur, df_prcc_results.PRCC_tvh_dur, df_prcc_results.PRCC_fake_dur], label=["b" "muv" "tvh" "fake"])
+
 
 cd("/Users/karinebey/Documents/GitHub/NoisyMBDs") do
-  CSV.write("sensitivity_analysis_1000x100.csv", df_prcc_results, transform = (col,val) -> something(val, missing))
+  CSV.write("sensitivity_analysis_new_all.csv", df_prcc_results, transform = (col,val) -> something(val, missing))
 end
 
 
