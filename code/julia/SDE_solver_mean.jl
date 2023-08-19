@@ -62,7 +62,7 @@ function tHV_from_R0(p, R0)
 end
 
 #Parameters: biting rate, THV, TVH, NH, NV, recovery, mortality, sigma, alphab, alphat, alpham
-p = [0.3, 0, 0.5, 10000, 100000, 0.1, 0.1, 0, 1.0, 0.0, 0.0]
+p = [0.3, 0, 0.5, 10000, 100000, 0.1, 0.1, 0, 0.0, 1.0, 1.0]
 
 
 #environmental noise strength parameter 
@@ -318,7 +318,7 @@ num_trajectories = 100
 
 
 cd("/Users/karinebey/Documents/GitHub/dahlin-noisy-mbds/") do
- CSV.write("alpha_test_b_on.csv", df_oprob, transform = (col,val) -> something(val, missing))
+ CSV.write("alpha_test_tm_on.csv", df_oprob, transform = (col,val) -> something(val, missing))
 end
 
 # cd("results") do
