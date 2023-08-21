@@ -400,24 +400,24 @@ ggplot(jopab, aes(x=sigma, y=prob_end_mean))+
   geom_line(aes(color=as.factor(R0)))+
   geom_point(aes(color=as.factor(R0)))+
   geom_ribbon(aes(ymin=prob_end_25, ymax=prob_end_75,fill=as.factor(R0)), alpha=0.3)+
-  scale_color_viridis(discrete=TRUE, guide = "legend")+
-  scale_fill_viridis(discrete=TRUE)+
-  theme_cowplot()+ggtitle("biting rate noise on")+
   ylab('Probability outbreak becomes endemic')+
-  labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+
-  xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha b on')+theme(text = element_text(size=15))
+ggsave("alpha_b_eprob.png", height=7, width = 7)
 ```
 
 ```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
-ggplot(jopab, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("biting rate noise on")
+ggplot(jopab, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha b on')+theme(text = element_text(size=15))
+ggsave("alpha_b_oprob10.png", height=7, width = 7)
 ```
 
-```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
-ggplot(jopab, aes(x=sigma, y=prob_out100_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out100_25, ymax=prob_out100_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 100')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("biting rate noise on")
+```{r max_cases_all, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
+ggplot(jopab, aes(x=sigma, y=max_cases_all_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=max_cases_all_25, ymax=max_cases_all_75, fill=as.factor(R0)), alpha=0.3)+ylab('Peak number of cases')+scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha b on')+theme(text = element_text(size=15))
+ggsave("alpha_b_peak.png", height=7, width = 7)
 ```
+
 2. only transmission probability from mosquitoes to hosts turned on for nosie
 ```{r}
-jopat <- read.csv("alpha_test_t1_on.csv")
+jopat <- read.csv("alpha_test_t_on.csv")
 jopat$R0 <- jopat$Thv
 Thv_list <- unique(jopat$Thv)
 jopat$R0 <- replace(jopat$R0, jopat$R0==Thv_list[1], 0.75)
@@ -435,20 +435,19 @@ ggplot(jopat, aes(x=sigma, y=prob_end_mean))+
   geom_line(aes(color=as.factor(R0)))+
   geom_point(aes(color=as.factor(R0)))+
   geom_ribbon(aes(ymin=prob_end_25, ymax=prob_end_75,fill=as.factor(R0)), alpha=0.3)+
-  scale_color_viridis(discrete=TRUE, guide = "legend")+
-  scale_fill_viridis(discrete=TRUE)+
-  theme_cowplot()+ggtitle("M to H transmission rate noise on")+
   ylab('Probability outbreak becomes endemic')+
-  labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+
-  xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha t on')+theme(text = element_text(size=15))
+ggsave("alpha_t_eprob.png", height=7, width = 7)
 ```
 
 ```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
-ggplot(jopat, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("M to H transmission rate noise on")
+ggplot(jopat, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha t on')+theme(text = element_text(size=15))
+ggsave("alpha_t_oprob10.png", height=7, width = 7)
 ```
 
 ```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
-ggplot(jopat, aes(x=sigma, y=prob_out100_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out100_25, ymax=prob_out100_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 100')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("M to H transmission rate noise on")
+ggplot(jopat, aes(x=sigma, y=max_cases_all_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=max_cases_all_25, ymax=max_cases_all_75, fill=as.factor(R0)), alpha=0.3)+ylab('Peak number of cases')+scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha t on')+theme(text = element_text(size=15))
+ggsave("alpha_t_peak.png", height=7, width = 7)
 ```
 
 
@@ -474,20 +473,19 @@ ggplot(jopam, aes(x=sigma, y=prob_end_mean))+
   geom_line(aes(color=as.factor(R0)))+
   geom_point(aes(color=as.factor(R0)))+
   geom_ribbon(aes(ymin=prob_end_25, ymax=prob_end_75,fill=as.factor(R0)), alpha=0.3)+
-  scale_color_viridis(discrete=TRUE, guide = "legend")+
-  scale_fill_viridis(discrete=TRUE)+
-  theme_cowplot()+ggtitle("mortality rate noise on")+
   ylab('Probability outbreak becomes endemic')+
-  labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+
-  xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha m on')+theme(text = element_text(size=15))
+ggsave("alpha_m_eprob.png", height=7, width = 7)
 ```
 
 ```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
-ggplot(jopam, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("mortality rate noise on")
+ggplot(jopam, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha m on')+theme(text = element_text(size=15))
+ggsave("alpha_m_oprob10.png", height=7, width = 7)
 ```
 
 ```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
-ggplot(jopam, aes(x=sigma, y=prob_out100_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out100_25, ymax=prob_out100_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 100')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("mortality rate noise on")
+ggplot(jopam, aes(x=sigma, y=max_cases_all_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=max_cases_all_25, ymax=max_cases_all_75, fill=as.factor(R0)), alpha=0.3)+ylab('Peak number of cases')+scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha m on')+theme(text = element_text(size=15))
+ggsave("alpha_m_peak.png", height=7, width = 7)
 ```
 
 
@@ -513,18 +511,17 @@ ggplot(jopabt, aes(x=sigma, y=prob_end_mean))+
   geom_line(aes(color=as.factor(R0)))+
   geom_point(aes(color=as.factor(R0)))+
   geom_ribbon(aes(ymin=prob_end_25, ymax=prob_end_75,fill=as.factor(R0)), alpha=0.3)+
-  scale_color_viridis(discrete=TRUE, guide = "legend")+
-  scale_fill_viridis(discrete=TRUE)+
-  theme_cowplot()+ggtitle("b t noise on")+
   ylab('Probability outbreak becomes endemic')+
-  labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+
-  xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha b, t on')+theme(text = element_text(size=15))
+ggsave("alpha_bt_eprob.png", height=7, width = 7)
 ```
 ```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
-ggplot(jopabt, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("b t noise on")
+ggplot(jopabt, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha b, t on')+theme(text = element_text(size=15))
+ggsave("alpha_bt_oprob10.png", height=7, width = 7)
 ```
 ```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
-ggplot(jopabt, aes(x=sigma, y=prob_out100_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out100_25, ymax=prob_out100_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 100')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("b t noise on")
+ggplot(jopabt, aes(x=sigma, y=max_cases_all_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=max_cases_all_25, ymax=max_cases_all_75, fill=as.factor(R0)), alpha=0.3)+ylab('Peak number of cases')+scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha b, t on')+theme(text = element_text(size=15))
+ggsave("alpha_bt_peak.png", height=7, width = 7)
 ```
 
 
@@ -547,18 +544,17 @@ ggplot(jopabm, aes(x=sigma, y=prob_end_mean))+
   geom_line(aes(color=as.factor(R0)))+
   geom_point(aes(color=as.factor(R0)))+
   geom_ribbon(aes(ymin=prob_end_25, ymax=prob_end_75,fill=as.factor(R0)), alpha=0.3)+
-  scale_color_viridis(discrete=TRUE, guide = "legend")+
-  scale_fill_viridis(discrete=TRUE)+
-  theme_cowplot()+ggtitle("b m noise on")+
   ylab('Probability outbreak becomes endemic')+
-  labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+
-  xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha b, m on')+theme(text = element_text(size=15))
+ggsave("alpha_bm_eprob.png", height=7, width = 7)
 ```
 ```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
-ggplot(jopabm, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("b m noise on")
+ggplot(jopabm, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha b, m on')+theme(text = element_text(size=15))
+ggsave("alpha_bm_oprob10.png", height=7, width = 7)
 ```
 ```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
-ggplot(jopabm, aes(x=sigma, y=prob_out100_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out100_25, ymax=prob_out100_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 100')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("b m noise on")
+ggplot(jopabm, aes(x=sigma, y=max_cases_all_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=max_cases_all_25, ymax=max_cases_all_75, fill=as.factor(R0)), alpha=0.3)+ylab('Peak number of cases')+scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha b, m on')+theme(text = element_text(size=15))
+ggsave("alpha_bm_peak.png", height=7, width = 7)
 ```
 
 
@@ -581,18 +577,17 @@ ggplot(jopatm, aes(x=sigma, y=prob_end_mean))+
   geom_line(aes(color=as.factor(R0)))+
   geom_point(aes(color=as.factor(R0)))+
   geom_ribbon(aes(ymin=prob_end_25, ymax=prob_end_75,fill=as.factor(R0)), alpha=0.3)+
-  scale_color_viridis(discrete=TRUE, guide = "legend")+
-  scale_fill_viridis(discrete=TRUE)+
-  theme_cowplot()+ggtitle("t m noise on")+
   ylab('Probability outbreak becomes endemic')+
-  labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+
-  xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))
+  scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha t, m on')+theme(text = element_text(size=15))
+ggsave("alpha_tm_eprob.png", height=7, width = 7)
 ```
 ```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
-ggplot(jopatm, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("t m noise on")
+ggplot(jopatm, aes(x=sigma, y=prob_out10_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out10_25, ymax=prob_out10_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 10')+ylim(0,1)+scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha t, m on')+theme(text = element_text(size=15))
+ggsave("alpha_tm_oprob10.png", height=7, width = 7)
 ```
 ```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
-ggplot(jopatm, aes(x=sigma, y=prob_out100_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=prob_out100_25, ymax=prob_out100_75, fill=as.factor(R0)), alpha=0.3)+scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+ylab('Probability of an outbreak > 100')+ylim(0,1)+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle("t m noise on")
+ggplot(jopatm, aes(x=sigma, y=max_cases_all_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=max_cases_all_25, ymax=max_cases_all_75, fill=as.factor(R0)), alpha=0.3)+ylab('Peak number of cases')+scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('alpha t, m on')+theme(text = element_text(size=15))
+ggsave("alpha_tm_peak.png", height=7, width = 7)
 ```
 
 
@@ -638,6 +633,7 @@ jopost <- read.csv("out_stats_test.csv")
 
 #Julia Final Results
 ```{r}
+
 jop1 <- read.csv("julia_mean_1.csv")
 jop2 <- read.csv("julia_mean_2.csv")
 jop3 <- read.csv("julia_mean_3.csv")
@@ -690,7 +686,7 @@ ggplot(jop, aes(x=sigma, y=max_cases_all_mean))+geom_line(aes(color=as.factor(R0
   scale_color_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+ 
 scale_fill_manual(values=c('blue', 'cyan2', 'lightcoral', 'red1', 'firebrick3', 'darkred', 'black'))+
   theme_cowplot()+labs(color = unname(TeX("$R_0$")), fill=unname(TeX("$R_0$")))+xlab(unname(TeX('Environmental noise strength $(\\sigma)$')))+ggtitle('All simulations')+theme(text = element_text(size=20))
-ggsave('max_cases.png', height = 7, width = 7.6)
+ggsave('max_cases.png', height = 3.5, width = 7)
 ```
 ```{r max_cases_out, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations only including simulations where the outbreak died out. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
 ggplot(jop, aes(x=sigma, y=max_cases_out_mean))+geom_line(aes(color=as.factor(R0)))+geom_point(aes(color=as.factor(R0)))+geom_ribbon(aes(ymin=max_cases_out_25, ymax=max_cases_out_75, fill=as.factor(R0)), alpha=0.3)+ylab('Peak number of cases')+
