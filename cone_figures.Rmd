@@ -1,0 +1,209 @@
+---
+title: "Environmental Noise and Ross-Macdonald Transmission Models"
+author: "Karin Ebey, John Vinson and Kyle Dahlin"
+date: "`r Sys.Date()`"
+link-citations: yes
+csl: proceedings-of-the-royal-society-b.csl
+bibliography: bibliography.bib
+output:
+  pdf_document: 
+    extra_dependencies: ["float"]
+    keep_tex: yes
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "doc") })
+---
+
+```{r setup, include=FALSE}
+
+# Load libraries (trim this list down to the essentials)
+library(ggplot2)
+library(tidyverse)
+library(cowplot)
+library(viridis)
+library(latex2exp)
+
+# Knitr settings (hides all chunk outputs besides figures and centers figures)
+knitr::opts_chunk$set(
+  echo = FALSE, cache = FALSE, warning = FALSE, message = FALSE, fig.pos = "H",
+  dev = c('pdf', 'png'),
+  out.extra = ""
+)
+
+```
+
+``` {r R0 calculator}
+#solves for b-biting rate based on desired R0 value
+tHV <- 0.02222222 # transmission prob. from V to H
+tVH <- 0.5 # transmission prob. from H to V
+NH <- 1000 # host population size
+NV <- 10000# vector population size
+gH <- 0.1 # recovery rate of hosts
+mV <- 0.1 # mortality of vectors
+
+R0=1
+b=sqrt((R0^2*NH * gH * mV)/(tHV * tVH * NV))
+b
+
+
+#solves for muV-mosquito mortality rate based on desired R0 value
+b <- 0.3 #biting rate arbitrarily chosen baseline b to be 0.3, because that was used in O'Regan 2016 paper, and yeilds TVH values between 0 and 1
+tVH <- 0.5
+tHV <- 0.5 # transmission prob. from V to H
+NH <- 1000 # host population size
+NV <- 10000# vector population size
+gH <- 0.1 # recovery rate of hosts
+
+R0=c(0.75, 0.95, 1, 1.05, 1.25, 2, 4, 6.5)
+mV=(b^2*tHV*tVH*NV)/(R0^2*NH*gH)
+mV
+
+
+
+#solves for tVH-transmission from hosts to mosquitos based on desired R0 value
+b <- 0.3 #biting rate arbitrarily chosen baseline b to be 0.3, because that was used in O'Regan 2016 paper, and yeilds TVH values between 0 and 1
+tHV <- 0.5 # transmission prob. from V to H
+NH <- 1000 # host population size
+NV <- 10000# vector population size
+gH <- 0.1 # recovery rate of hosts
+mV <- 0.1 # mortality of vectors
+
+R0=c(0.75, 0.95, 1, 1.05, 1.25, 2, 4, 6.5)
+tVH=(R0^2*NH * gH * mV)/(b^2*tHV * NV)
+tVH
+
+#solves for tHV-transmission from hosts to mosquitos based on desired R0 value
+b <- 0.3 #biting rate arbitrarily chosen baseline b to be 0.3, because that was used in O'Regan 2016 paper, and yeilds THV values between 0 and 1
+tVH <- 0.5 # transmission prob. from H to V
+NH <- 1000 # host population size
+NV <- 10000# vector population size
+gH <- 0.1 # recovery rate of hosts
+mV <- 0.1 # mortality of vectors
+
+R0=c(0.75, 0.95, 1, 1.05, 1.25, 2, 4, 6.5)
+tHV=(R0^2*NH * gH * mV)/(b^2*tVH * NV)
+tHV
+
+#This calculates the Thv for each R0 value based on baseline parameter values used in simulations
+#This is how R0 is controlled in simulations
+tHV_calc <- function(R0) {
+  b <- 0.3 #biting rate arbitrarily chosen baseline b to be 0.3, because that was used in O'Regan 2016 paper, and yeilds THV values between 0 and 1
+tVH <- 0.5 # transmission prob. from H to V
+NH <- 1000 # host population size
+NV <- 10000# vector population size
+gH <- 0.1 # recovery rate of hosts
+mV <- 0.1 # mortality of vectors
+
+tHV=(R0^2*NH * gH * mV)/(b^2*tVH * NV)
+return(tHV)
+}
+
+#This calculates the b value to acheive a certain R0 with a selected baseline tHV
+b_calc <- function(tHV, R0){
+tVH <- 0.5 # transmission prob. from H to V
+NH <- 1000 # host population size
+NV <- 10000# vector population size
+gH <- 0.1 # recovery rate of hosts
+mV <- 0.1 # mortality of vectors
+
+b=sqrt((R0^2*NH * gH * mV)/(tHV * tVH * NV))
+return(b)
+}
+
+#This calculates the mortality rate value to acheive a certain R0 with a selected baseline tHV
+mv_calc <- function(tHV, R0){
+b <- 0.3 #biting rate arbitrarily chosen baseline b to be 0.3, because that was used in O'Regan 2016 paper, and yeilds TVH values between 0 and 1
+tVH <- 0.5
+NH <- 1000 # host population size
+NV <- 10000# vector population size
+gH <- 0.1 # recovery rate of hosts
+mV=(b^2*tHV*tVH*NV)/(R0^2*NH*gH)
+return(mV)
+}
+
+#This calculates the tVH value to acheive a certain R0 with a selected baseline tHV
+tvh_calc <- function(tHV, R0){
+b <- 0.3 #biting rate arbitrarily chosen baseline b to be 0.3, because that was used in O'Regan 2016 paper, and yeilds TVH values between 0 and 1
+NH <- 1000 # host population size
+NV <- 10000# vector population size
+gH <- 0.1 # recovery rate of hosts
+mV <- 0.1 # mortality of vectors
+
+tVH=(R0^2*NH * gH * mV)/(b^2*tHV * NV)
+return(tVH)
+}
+```
+
+
+#Beta cones
+```{r}
+
+#make dataframe with upper and lower boundaries of parameter
+mydata = data.frame(x=seq(0, 0.4, by=0.001))
+mydata$func1 = sapply(mydata$x, FUN = function(x){(1+x)*0.3})
+mydata$func2 = sapply(mydata$x, FUN = function(x){(1-x)*0.3})
+
+#make 6 plots of baseline R0 values 0.75, 0.95, 1.05, 2, 4
+#red line is the minimum beta value for R0=1 under the different scenarios
+#shading indicates where R0 is greater than 1
+p1 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=b_calc(tHV_calc(0.75), 1)), color='red')+geom_ribbon(data=mydata[mydata$func1>=b_calc(tHV_calc(0.75), 1),], aes(ymin=b_calc(tHV_calc(0.75), 1), ymax=func1), alpha=0.5)+ggtitle('R0=0.75')+ylab('beta')+xlab('env noise strength')+theme_cowplot()+ylim(0, 0.5)
+
+p2 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=b_calc(tHV_calc(0.95), 1)), color='red')+geom_ribbon(data=mydata[mydata$func1>=b_calc(tHV_calc(0.95), 1),], aes(ymin=b_calc(tHV_calc(0.95), 1), ymax=func1), alpha=0.5)+ggtitle('R0=0.95')+ylab('beta')+xlab('env noise strength')+theme_cowplot()+ylim(0, 0.5)
+
+p3 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=b_calc(tHV_calc(1), 1)), color='red')+geom_ribbon(data=mydata[mydata$func1>=b_calc(tHV_calc(1), 1),], aes(ymin=b_calc(tHV_calc(1), 1), ymax=func1), alpha=0.5)+ggtitle('R0=1')+ylab('beta')+xlab('env noise strength')+theme_cowplot()+ylim(0, 0.5)
+
+p4 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=b_calc(tHV_calc(1.05), 1)), color='red')+geom_ribbon(data=mydata[mydata$func1>=b_calc(tHV_calc(1.05), 1),], aes(ymin=b_calc(tHV_calc(1.05), 1), ymax=func1), alpha=0.5)+ggtitle('R0=1.05')+ylab('beta')+xlab('env noise strength')+theme_cowplot()+ylim(0, 0.5)
+
+p5 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=b_calc(tHV_calc(2), 1)), color='red')+geom_ribbon(data=mydata[mydata$func1>=b_calc(tHV_calc(2), 1),], aes(ymin=b_calc(tHV_calc(2), 1), ymax=func1), alpha=0.5)+ggtitle('R0=2')+ylab('beta')+xlab('env noise strength')+theme_cowplot()+ylim(0, 0.5)
+
+p6 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=b_calc(tHV_calc(4), 1)), color='red')+geom_ribbon(data=mydata[mydata$func1>=b_calc(tHV_calc(4), 1),], aes(ymin=b_calc(tHV_calc(4), 1), ymax=func1), alpha=0.5)+ggtitle('R0=4')+ylab('beta')+xlab('env noise strength')+theme_cowplot()+ylim(0, 0.5)
+
+plot_grid(p1, p2, p3, p4, p5, p6)
+```
+
+
+#MV cones
+```{r}
+#R0=1
+
+mydata = data.frame(x=seq(0, 0.4, by=0.001))
+mydata$func1 = sapply(mydata$x, FUN = function(x){(1+x)*0.1})
+mydata$func2 = sapply(mydata$x, FUN = function(x){(1-x)*0.1})
+
+p1 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=mv_calc(tHV_calc(0.75), 1)), color='red')+geom_ribbon(data=mydata[mydata$func2<=mv_calc(tHV_calc(0.75), 1),], aes(ymin=func2, ymax=mv_calc(tHV_calc(0.75), 1)), alpha=0.5)+ggtitle('R0=0.75')+ylab('mV')+xlab('env noise strength')+theme_cowplot()+ylim(0, 0.5)
+
+p2 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=mv_calc(tHV_calc(0.95), 1)), color='red')+geom_ribbon(data=mydata[mydata$func2<=mv_calc(tHV_calc(0.95), 1),], aes(ymin=func2, ymax=mv_calc(tHV_calc(0.95), 1)), alpha=0.5)+ggtitle('R0=0.95')+ylab('mV')+xlab('env noise strength')+theme_cowplot()+ylim(0, 0.5)
+
+p3 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=mv_calc(tHV_calc(1), 1)), color='red')+geom_ribbon(data=mydata[mydata$func2<=mv_calc(tHV_calc(1), 1),], aes(ymin=func2, ymax=mv_calc(tHV_calc(1), 1)), alpha=0.5)+ggtitle('R0=1')+ylab('mV')+xlab('env noise strength')+theme_cowplot()+ylim(0, 0.5)
+
+p4 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=mv_calc(tHV_calc(1.05), 1)), color='red')+geom_ribbon(data=mydata[mydata$func2<=mv_calc(tHV_calc(1.05), 1),], aes(ymin=func2, ymax=mv_calc(tHV_calc(1.05), 1)), alpha=0.5)+ggtitle('R0=1.05')+ylab('mV')+xlab('env noise strength')+theme_cowplot()+ylim(0, 0.5)
+
+p5 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=mv_calc(tHV_calc(2), 1)), color='red')+geom_ribbon(data=mydata[mydata$func2<=mv_calc(tHV_calc(2), 1),], aes(ymin=func2, ymax=mv_calc(tHV_calc(2), 1)), alpha=0.5)+ggtitle('R0=2')+ylab('mV')+xlab('env noise strength')+theme_cowplot()+ylim(0, 0.5)
+
+p6 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=mv_calc(tHV_calc(4), 1)), color='red')+geom_ribbon(data=mydata[mydata$func2<=mv_calc(tHV_calc(4), 1),], aes(ymin=func2, ymax=mv_calc(tHV_calc(4), 1)), alpha=0.5)+ggtitle('R0=4')+ylab('mV')+xlab('env noise strength')+theme_cowplot()+ylim(0, 1.6)
+
+plot_grid(p1, p2, p3, p4, p5, p6)
+```
+
+
+#TVH cones
+```{r}
+#R0=1
+
+mydata = data.frame(x=seq(0, 0.4, by=0.001))
+mydata$func1 = sapply(mydata$x, FUN = function(x){(1+x)*0.5})
+mydata$func2 = sapply(mydata$x, FUN = function(x){(1-x)*0.5})
+
+p1 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=tvh_calc(tHV_calc(0.75), 1)), color='red')+geom_ribbon(data=mydata[mydata$func1>=tvh_calc(tHV_calc(0.75), 1),], aes(ymin=tvh_calc(tHV_calc(0.75), 1), ymax=func1), alpha=0.5)+ggtitle('R0=0.75')+ylab('Tvh')+xlab('env noise strength')+theme_cowplot()+ylim(0, 1)
+
+p2 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=tvh_calc(tHV_calc(0.95), 1)), color='red')+geom_ribbon(data=mydata[mydata$func1>=tvh_calc(tHV_calc(0.95), 1),], aes(ymin=tvh_calc(tHV_calc(0.95), 1), ymax=func1), alpha=0.5)+ggtitle('R0=0.95')+ylab('Tvh')+xlab('env noise strength')+theme_cowplot()+ylim(0, 1)
+
+p3 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=tvh_calc(tHV_calc(1), 1)), color='red')+geom_ribbon(data=mydata[mydata$func1>=tvh_calc(tHV_calc(1), 1),], aes(ymin=tvh_calc(tHV_calc(1), 1), ymax=func1), alpha=0.5)+ggtitle('R0=1')+ylab('Tvh')+xlab('env noise strength')+theme_cowplot()+ylim(0, 1)
+
+p4 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=tvh_calc(tHV_calc(1.05), 1)), color='red')+geom_ribbon(data=mydata[mydata$func1>=tvh_calc(tHV_calc(1.05), 1),], aes(ymin=tvh_calc(tHV_calc(1.05), 1), ymax=func1), alpha=0.5)+ggtitle('R0=1.05')+ylab('Tvh')+xlab('env noise strength')+theme_cowplot()+ylim(0, 1)
+
+p5 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=tvh_calc(tHV_calc(2), 1)), color='red')+geom_ribbon(data=mydata[mydata$func1>=tvh_calc(tHV_calc(2), 1),], aes(ymin=tvh_calc(tHV_calc(2), 1), ymax=func1), alpha=0.5)+ggtitle('R0=2')+ylab('Tvh')+xlab('env noise strength')+theme_cowplot()+ylim(0, 1)
+
+p6 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=tvh_calc(tHV_calc(4), 1)), color='red')+geom_ribbon(data=mydata[mydata$func1>=tvh_calc(tHV_calc(4), 1),], aes(ymin=tvh_calc(tHV_calc(4), 1), ymax=func1), alpha=0.5)+ggtitle('R0=4')+ylab('Tvh')+xlab('env noise strength')+theme_cowplot()+ylim(0, 1)
+
+plot_grid(p1, p2, p3, p4, p5, p6)
+```
