@@ -79,7 +79,7 @@ NV <- 10000# vector population size
 gH <- 0.1 # recovery rate of hosts
 mV <- 0.1 # mortality of vectors
 
-R0=c(0.75, 0.95, 1, 1.05, 1.25, 2, 4, 6.5)
+R0=c(1.05, 2)
 tHV=(R0^2*NH * gH * mV)/(b^2*tVH * NV)
 tHV
 
@@ -206,4 +206,194 @@ p5 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2)
 p6 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=tvh_calc(tHV_calc(4), 1)), color='red')+geom_ribbon(data=mydata[mydata$func1>=tvh_calc(tHV_calc(4), 1),], aes(ymin=tvh_calc(tHV_calc(4), 1), ymax=func1), alpha=0.5)+ggtitle('R0=4')+ylab('Tvh')+xlab('env noise strength')+theme_cowplot()+ylim(0, 1)
 
 plot_grid(p1, p2, p3, p4, p5, p6)
+```
+
+
+#Trajectories
+```{r} 
+jtd_1.05 <- read_csv('julia_trajectories_1.05deterministic.csv')
+
+jts1_1.05_0.1 <- read_csv('traj_stoc_1.05_0.1_1.csv')
+jts2_1.05_0.1 <- read_csv('traj_stoc_1.05_0.1_2.csv')
+jts3_1.05_0.1 <- read_csv('traj_stoc_1.05_0.1_3.csv')
+jts4_1.05_0.1 <- read_csv('traj_stoc_1.05_0.1_4.csv')
+jts5_1.05_0.1 <- read_csv('traj_stoc_1.05_0.1_5.csv')
+jts6_1.05_0.1 <- read_csv('traj_stoc_1.05_0.1_6.csv')
+jts7_1.05_0.1 <- read_csv('traj_stoc_1.05_0.1_7.csv')
+jts8_1.05_0.1 <- read_csv('traj_stoc_1.05_0.1_8.csv')
+jts9_1.05_0.1 <- read_csv('traj_stoc_1.05_0.1_9.csv')
+jts10_1.05_0.1 <- read_csv('traj_stoc_1.05_0.1_10.csv')
+jts1_1.05_0.1$traj <- 1
+jts2_1.05_0.1$traj <- 4
+jts3_1.05_0.1$traj <- 3
+jts4_1.05_0.1$traj <- 2
+jts5_1.05_0.1$traj <- 5
+jts6_1.05_0.1$traj <- 6
+jts7_1.05_0.1$traj <- 7
+jts8_1.05_0.1$traj <- 8
+jts9_1.05_0.1$traj <- 9
+jts10_1.05_0.1$traj <- 10
+
+jts_1.05_0.1 <- rbind(jts1_1.05_0.1, jts2_1.05_0.1, jts3_1.05_0.1, jts4_1.05_0.1, jts5_1.05_0.1, jts6_1.05_0.1, jts7_1.05_0.1, jts8_1.05_0.1, jts9_1.05_0.1, jts10_1.05_0.1)
+
+jts_1.05_0.1 <- jts_1.05_0.1[jts_1.05_0.1$value2>=0,]
+jts_1.05_0.1 <- jts_1.05_0.1[jts_1.05_0.1$value1>=0,]
+
+
+```
+```{r trajectories 1.05_0.1, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
+ggplot(jtd_1.05)+geom_line(data=jts_1.05_0.1, aes(x=timestamp, y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (days)')+ylab('Number of hosts infected')+geom_line(aes(x=timestamp, y=value1),lwd=1.5)+theme(legend.position="none")
+
+ggsave('trajectories_1.05_0.1.png', height = 7, width = 7)
+```
+```{r} 
+jtd_1.05 <- read_csv('julia_trajectories_1.05deterministic.csv')
+
+jts1_1.05_0.4 <- read_csv('traj_stoc_1.05_0.4_1.csv')
+jts2_1.05_0.4 <- read_csv('traj_stoc_1.05_0.4_2.csv')
+jts3_1.05_0.4 <- read_csv('traj_stoc_1.05_0.4_3.csv')
+jts4_1.05_0.4 <- read_csv('traj_stoc_1.05_0.4_4.csv')
+jts5_1.05_0.4 <- read_csv('traj_stoc_1.05_0.4_5.csv')
+jts6_1.05_0.4 <- read_csv('traj_stoc_1.05_0.4_6.csv')
+jts7_1.05_0.4 <- read_csv('traj_stoc_1.05_0.4_7.csv')
+jts8_1.05_0.4 <- read_csv('traj_stoc_1.05_0.4_8.csv')
+jts9_1.05_0.4 <- read_csv('traj_stoc_1.05_0.4_9.csv')
+jts10_1.05_0.4 <- read_csv('traj_stoc_1.05_0.4_10.csv')
+jts1_1.05_0.4$traj <- 1
+jts2_1.05_0.4$traj <- 4
+jts3_1.05_0.4$traj <- 3
+jts4_1.05_0.4$traj <- 2
+jts5_1.05_0.4$traj <- 5
+jts6_1.05_0.4$traj <- 6
+jts7_1.05_0.4$traj <- 7
+jts8_1.05_0.4$traj <- 8
+jts9_1.05_0.4$traj <- 9
+jts10_1.05_0.4$traj <- 10
+
+jts_1.05_0.4 <- rbind(jts1_1.05_0.4, jts2_1.05_0.4, jts3_1.05_0.4, jts4_1.05_0.4, jts5_1.05_0.4, jts6_1.05_0.4, jts7_1.05_0.4, jts8_1.05_0.4, jts9_1.05_0.4, jts10_1.05_0.4)
+
+jts_1.05_0.4 <- jts_1.05_0.4[jts_1.05_0.4$value2>=0,]
+jts_1.05_0.4 <- jts_1.05_0.4[jts_1.05_0.4$value1>=0,]
+
+
+```
+```{r trajectories 1.05_0.4, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
+ggplot(jtd_1.05)+geom_line(data=jts_1.05_0.4, aes(x=timestamp, y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (days)')+ylab('Number of hosts infected')+geom_line(aes(x=timestamp, y=value1),lwd=1.5)+theme(legend.position="none")
+
+ggsave('trajectories_1.05_0.4.png', height = 7, width = 7)
+```
+```{r} 
+jtd_2 <- read_csv('julia_trajectories_2deterministic.csv')
+
+jts1_2_0.1 <- read_csv('traj_stoc_2_0.1_1.csv')
+jts2_2_0.1 <- read_csv('traj_stoc_2_0.1_2.csv')
+jts3_2_0.1 <- read_csv('traj_stoc_2_0.1_3.csv')
+jts4_2_0.1 <- read_csv('traj_stoc_2_0.1_4.csv')
+jts5_2_0.1 <- read_csv('traj_stoc_2_0.1_5.csv')
+jts6_2_0.1 <- read_csv('traj_stoc_2_0.1_6.csv')
+jts7_2_0.1 <- read_csv('traj_stoc_2_0.1_7.csv')
+jts8_2_0.1 <- read_csv('traj_stoc_2_0.1_8.csv')
+jts9_2_0.1 <- read_csv('traj_stoc_2_0.1_9.csv')
+jts10_2_0.1 <- read_csv('traj_stoc_2_0.1_10.csv')
+jts1_2_0.1$traj <- 1
+jts2_2_0.1$traj <- 4
+jts3_2_0.1$traj <- 3
+jts4_2_0.1$traj <- 2
+jts5_2_0.1$traj <- 5
+jts6_2_0.1$traj <- 6
+jts7_2_0.1$traj <- 7
+jts8_2_0.1$traj <- 8
+jts9_2_0.1$traj <- 9
+jts10_2_0.1$traj <- 10
+
+jts_2_0.1 <- rbind(jts1_2_0.1, jts2_2_0.1, jts3_2_0.1, jts4_2_0.1, jts5_2_0.1, jts6_2_0.1, jts7_2_0.1, jts8_2_0.1, jts9_2_0.1, jts10_2_0.1)
+
+jts_2_0.1 <- jts_2_0.1[jts_2_0.1$value2>=0,]
+jts_2_0.1 <- jts_2_0.1[jts_2_0.1$value1>=0,]
+
+
+```
+```{r trajectories 2_0.1, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
+ggplot(jtd_2)+geom_line(data=jts_2_0.1, aes(x=timestamp, y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (days)')+ylab('Number of hosts infected')+geom_line(aes(x=timestamp, y=value1),lwd=1.5)+theme(legend.position="none")
+
+ggsave('trajectories_2_0.1.png', height = 7, width = 7)
+```
+
+```{r} 
+jtd_2 <- read_csv('julia_trajectories_2deterministic.csv')
+
+jts1_2_0.4 <- read_csv('traj_stoc_2_0.4_1.csv')
+jts2_2_0.4 <- read_csv('traj_stoc_2_0.4_2.csv')
+jts3_2_0.4 <- read_csv('traj_stoc_2_0.4_3.csv')
+jts4_2_0.4 <- read_csv('traj_stoc_2_0.4_4.csv')
+jts5_2_0.4 <- read_csv('traj_stoc_2_0.4_5.csv')
+jts6_2_0.4 <- read_csv('traj_stoc_2_0.4_6.csv')
+jts7_2_0.4 <- read_csv('traj_stoc_2_0.4_7.csv')
+jts8_2_0.4 <- read_csv('traj_stoc_2_0.4_8.csv')
+jts9_2_0.4 <- read_csv('traj_stoc_2_0.4_9.csv')
+jts10_2_0.4 <- read_csv('traj_stoc_2_0.4_10.csv')
+jts1_2_0.4$traj <- 1
+jts2_2_0.4$traj <- 4
+jts3_2_0.4$traj <- 3
+jts4_2_0.4$traj <- 2
+jts5_2_0.4$traj <- 5
+jts6_2_0.4$traj <- 6
+jts7_2_0.4$traj <- 7
+jts8_2_0.4$traj <- 8
+jts9_2_0.4$traj <- 9
+jts10_2_0.4$traj <- 10
+
+jts_2_0.4 <- rbind(jts1_2_0.4, jts2_2_0.4, jts3_2_0.4, jts4_2_0.4, jts5_2_0.4, jts6_2_0.4, jts7_2_0.4, jts8_2_0.4, jts9_2_0.4, jts10_2_0.4)
+
+jts_2_0.4 <- jts_2_0.4[jts_2_0.4$value2>=0,]
+jts_2_0.4 <- jts_2_0.4[jts_2_0.4$value1>=0,]
+
+
+```
+```{r trajectories 2_0.4, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
+ggplot(jtd_2)+geom_line(data=jts_2_0.4, aes(x=timestamp, y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (days)')+ylab('Number of hosts infected')+geom_line(aes(x=timestamp, y=value1),lwd=1.5)+theme(legend.position="none")
+
+ggsave('trajectories_2_0.4.png', height = 7, width = 7)
+```
+
+
+
+
+
+
+
+```{r}
+jtd <- read_csv('julia_trajectories_deterministic.csv')
+jts1 <- read_csv('traj_detstoc_1.csv')
+jts2 <- read_csv('traj_detstoc_2.csv')
+jts3 <- read_csv('traj_detstoc_3.csv')
+jts4 <- read_csv('traj_detstoc_4.csv')
+jts5 <- read_csv('traj_detstoc_5.csv')
+jts1$traj <- 1
+jts2$traj <- 4
+jts3$traj <- 3
+jts4$traj <- 2
+jts5$traj <- 5
+jtsd <- rbind(jts1, jts2, jts3, jts4, jts5)
+jtsd <- jtsd[jtsd$value2>=0,]
+jtsd <- jtsd[jtsd$value1>=0,]
+
+```
+```{r trajectories, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
+ggplot(jtd)+geom_line(data=jtsd, aes(x=timestamp, y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (days)')+ylab('Number of hosts infected')+geom_line(aes(x=timestamp, y=value1),lwd=1.5)+ylim(0, 4500)+theme(legend.position="none")#+geom_line(data=ahs, aes(x=Group.1, y=x), color='darkgrey', lwd=1.5)#+geom_line(data=ahds,aes(x=Group.1, y=x), color='grey', lwd=1.5)
+
+
+ggsave('trajectories-det.png', height = 7, width = 7)
+```
+
+
+
+
+
+```{r trajectories-2, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories-2} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
+library(ggnewscale)
+
+ggplot(jtd)+ylab('Number of hosts infected')+ylim(0,4500)+geom_line(data=jtse, aes(x=timestamp, y=value1, alpha=0.5, color=as.factor(traj)))+scale_color_manual(values=c('orange', 'darkorange', 'chocolate2','tan1','darkorange2'))+new_scale_colour()+geom_line(data=jtsd, aes(x=timestamp, y=value1, alpha=0.5, color=as.factor(traj)))+scale_color_manual(values=c('darkgreen', 'green', 'darkolivegreen2','green3', 'olivedrab'))+ new_scale_colour()+theme_cowplot()+xlab('Time (days)')+theme(legend.position="none")+geom_line(aes(x=timestamp, y=value1),lwd=1)
+
+ggsave('trajectories-combined.png', height = 3, width = 7)
 ```

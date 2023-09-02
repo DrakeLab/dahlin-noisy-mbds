@@ -30,7 +30,8 @@ function tVH_from_R0(p, R0)
 end
 
 #Parameters: biting rate, THV, TVH, NH, NV, recovery, mortality, sigma, alphab, alpham, alphat
-p = [0.3, 0.93888889, 0.5, 10000, 100000, 0.1, 0.1, 0.0125, 1.0, 1.0, 1.0]
+p = [0.3, 0.02450000, 0.5, 10000, 100000, 0.1, 0.1, 0.0125, 1.0, 1.0, 1.0]
+
 
 
 #Rate of transmission from hosts to vectors-We varied this parameter to get different R0 values
@@ -110,8 +111,8 @@ plot(sol, layout=(3,1), legend=true)
 hline!([10])
 
 traj_det = DataFrame(sol)
-cd("/Users/karinebey/Documents/GitHub/NoisyMBDs") do
-  CSV.write("julia_trajectories_6.5deterministic.csv", traj_det, transform = (col,val) -> something(val, missing))
+cd("/Users/karinebey/Documents/GitHub/dahlin-noisy-mbds/") do
+  CSV.write("julia_trajectories_1.05deterministic.csv", traj_det, transform = (col,val) -> something(val, missing))
 end
 
 p[3]=TVHs[5]
@@ -162,7 +163,7 @@ function g(du,u,p,t)
 
 end
 
-p = [0.3, 0.93888889, 0.5, 10000, 100000, 0.1, 0.1, 0.26, 1.0, 1.0, 1.0]
+p = [0.3, 0.08888889, 0.5, 10000, 100000, 0.1, 0.1, 0.4, 1.0, 1.0, 1.0]
 u0 = [0.0, 10.0]
 tspan = [0.0, 10*365]
 noise_rate_prototype = [0.0 0.0 0.0; 0.0 0.0 0.0]
@@ -218,11 +219,11 @@ dftemp = empty
 dftemp = DataFrame(sol)
 
 
-
-
-cd("/Users/karinebey/Documents/GitHub/NoisyMBDs") do
-  CSV.write("traj_6.5envstoc_1.csv", dftemp, transform = (col,val) -> something(val, missing))
+cd("/Users/karinebey/Documents/GitHub/dahlin-noisy-mbds/") do
+  CSV.write("traj_stoc_2_0.4_10.csv", dftemp, transform = (col,val) -> something(val, missing))
 end
+
+
 cd("/Users/karinebey/Documents/GitHub/NoisyMBDs") do
   CSV.write("traj_6.5envstoc_2.csv", dftemp, transform = (col,val) -> something(val, missing))
 end
