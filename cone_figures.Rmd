@@ -158,6 +158,7 @@ p5 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2)
 p6 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=b_calc(tHV_calc(4), 1)), color='red')+geom_ribbon(data=mydata[mydata$func1>=b_calc(tHV_calc(4), 1),], aes(ymin=b_calc(tHV_calc(4), 1), ymax=func1), alpha=0.5)+ggtitle('R0=4')+ylab('beta')+xlab('env noise strength')+theme_cowplot()+ylim(0, 0.5)
 
 plot_grid(p1, p2, p3, p4, p5, p6)
+ggsave('cones_beta.png', height = 7, width = 7)
 ```
 
 
@@ -182,6 +183,7 @@ p5 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2)
 p6 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=mv_calc(tHV_calc(4), 1)), color='red')+geom_ribbon(data=mydata[mydata$func2<=mv_calc(tHV_calc(4), 1),], aes(ymin=func2, ymax=mv_calc(tHV_calc(4), 1)), alpha=0.5)+ggtitle('R0=4')+ylab('mV')+xlab('env noise strength')+theme_cowplot()+ylim(0, 1.6)
 
 plot_grid(p1, p2, p3, p4, p5, p6)
+ggsave('cones_mV.png', height = 7, width = 7)
 ```
 
 
@@ -206,6 +208,7 @@ p5 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2)
 p6 <- ggplot(mydata, aes(x=x, y=func1))+ geom_line()+geom_line(aes(x=x, y=func2))+geom_line(aes(x=x, y=tvh_calc(tHV_calc(4), 1)), color='red')+geom_ribbon(data=mydata[mydata$func1>=tvh_calc(tHV_calc(4), 1),], aes(ymin=tvh_calc(tHV_calc(4), 1), ymax=func1), alpha=0.5)+ggtitle('R0=4')+ylab('Tvh')+xlab('env noise strength')+theme_cowplot()+ylim(0, 1)
 
 plot_grid(p1, p2, p3, p4, p5, p6)
+ggsave('cones_Tvh.png', height = 7, width = 7)
 ```
 
 
@@ -242,7 +245,7 @@ jts_1.05_0.1 <- jts_1.05_0.1[jts_1.05_0.1$value1>=0,]
 
 ```
 ```{r trajectories 1.05_0.1, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
-ggplot(jtd_1.05)+geom_line(data=jts_1.05_0.1, aes(x=timestamp, y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (days)')+ylab('Number of hosts infected')+geom_line(aes(x=timestamp, y=value1),lwd=1.5)+theme(legend.position="none")
+ggplot(jtd_1.05)+geom_line(data=jts_1.05_0.1, aes(x=timestamp, y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (days)')+ylab('Number of hosts infected')+geom_line(aes(x=timestamp, y=value1),lwd=1.5)+theme(legend.position="none")+ggtitle('R0=1.05; sigma=0.1')
 
 ggsave('trajectories_1.05_0.1.png', height = 7, width = 7)
 ```
@@ -278,7 +281,7 @@ jts_1.05_0.4 <- jts_1.05_0.4[jts_1.05_0.4$value1>=0,]
 
 ```
 ```{r trajectories 1.05_0.4, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
-ggplot(jtd_1.05)+geom_line(data=jts_1.05_0.4, aes(x=timestamp, y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (days)')+ylab('Number of hosts infected')+geom_line(aes(x=timestamp, y=value1),lwd=1.5)+theme(legend.position="none")
+ggplot(jtd_1.05)+geom_line(data=jts_1.05_0.4, aes(x=timestamp, y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (days)')+ylab('Number of hosts infected')+geom_line(aes(x=timestamp, y=value1),lwd=1.5)+theme(legend.position="none")+ggtitle('R0=1.05; sigma=0.4')
 
 ggsave('trajectories_1.05_0.4.png', height = 7, width = 7)
 ```
@@ -314,7 +317,7 @@ jts_2_0.1 <- jts_2_0.1[jts_2_0.1$value1>=0,]
 
 ```
 ```{r trajectories 2_0.1, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
-ggplot(jtd_2)+geom_line(data=jts_2_0.1, aes(x=timestamp, y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (days)')+ylab('Number of hosts infected')+geom_line(aes(x=timestamp, y=value1),lwd=1.5)+theme(legend.position="none")
+ggplot(jtd_2)+geom_line(data=jts_2_0.1, aes(x=timestamp, y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (days)')+ylab('Number of hosts infected')+geom_line(aes(x=timestamp, y=value1),lwd=1.5)+theme(legend.position="none")+ggtitle('R0=2; sigma=0.1')
 
 ggsave('trajectories_2_0.1.png', height = 7, width = 7)
 ```
@@ -351,7 +354,7 @@ jts_2_0.4 <- jts_2_0.4[jts_2_0.4$value1>=0,]
 
 ```
 ```{r trajectories 2_0.4, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
-ggplot(jtd_2)+geom_line(data=jts_2_0.4, aes(x=timestamp, y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (days)')+ylab('Number of hosts infected')+geom_line(aes(x=timestamp, y=value1),lwd=1.5)+theme(legend.position="none")
+ggplot(jtd_2)+geom_line(data=jts_2_0.4, aes(x=timestamp, y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (days)')+ylab('Number of hosts infected')+geom_line(aes(x=timestamp, y=value1),lwd=1.5)+theme(legend.position="none")+ggtitle('R0=2; sigma=0.4')
 
 ggsave('trajectories_2_0.4.png', height = 7, width = 7)
 ```
