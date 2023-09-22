@@ -135,7 +135,9 @@ return(tVH)
 
 
 #Beta cones
+
 ```{r}
+# TODO: make it so that the grey only occurs within the cone, since the parameter does not take on values outside of the cone
 
 #make dataframe with upper and lower boundaries of parameter
 mydata = data.frame(x=seq(0, 0.4, by=0.001))
@@ -244,6 +246,7 @@ jts_1.05_0.1 <- jts_1.05_0.1[jts_1.05_0.1$value1>=0,]
 
 
 ```
+
 ```{r trajectories 1.05_0.1, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
 ggplot(jtd_1.05)+geom_line(data=jts_1.05_0.1, aes(x=timestamp, y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (days)')+ylab('Number of hosts infected')+geom_line(aes(x=timestamp, y=value1),lwd=1.5)+theme(legend.position="none")+ggtitle('R0=1.05; sigma=0.1')
 
@@ -280,6 +283,7 @@ jts_1.05_0.4 <- jts_1.05_0.4[jts_1.05_0.4$value1>=0,]
 
 
 ```
+
 ```{r trajectories 1.05_0.4, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
 ggplot(jtd_1.05)+geom_line(data=jts_1.05_0.4, aes(x=timestamp, y=value1, color=as.factor(traj)), alpha=0.8)+scale_color_viridis(discrete=TRUE)+theme_cowplot()+xlab('Time (days)')+ylab('Number of hosts infected')+geom_line(aes(x=timestamp, y=value1),lwd=1.5)+theme(legend.position="none")+ggtitle('R0=1.05; sigma=0.4')
 
