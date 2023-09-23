@@ -274,12 +274,6 @@ num_trajectories=100
 
 df_prcc_results = SDE_PRCC_func(sigmas_indices, LHSamples, num_runs, num_trajectories)
 
-# plot(df_prcc_results.sigma, [df_prcc_results.PRCC_b_o10prob,df_prcc_results.PRCC_muv_o10prob, df_prcc_results.PRCC_tvh_o10prob, df_prcc_results.PRCC_fake_o10prob], label=["b" "muv" "tvh" "fake"])
-# plot(df_prcc_results.sigma, [df_prcc_results.PRCC_b_o100prob,df_prcc_results.PRCC_muv_o100prob, df_prcc_results.PRCC_tvh_o100prob, df_prcc_results.PRCC_fake_o100prob], label=["b" "muv" "tvh" "fake"])
-# plot(df_prcc_results.sigma, [df_prcc_results.PRCC_b_eprob,df_prcc_results.PRCC_muv_eprob, df_prcc_results.PRCC_tvh_eprob, df_prcc_results.PRCC_fake_eprob], label=["b" "muv" "tvh" "fake"])
-# plot(df_prcc_results.sigma, [df_prcc_results.PRCC_b_peak,df_prcc_results.PRCC_muv_peak, df_prcc_results.PRCC_tvh_peak, df_prcc_results.PRCC_fake_peak], label=["b" "muv" "tvh" "fake"])
-# plot(df_prcc_results.sigma, [df_prcc_results.PRCC_b_dur,df_prcc_results.PRCC_muv_dur, df_prcc_results.PRCC_tvh_dur, df_prcc_results.PRCC_fake_dur], label=["b" "muv" "tvh" "fake"])
-
 # CSV.write("sensitivity_analysis_new_all.csv", df_prcc_results)
 
 read_df = CSV.read("sensitivity_analysis_new_all.csv", DataFrame)
@@ -288,6 +282,20 @@ save_df = vcat(read_df, df_prcc_results)
 # cd("/Users/karinebey/Documents/GitHub/NoisyMBDs") do
 CSV.write("sensitivity_analysis_new_all.csv", save_df, transform = (col,val) -> something(val, missing))
 # end
+
+df_prcc_results = CSV.read("sensitivity_analysis_new_all.csv", DataFrame)
+
+# plot(df_prcc_results.sigma, [df_prcc_results.PRCC_b_o10prob,df_prcc_results.PRCC_muv_o10prob, df_prcc_results.PRCC_tvh_o10prob, df_prcc_results.PRCC_fake_o10prob], label=["b" "muv" "tvh" "fake"])
+# png("o10_SA.png")
+# plot(df_prcc_results.sigma, [df_prcc_results.PRCC_b_o100prob,df_prcc_results.PRCC_muv_o100prob, df_prcc_results.PRCC_tvh_o100prob, df_prcc_results.PRCC_fake_o100prob], label=["b" "muv" "tvh" "fake"])
+# png("o100_SA.png")
+# plot(df_prcc_results.sigma, [df_prcc_results.PRCC_b_eprob,df_prcc_results.PRCC_muv_eprob, df_prcc_results.PRCC_tvh_eprob, df_prcc_results.PRCC_fake_eprob], label=["b" "muv" "tvh" "fake"])
+# png("endemic_SA.png")
+# plot(df_prcc_results.sigma, [df_prcc_results.PRCC_b_peak,df_prcc_results.PRCC_muv_peak, df_prcc_results.PRCC_tvh_peak, df_prcc_results.PRCC_fake_peak], label=["b" "muv" "tvh" "fake"])
+# png("peak_SA.png")
+# plot(df_prcc_results.sigma, [df_prcc_results.PRCC_b_dur,df_prcc_results.PRCC_muv_dur, df_prcc_results.PRCC_tvh_dur, df_prcc_results.PRCC_fake_dur], label=["b" "muv" "tvh" "fake"])
+# png("duration_SA.png")
+
 
 
 
