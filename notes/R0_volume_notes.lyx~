@@ -200,8 +200,7 @@ where
 \begin_inset Formula $C=\sqrt{\frac{\tau_{HV}N_{V}}{\gamma_{H}N_{H}}}$
 \end_inset
 
-.
- Let 
+.Let 
 \begin_inset Formula $\mu_{V}\in\left[\mu_{V}^{*}-2\sigma,\mu_{V}^{*}+2\sigma\right]$
 \end_inset
 
@@ -213,7 +212,7 @@ where
 , we must have
 \begin_inset Formula 
 \[
-b\mu_{V}^{-1/2}>C^{-1}\tau_{VH}^{-1/2}\ge C^{-1}\left(\tau_{VH}^{*}+2\sigma\right)^{-1/2}
+b\mu_{V}^{-1/2}>C^{-1}\tau_{VH}^{-1/2}>C^{-1}\left(\tau_{VH}^{*}+2\sigma\right)^{-1/2}
 \]
 
 \end_inset
@@ -241,8 +240,8 @@ V\left(\sigma\right) & ={\displaystyle \iiintop_{\mathcal{R}_{0}>1}}dbd\mu_{V}d\
  & ={\displaystyle \intop_{\mu_{V}^{*}-2\sigma}^{\mu_{V}^{*}+2\sigma}}\left(\intop_{C^{-1}\left(\tau_{VH}^{*}+2\sigma\right)^{-1/2}\mu_{V}^{1/2}}^{b^{*}+2\sigma}\left(\intop_{C^{-2}\mu_{V}b^{-2}}^{\tau_{VH}^{*}+2\sigma}d\tau_{VH}\right)db\right)d\mu_{V}\\
  & ={\displaystyle \intop_{\mu_{V}^{*}-2\sigma}^{\mu_{V}^{*}+2\sigma}}\left(\intop_{C^{-1}\left(\tau_{VH}^{*}+2\sigma\right)^{-1/2}\mu_{V}^{1/2}}^{b^{*}+2\sigma}\left(\left(\tau_{VH}^{*}+2\sigma\right)-C^{-2}\mu_{V}b^{-2}\right)db\right)d\mu_{V}\\
  & =\intop_{\mu_{V}^{*}-2\sigma}^{\mu_{V}^{*}+2\sigma}\left(\tau_{VH}^{*}+2\sigma\right)\left(\left(b^{*}+2\sigma\right)-C^{-1}\left(\tau_{VH}^{*}+2\sigma\right)^{-1/2}\mu_{V}^{1/2}\right)+C^{-2}\mu_{V}\left(\left(b^{*}+2\sigma\right)^{-1}-\left(C^{-1}\left(\tau_{VH}^{*}+2\sigma\right)^{-1/2}\mu_{V}^{1/2}\right)^{-1}\right)d\mu_{V}\\
- & =\intop_{\mu_{V}^{*}-2\sigma}^{\mu_{V}^{*}+2\sigma}\left(b^{*}+2\sigma\right)\left(\tau_{VH}^{*}+2\sigma\right)-2C^{-1}\left(\tau_{VH}^{*}+2\sigma\right)^{1/2}\mu_{V}^{1/2}+C^{-2}\left(b^{*}+2\sigma\right)^{-1}\mu_{V}d\mu_{V}\\
- & =\left(b^{*}+2\sigma\right)\left(\tau_{VH}^{*}+2\sigma\right)4\sigma-\frac{4}{3}C^{-1}\left(\tau_{VH}^{*}+2\sigma\right)^{1/2}\left(\left(\mu_{V}^{*}+2\sigma\right)^{3/2}-\left(\mu_{V}^{*}-2\sigma\right)^{3/2}\right)+4C^{-2}\left(b^{*}+2\sigma\right)^{-1}\sigma\mu_{V}^{*}\\
+ & =\intop_{\mu_{V}^{*}-2\sigma}^{\mu_{V}^{*}+2\sigma}\left(b^{*}+2\sigma\right)\left(\tau_{VH}^{*}+2\sigma\right)-C^{-1}\left(\tau_{VH}^{*}+2\sigma\right)^{1/2}\mu_{V}^{1/2}+C^{-2}\left(b^{*}+2\sigma\right)^{-1}\mu_{V}-C^{-1}\left(\tau_{VH}^{*}+2\sigma\right)^{1/2}\mu_{V}^{1/2}d\mu_{V}\\
+ & =\left(b^{*}+2\sigma\right)\left(\tau_{VH}^{*}+2\sigma\right)4\sigma-\frac{2}{3}C^{-1}\left(\tau_{VH}^{*}+2\sigma\right)^{1/2}\left(\left(\mu_{V}^{*}+2\sigma\right)^{3/2}-\left(\mu_{V}^{*}-2\sigma\right)^{3/2}\right)+4C^{-2}\left(b^{*}+2\sigma\right)^{-1}\sigma\mu_{V}^{*}-\frac{2}{3}C^{-1}\left(\tau_{VH}^{*}+2\sigma\right)^{1/2}\left(\left(\mu_{V}^{*}+2\sigma\right)^{3/2}-\left(\mu_{V}^{*}-2\sigma\right)^{3/2}\right)\\
 \end{align*}
 
 \end_inset
