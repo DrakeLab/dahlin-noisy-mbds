@@ -124,7 +124,7 @@ ggplot(jop, aes(x = sigma, y = prob_end_mean)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$")))
 
-ggsave("prob_end.png", height = 4, width = 7)
+ggsave("figures/prob_end.png", height = 4, width = 7)
 ```
 ```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
 ggplot(jop, aes(x = sigma, y = prob_out10_mean)) +
@@ -140,7 +140,7 @@ ggplot(jop, aes(x = sigma, y = prob_out10_mean)) +
   ylab("Probability of outbreak > 10 hosts") +
   ylim(0, 1) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$")))
-ggsave("prob_out10.png", height = 4, width = 7)
+ggsave("figures/prob_out10.png", height = 4, width = 7)
 ```
 ```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out100} Probability of an outbreak (defined as 100 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. In general, for R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.25 and then decreases. R0=1.05 follows both patterns to some degree. There is a greater probability of an outbreak at higher values of R0.'}
 ggplot(jop, aes(x = sigma, y = prob_out100_mean)) +
@@ -153,7 +153,7 @@ ggplot(jop, aes(x = sigma, y = prob_out100_mean)) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$")))
-ggsave("prob_out100.png", height = 7, width = 7)
+ggsave("figures/prob_out100.png", height = 7, width = 7)
 ```
 ```{r max_cases_all, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
 ggplot(jop, aes(x = sigma, y = max_cases_all_mean)) +
@@ -169,7 +169,7 @@ ggplot(jop, aes(x = sigma, y = max_cases_all_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("All simulations") +
   theme(text = element_text(size = 20))
-ggsave("max_cases.png", height = 7, width = 7.6)
+ggsave("figures/max_cases.png", height = 7, width = 7.6)
 ```
 ```{r max_cases_out, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations only including simulations where the outbreak died out. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
 ggplot(jop, aes(x = sigma, y = max_cases_out_mean)) +
@@ -185,7 +185,7 @@ ggplot(jop, aes(x = sigma, y = max_cases_out_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("Only simulations where disease died out") +
   theme(text = element_text(size = 20))
-ggsave("max_cases.png", height = 7, width = 7.6)
+ggsave("figures/max_cases.png", height = 7, width = 7.6)
 ```
 
 
@@ -203,7 +203,7 @@ ggplot(jop, aes(x = sigma, y = end_time_mean / 365)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("All simulations") +
   theme(text = element_text(size = 20))
-ggsave("end_time.png", height = 7, width = 7.6)
+ggsave("figures/end_time.png", height = 7, width = 7.6)
 ```
 ```{r end_time_out, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEend_time} Time that the outbreak dies out (or 10 years-end of simulation) by sigma and R0 based on 1000 runs of 100 iterations. This graph looks quite similar to that of the probability of disease going endemic, because if the disease does not go endemic, the disease goes extinct early on in the simulation.'}
 ggplot(jop, aes(x = sigma, y = end_time_out_mean / 365)) +
@@ -219,7 +219,7 @@ ggplot(jop, aes(x = sigma, y = end_time_out_mean / 365)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("Only simulations where disease died out") +
   theme(text = element_text(size = 20))
-ggsave("end_time.png", height = 7, width = 7.6)
+ggsave("figures/end_time.png", height = 7, width = 7.6)
 ```
 
 
@@ -290,7 +290,7 @@ ggplot(jop, aes(x = prob_end_mean, y = prob_out100_mean)) +
 
 #Max cases and end time endemic vs not exploration
 ```{r}
-jopmt <- read.csv("resumax_case_end_time_expo.csv")
+jopmt <- read.csv("results/max_case_end_time_expo.csv")
 jopmt$R0 <- jopmt$Thv
 Thv_list <- unique(jopmt$Thv)
 jopmt$R0 <- replace(jopmt$R0, jopmt$R0 == Thv_list[1], 0.75)
@@ -325,7 +325,7 @@ ggplot(jopmt, aes(x = sigma, y = max_cases_end_mean)) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$")))
-ggsave("max_cases_end.png", height = 7, width = 7)
+ggsave("figures/max_cases_end.png", height = 7, width = 7)
 ```
 ```{r max_cases_all, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
 ggplot(jopmt, aes(x = sigma, y = max_cases_out_mean)) +
@@ -339,7 +339,7 @@ ggplot(jopmt, aes(x = sigma, y = max_cases_out_mean)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("Only simulations where disease dies out")
-ggsave("max_cases_out.png", height = 7, width = 7.6)
+ggsave("figures/max_cases_out.png", height = 7, width = 7.6)
 ```
 ```{r end_time, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEend_time} Time that the outbreak dies out (or 10 years-end of simulation) by sigma and R0 based on 1000 runs of 100 iterations. This graph looks quite similar to that of the probability of disease going endemic, because if the disease does not go endemic, the disease goes extinct early on in the simulation.'}
 ggplot(jopmt, aes(x = sigma, y = end_time_mean / 365)) +
@@ -352,7 +352,7 @@ ggplot(jopmt, aes(x = sigma, y = end_time_mean / 365)) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$")))
-ggsave("end_time.png", height = 7, width = 7)
+ggsave("figures/end_time.png", height = 7, width = 7)
 ```
 
 
@@ -368,7 +368,7 @@ ggplot(jopmt, aes(x = sigma, y = end_time_out_mean / 365)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("Only simulations where disease dies out")
-ggsave("end_time_out.png", height = 7, width = 7.6)
+ggsave("figures/end_time_out.png", height = 7, width = 7.6)
 ```
 
 
@@ -416,14 +416,15 @@ ggplot(jtd) +
   theme_cowplot() +
   xlab("Time (days)") +
   ylab("Number of hosts infected") +
-  ggtitle("R0 = 1.25, sigma = 0.08")
+  ggtitle("R0 = 1.25, sigma = 0.08, w/ environmental noise") +
   geom_line(aes(x = timestamp, y = value1), lwd = 1.5) +
   theme(legend.position = "none") +
   ylim(0, 4500) #+geom_line(data=ahs, aes(x=Group.1, y=x), color='darkgrey', lwd=1.5)#+geom_line(data=ahds,aes(x=Group.1, y=x), color='grey', lwd=1.5)
 
 
-ggsave("trajectories-env.png", height = 7, width = 7)
+ggsave("figures/trajectories-env.png", height = 7, width = 7)
 ```
+
 ```{r}
 jtd <- read_csv("results/julia_trajectories_deterministic.csv")
 jts1 <- read_csv("results/traj_detstoc_1.csv")
@@ -448,16 +449,14 @@ ggplot(jtd) +
   theme_cowplot() +
   xlab("Time (days)") +
   ylab("Number of hosts infected") +
+  ggtitle("R0 = 1.25, sigma = 0.08, w/o environmental noise") +
   geom_line(aes(x = timestamp, y = value1), lwd = 1.5) +
   ylim(0, 4500) +
   theme(legend.position = "none") #+geom_line(data=ahs, aes(x=Group.1, y=x), color='darkgrey', lwd=1.5)#+geom_line(data=ahds,aes(x=Group.1, y=x), color='grey', lwd=1.5)
 
 
-ggsave("trajectories-det.png", height = 7, width = 7)
+ggsave("figures/trajectories-det.png", height = 7, width = 7)
 ```
-
-
-
 
 
 ```{r trajectories-2, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories-2} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
@@ -477,8 +476,9 @@ ggplot(jtd) +
   theme(legend.position = "none") +
   geom_line(aes(x = timestamp, y = value1), lwd = 1)
 
-ggsave("trajectories-combined.png", height = 3, width = 7)
+ggsave("figures/trajectories-combined.png", height = 3, width = 7)
 ```
+
 ```{r}
 jtd <- read_csv("results/julia_trajectories_6.5deterministic.csv")
 jts1 <- read_csv("results/traj_6.5envstoc_1.csv")
@@ -508,7 +508,7 @@ ggplot(jtd) +
   geom_line(aes(x = (timestamp / 365), y = value1), lwd = 1.5) #+theme(legend.position="none")#+geom_line(data=ahs, aes(x=Group.1, y=x), color='darkgrey', lwd=1.5)#+geom_line(data=ahds,aes(x=Group.1, y=x), color='grey', lwd=1.5)
 
 
-ggsave("trajectories-env.png", height = 7, width = 7)
+ggsave("figures/trajectories-env.png", height = 7, width = 7)
 ```
 
 
@@ -541,7 +541,7 @@ ggplot(jopab, aes(x = sigma, y = prob_end_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha b on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_b_eprob.png", height = 7, width = 7)
+ggsave("figures/alpha_b_eprob.png", height = 7, width = 7)
 ```
 
 ```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
@@ -562,7 +562,7 @@ ggplot(jopab, aes(x = sigma, y = prob_out10_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha b on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_b_oprob10.png", height = 7, width = 7)
+ggsave("figures/alpha_b_oprob10.png", height = 7, width = 7)
 ```
 
 ```{r max_cases_all, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
@@ -578,7 +578,7 @@ ggplot(jopab, aes(x = sigma, y = max_cases_all_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha b on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_b_peak.png", height = 7, width = 7)
+ggsave("figures/alpha_b_peak.png", height = 7, width = 7)
 ```
 
 2. only transmission probability from mosquitoes to hosts turned on for nosie
@@ -608,7 +608,7 @@ ggplot(jopat, aes(x = sigma, y = prob_end_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha t on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_t_eprob.png", height = 7, width = 7)
+ggsave("figures/alpha_t_eprob.png", height = 7, width = 7)
 ```
 
 ```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
@@ -629,7 +629,7 @@ ggplot(jopat, aes(x = sigma, y = prob_out10_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha t on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_t_oprob10.png", height = 7, width = 7)
+ggsave("figures/alpha_t_oprob10.png", height = 7, width = 7)
 ```
 
 ```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
@@ -645,7 +645,7 @@ ggplot(jopat, aes(x = sigma, y = max_cases_all_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha t on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_t_peak.png", height = 7, width = 7)
+ggsave("figures/alpha_t_peak.png", height = 7, width = 7)
 ```
 
 
@@ -678,7 +678,7 @@ ggplot(jopam, aes(x = sigma, y = prob_end_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha m on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_m_eprob.png", height = 7, width = 7)
+ggsave("figures/alpha_m_eprob.png", height = 7, width = 7)
 ```
 
 ```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
@@ -699,7 +699,7 @@ ggplot(jopam, aes(x = sigma, y = prob_out10_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha m on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_m_oprob10.png", height = 7, width = 7)
+ggsave("figures/alpha_m_oprob10.png", height = 7, width = 7)
 ```
 
 ```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
@@ -715,7 +715,7 @@ ggplot(jopam, aes(x = sigma, y = max_cases_all_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha m on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_m_peak.png", height = 7, width = 7)
+ggsave("figures/alpha_m_peak.png", height = 7, width = 7)
 ```
 
 
@@ -748,7 +748,7 @@ ggplot(jopabt, aes(x = sigma, y = prob_end_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha b, t on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_bt_eprob.png", height = 7, width = 7)
+ggsave("figures/alpha_bt_eprob.png", height = 7, width = 7)
 ```
 ```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
 ggplot(jopabt, aes(x = sigma, y = prob_out10_mean)) +
@@ -768,7 +768,7 @@ ggplot(jopabt, aes(x = sigma, y = prob_out10_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha b, t on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_bt_oprob10.png", height = 7, width = 7)
+ggsave("figures/alpha_bt_oprob10.png", height = 7, width = 7)
 ```
 ```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
 ggplot(jopabt, aes(x = sigma, y = max_cases_all_mean)) +
@@ -783,7 +783,7 @@ ggplot(jopabt, aes(x = sigma, y = max_cases_all_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha b, t on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_bt_peak.png", height = 7, width = 7)
+ggsave("figures/alpha_bt_peak.png", height = 7, width = 7)
 ```
 
 
@@ -813,7 +813,7 @@ ggplot(jopabm, aes(x = sigma, y = prob_end_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha b, m on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_bm_eprob.png", height = 7, width = 7)
+ggsave("figures/alpha_bm_eprob.png", height = 7, width = 7)
 ```
 ```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
 ggplot(jopabm, aes(x = sigma, y = prob_out10_mean)) +
@@ -833,7 +833,7 @@ ggplot(jopabm, aes(x = sigma, y = prob_out10_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha b, m on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_bm_oprob10.png", height = 7, width = 7)
+ggsave("figures/alpha_bm_oprob10.png", height = 7, width = 7)
 ```
 ```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
 ggplot(jopabm, aes(x = sigma, y = max_cases_all_mean)) +
@@ -848,7 +848,7 @@ ggplot(jopabm, aes(x = sigma, y = max_cases_all_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha b, m on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_bm_peak.png", height = 7, width = 7)
+ggsave("figures/alpha_bm_peak.png", height = 7, width = 7)
 ```
 
 
@@ -878,7 +878,7 @@ ggplot(jopatm, aes(x = sigma, y = prob_end_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha t, m on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_tm_eprob.png", height = 7, width = 7)
+ggsave("figures/alpha_tm_eprob.png", height = 7, width = 7)
 ```
 ```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
 ggplot(jopatm, aes(x = sigma, y = prob_out10_mean)) +
@@ -898,7 +898,7 @@ ggplot(jopatm, aes(x = sigma, y = prob_out10_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha t, m on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_tm_oprob10.png", height = 7, width = 7)
+ggsave("figures/alpha_tm_oprob10.png", height = 7, width = 7)
 ```
 ```{r prob_out100, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
 ggplot(jopatm, aes(x = sigma, y = max_cases_all_mean)) +
@@ -913,7 +913,7 @@ ggplot(jopatm, aes(x = sigma, y = max_cases_all_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("alpha t, m on") +
   theme(text = element_text(size = 15))
-ggsave("alpha_tm_peak.png", height = 7, width = 7)
+ggsave("figures/alpha_tm_peak.png", height = 7, width = 7)
 ```
 
 
@@ -948,7 +948,7 @@ ggplot(jopg[jopg$R0 > 1.5, ], aes(x = sigma, y = prob_end_mean)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$")))
 
-ggsave("prob_end.png", height = 4, width = 7)
+ggsave("figures/prob_end.png", height = 4, width = 7)
 ```
 
 
@@ -992,7 +992,7 @@ ggplot(jop, aes(x = sigma, y = prob_end_mean)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$")))
 
-ggsave("prob_end.png", height = 3.5, width = 7)
+ggsave("figures/prob_end.png", height = 3.5, width = 7)
 ```
 ```{r prob_out10, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_out10} Probability of an outbreak (defined as 10 host cases at one time point) occuring by sigma and R0 based on 1000 runs of 100 iterations. For R0 values greater than 1, as environmental noise strength increases the probability of an outbreak decreases. For R0 values less than 1, as environmental noise strength increases, the probability of an outbreak increases until sigma=~0.2 and then decreases. There is a greater probability of an outbreak at higher values of R0.'}
 ggplot(jop, aes(x = sigma, y = prob_out10_mean)) +
@@ -1008,7 +1008,7 @@ ggplot(jop, aes(x = sigma, y = prob_out10_mean)) +
   ylab("Probability of outbreak > 10 hosts") +
   ylim(0, 1) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$")))
-ggsave("prob_out10.png", height = 3.5, width = 7)
+ggsave("figures/prob_out10.png", height = 3.5, width = 7)
 ```
 ```{r max_cases_all, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
 ggplot(jop, aes(x = sigma, y = max_cases_all_mean)) +
@@ -1024,7 +1024,7 @@ ggplot(jop, aes(x = sigma, y = max_cases_all_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("All simulations") +
   theme(text = element_text(size = 20))
-ggsave("max_cases.png", height = 3.5, width = 7)
+ggsave("figures/max_cases.png", height = 3.5, width = 7)
 ```
 ```{r max_cases_out, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations only including simulations where the outbreak died out. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
 ggplot(jop, aes(x = sigma, y = max_cases_out_mean)) +
@@ -1040,7 +1040,7 @@ ggplot(jop, aes(x = sigma, y = max_cases_out_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("Simulations where disease died out") +
   theme(text = element_text(size = 20))
-ggsave("max_cases_out.png", height = 7, width = 7.6)
+ggsave("figures/max_cases_out.png", height = 7, width = 7.6)
 ```
 ```{r end_time, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEend_time} Time that the outbreak dies out (or 10 years-end of simulation) by sigma and R0 based on 1000 runs of 100 iterations. This graph looks quite similar to that of the probability of disease going endemic, because if the disease does not go endemic, the disease goes extinct early on in the simulation.'}
 ggplot(jop, aes(x = sigma, y = end_time_mean / 365)) +
@@ -1056,7 +1056,7 @@ ggplot(jop, aes(x = sigma, y = end_time_mean / 365)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("All simulations") +
   theme(text = element_text(size = 20))
-ggsave("end_time.png", height = 7, width = 7.6)
+ggsave("figures/end_time.png", height = 7, width = 7.6)
 ```
 ```{r end_time_out, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEend_time} Time that the outbreak dies out (or 10 years-end of simulation) by sigma and R0 based on 1000 runs of 100 iterations. This graph looks quite similar to that of the probability of disease going endemic, because if the disease does not go endemic, the disease goes extinct early on in the simulation.'}
 ggplot(jop, aes(x = sigma, y = end_time_out_mean / 365)) +
@@ -1072,7 +1072,7 @@ ggplot(jop, aes(x = sigma, y = end_time_out_mean / 365)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("Simulations where disease died out") +
   theme(text = element_text(size = 20))
-ggsave("end_time_out.png", height = 7, width = 7.6)
+ggsave("figures/end_time_out.png", height = 7, width = 7.6)
 ```
 
 
@@ -1096,7 +1096,7 @@ ggplot(sa, aes(x = sigma, y = PRCC_b_oprob)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("Sensitivity of outbreak probability") +
   theme(text = element_text(size = 20))
-ggsave("sa_oprob.png", height = 7, width = 7.6)
+ggsave("figures/sa_oprob.png", height = 7, width = 7.6)
 ```
 ```{r sa_eprob, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEend_time} Sensitivity analysis of parameters on outbreak probability based on 1000 runs of 100 iterations.'}
 ggplot(sa, aes(x = sigma, y = PRCC_b_eprob)) +
@@ -1114,5 +1114,5 @@ ggplot(sa, aes(x = sigma, y = PRCC_b_eprob)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("Sensitivity of endemic disease probability") +
   theme(text = element_text(size = 20))
-ggsave("sa_eprob.png", height = 7, width = 7.6)
+ggsave("figures/sa_eprob.png", height = 7, width = 7.6)
 ```
