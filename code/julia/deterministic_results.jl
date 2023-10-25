@@ -1,15 +1,13 @@
+
+# Load necessary packages_______________________________________________________
+using CSV
+using DataFrames
 using DifferentialEquations
 using Plots
-using DataFrames
 using Statistics
-#using StatsBase
-#using Suppressor # to suppress warnings from SDE solver
-#using ProgressBars # to gauge how long the solver will take
-#using TimerOutputs # to actually time which commands are taking the most time
-using CSV
 # using PlotlyJS
 
-
+# Define functions_____________________________________________________________
 # base function for mosquito borne disease
 function f(du,u,p,t)
   #(H,V) = u
@@ -23,34 +21,31 @@ function f(du,u,p,t)
 end
 
 # Function: Calculate tVH values from specified R0 values
-function tVH_from_R0(p, R0) 
+function tHV_from_R0(p, R0) 
   (b, τₕᵥ, τᵥₕ, Nₕ, Nᵥ, γₕ, μᵥ) = p
-  tVH = (R0.^2) / ((b.^2 * τₕᵥ * Nᵥ) / (Nₕ * γₕ * μᵥ))
-  return(tVH)
+  tHV = (R0.^2) / ((b.^2 * τᵥₕ * Nᵥ) / (Nₕ * γₕ * μᵥ))
+  return(tHV)
 end
 
+# Define parameters___________________________________________________________________________
 #Parameters: biting rate, THV, TVH, NH, NV, recovery, mortality, sigma, alphab, alpham, alphat
 p = [0.3, 0.02450000, 0.5, 10000, 100000, 0.1, 0.1, 0.0125, 1.0, 1.0, 1.0]
 
-
-
 #Rate of transmission from hosts to vectors-We varied this parameter to get different R0 values
 #Code for calculating Tvh for a given R0 value is in the main R code
-# TVHs=[0.01250000, 0.02005556, 0.02450000, 0.03472222, 0.08888889,  0.35555556, 0.93888889]#R0=0.75, 0.95, 1.05, 1.25, 2, 4, 6.5
 R0s = [0.75, 0.95, 1.05, 1.25, 2, 4, 6.5]
-TVHs = tVH_from_R0(p, R0s)
-#[0.02005556, 0.02450000, 0.03472222, 0.08888889, 0.35555556, 0.93888889] # These are for R0=0.95, 1.05, 1.25, 2, 4, 6.5
-#[ 0.02450000, 0.03472222, 0.05000000, 0.08888889, 0.35555556] #These are for R0=1.05, 1.25,1.5, 2, 4
-#[0.01250000, 0.02005556, 0.02450000, 0.35555556] These are for R0=0.75, 0.95, 1.05, 4
-#Now varying R0 by TVH since that is not a parameter we want to play with for sensitivity analysis
+THVs = tHV_from_R0(p, R0s)
 
-#initial conditions->10 infected mosquitos to star
+#initial conditions->10 infected mosquitos to start
 u0 = [0.0, 10.0]
 #10 year simulation with time step of 1 day
 tspan = [0.0, 10*365]
 dt = 1
 
+# Set up SDE solver____________________________________________________________
 
+# Callback functions
+# Callback 1: if infected host pop. goes negative, replace its value with zero
 function condition1(u, t, integrator)
     u[1]<0
 end
@@ -58,7 +53,7 @@ function affect1!(integrator)
     integrator.u[1] = 0
 end
 cb1 = DiscreteCallback(condition1, affect1!)
-  #callback 2 makes vector population value 0 if goes negative
+# Callback 2: if infected vector pop. goes negative, replace its value with zero
 function condition2(u, t, integrator)
     u[2]<0
 end
@@ -66,9 +61,7 @@ function affect2!(integrator)
     integrator.u[2] = 0
 end
 cb2 = DiscreteCallback(condition2, affect2!)
-  #Callback 3 racks the maximum number of hosts infected and saves this value
-
-  ##callback 4 makes Host population value 10000 if it exceeds this
+# Callback 4: if infected host pop. exceeds carrying capacity (10000), replace its value with carrying capacity
 function condition4(u, t, integrator)
       u[1]>10000
 end
@@ -76,7 +69,7 @@ function affect4!(integrator)
       integrator.u[1] = 10000
 end
 cb4 = DiscreteCallback(condition4, affect4!)
-  #callback 5 makes Vector population value 100000 if it exceeds this
+# Callback 5:  if infected vector pop. exceeds carrying capacity (100000), replace its value with carrying capacity
 function condition5(u, t, integrator)
     u[2]>100000
 end
@@ -84,61 +77,79 @@ function affect5!(integrator)
     integrator.u[2] = 100000
 end
 cb5 = DiscreteCallback(condition5, affect5!)
+# Combine callbacks
 cbs = CallbackSet(cb1, cb2, cb4, cb5)
 
-  
-prob = ODEProblem(f,u0, tspan, p, callback=cbs)
-sol = solve(prob)
-plot(sol, layout=(3,1), legend=true)
-hline!([10])
-
-p[3]=TVHs[2]
-prob = ODEProblem(f,u0, tspan, p, callback=cbs)
-sol = solve(prob)
-plot(sol, layout=(3,1), legend=true)
-hline!([10])
-
-p[3]=TVHs[3]
-prob = ODEProblem(f,u0, tspan, p, callback=cbs)
-sol = solve(prob)
-plot(sol, layout=(3,1), legend=true)
-hline!([10])
-
-p[3]=TVHs[4] #R0=1.25
-prob = ODEProblem(f,u0, tspan, p, callback=cbs)
-sol = solve(prob)
-plot(sol, layout=(3,1), legend=true)
-hline!([10])
-
-traj_det = DataFrame(sol)
-cd("/Users/karinebey/Documents/GitHub/dahlin-noisy-mbds/") do
-  CSV.write("julia_trajectories_1.05deterministic.csv", traj_det, transform = (col,val) -> something(val, missing))
+# Function: reduce to batches
+function reduction(u,batch,I)
+  tmp = sum(cat(batch..., dims = 5), dims = 5)/length(I)
+  length(u) == 0 && return tmp, false
+  cat(u, tmp, dims = 5), false
 end
 
-p[3]=TVHs[5]
-prob = ODEProblem(f,u0, tspan, p, callback=cbs)
-sol = solve(prob)
-plot(sol, layout=(3,1), legend=true)
-hline!([10])
 
-p[3]=TVHs[6]
-prob = ODEProblem(f,u0, tspan, p, callback=cbs)
-sol = solve(prob)
-plot(sol, layout=(3,1), legend=true)
-hline!([10])
+# # DIAGNOSTICS: Check deterministic ODE solutions_______
+# # Define ODE problem (no stochasticity)
+# prob = ODEProblem(f,u0, tspan, p, callback=cbs)
+# # Solve 
+# sol = solve(prob)
+# plot(sol, layout=(3,1), legend=true)
+# hline!([10])
 
-p[3]=TVHs[7]
-prob = ODEProblem(f,u0, tspan, p, callback=cbs)
-sol = solve(prob)
-plot(sol, layout=(3,1), legend=true)
-hline!([10])
+# p[3]=TVHs[2]
+# prob = ODEProblem(f,u0, tspan, p, callback=cbs)
+# sol = solve(prob)
+# plot(sol, layout=(3,1), legend=true)
+# hline!([10])
 
+# p[3]=TVHs[3]
+# prob = ODEProblem(f,u0, tspan, p, callback=cbs)
+# sol = solve(prob)
+# plot(sol, layout=(3,1), legend=true)
+# hline!([10])
 
+# p[3]=TVHs[4] #R0=1.25
+# prob = ODEProblem(f,u0, tspan, p, callback=cbs)
+# sol = solve(prob)
+# plot(sol, layout=(3,1), legend=true)
+# hline!([10])
 
-#Stochastic trajectories R0=1.25; sigma=0.12 and 0.0
+# traj_det = DataFrame(sol)
+# cd("/Users/karinebey/Documents/GitHub/dahlin-noisy-mbds/") do
+#   CSV.write("julia_trajectories_1.05deterministic.csv", traj_det, transform = (col,val) -> something(val, missing))
+# end
 
+# p[2]=THVs[5]
+# prob = ODEProblem(f,u0, tspan, p, callback=cbs)
+# sol = solve(prob)
+# plot(sol, layout=(3,1), legend=true)
+# hline!([10])
+
+# p[2]=THVs[6]
+# prob = ODEProblem(f,u0, tspan, p, callback=cbs)
+# sol = solve(prob)
+# plot(sol, layout=(3,1), legend=true)
+# hline!([10])
+
+# p[2]=THVs[7]
+# prob = ODEProblem(f,u0, tspan, p, callback=cbs)
+# sol = solve(prob)
+# plot(sol, layout=(3,1), legend=true)
+# hline!([10])
+
+# Set up SDE problem_____________________________________
+# Reduce parameter space
+R0s = [1.05, 2]
+THVs = tHV_from_R0(p, R0s)
+sigmas = [0.1, 0.4]
+# Create grid to reduce number of for loops
+const parm_grid = collect(Iterators.product(sigmas, THVs))
+
+num_runs = 100
+num_trajectories = 100
+
+# Drift terms
 function f(du,u,p,t)
-
   #(V,H) = u
   #(b, τₕᵥ, τᵥₕ, Nₕ, Nᵥ, γₕ, μᵥ) = p
   du[1] = (p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] - p[6] * u[1]
@@ -160,67 +171,45 @@ function g(du,u,p,t)
   #du[1,3] = σ * αᵦ * τₕᵥ * (Nₕ - H) * V / Nₕ
   du[2,3] = p[8] * ((p[9] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + (p[10] * p[1] * (p[5] - u[2]) / p[4]) * u[1] + p[11] * u[2])
   #du[2,3] = σ * (αᵦ * τᵥₕ * H * (Nᵥ - V) / Nₕ + αₜ * b * H * (Nᵥ - V) / Nₕ + αₘ * V)
-
 end
 
-p = [0.3, 0.08888889, 0.5, 10000, 100000, 0.1, 0.1, 0.4, 1.0, 1.0, 1.0]
-u0 = [0.0, 10.0]
-tspan = [0.0, 10*365]
+# Diffusion parameters
 noise_rate_prototype = [0.0 0.0 0.0; 0.0 0.0 0.0]
-dt = 1
 
-#callbacks make value 0 if goes negative
+# Define SDE problem
+out = DataFrame([Float64[],Float64[], Float64[], Float64[], Float64[], Float64[]],  [:H, :V, :t, :trajectory, :sigma, :tHV])
+for s in eachindex(parm_grid)
+  p[8]=parm_grid[s][1] # sigma value
+  p[2]=parm_grid[s][2] # Thv value
+  #Sets up empty dataframe for temporary data for each set of runs
+  dftemp2 = DataFrame([Float64[],Float64[], Float64[], Float64[],Float64[], Float64[], Float64[],Float64[], Float64[]], ["eprob", "oprob10","oprob100", "max_cases_all", "max_cases_out", "num_cases", "end_time", "end_time_out", "time_max"])
 
-#callback 1 makes Host population value 0 if goes negative
-function condition1(u, t, integrator)
-  u[1]<0
+  total_runs = num_runs
+  #defines the SDE problem to be solved
+  prob = SDEProblem(f, g, u0, tspan, p, noise_rate_prototype=noise_rate_prototype, callback = cbs)
+  # Set up an ensemble problem-run 1000 iterations and save only the final time step values
+  ensembleprob = EnsembleProblem(prob) 
+  sol = DataFrame
+  sol = DataFrame(solve(ensembleprob, EM(), dt = dt, EnsembleSplitThreads(), abstol = 1e-7, trajectories = total_runs, save_everystep = true, verbose = false, isoutofdomain = (u,p,t) -> any(x -> x < 0, u)))
+  states = sol.u
+  times = sol.t
+
+  for i in 1:size(states)[1]
+    temp = reduce(vcat, transpose(states[i]))
+    temp2 = reduce(hcat, [temp, times[i]])
+    trajectory_indexes = repeat([i], size(temp)[1])
+    sigma_val = repeat([p[8]], size(temp)[1])
+    tHV_val = repeat([p[2]], size(temp)[1])
+    temp3 = reduce(hcat, [temp2, trajectory_indexes, sigma_val, tHV_val])
+    temp4 = DataFrame(temp3, [:H, :V, :t, :trajectory, :sigma, :tHV])
+
+    append!(out,temp4)
+  end
 end
-function affect1!(integrator)
-  integrator.u[1] = 0
-end
-cb1 = DiscreteCallback(condition1, affect1!)
-#callback 2 makes vector population value 0 if goes negative
-function condition2(u, t, integrator)
-  u[2]<0
-end
-function affect2!(integrator)
-  integrator.u[2] = 0
-end
-cb2 = DiscreteCallback(condition2, affect2!)
-
-##callback 4 makes Host population value 10000 if it exceeds this
-function condition4(u, t, integrator)
-    u[1]>10000
-end
-function affect4!(integrator)
-    integrator.u[1] = 10000
-end
-cb4 = DiscreteCallback(condition4, affect4!)
-#callback 5 makes Vector population value 100000 if it exceeds this
-function condition5(u, t, integrator)
-  u[2]>100000
-end
-function affect5!(integrator)
-  integrator.u[2] = 100000
-end
-cb5 = DiscreteCallback(condition5, affect5!)
-#This callback terminates the simulation if the outbreak dies out defined as less than 1 host and vector infected
-
-cbs = CallbackSet(cb1, cb2, cb4, cb5)
 
 
-prob = SDEProblem(f, g, u0, tspan, p, noise_rate_prototype=noise_rate_prototype, callback = cbs)#, callback = PositiveDomain())
-#ensembleprob = EnsembleProblem(prob) 
-#sol = solve(ensembleprob, EM(), dt = dt, EnsembleSplitThreads(), trajectories = 100, verbose = false)#, isoutofdomain = (u,p,t) -> any(x -> x < 0, u))
-sol = solve(prob, EM(), dt = dt, verbose = false)
-
-dftemp = empty
-
-dftemp = DataFrame(sol)
-
-
-cd("/Users/karinebey/Documents/GitHub/dahlin-noisy-mbds/") do
-  CSV.write("traj_stoc_2_0.4_10.csv", dftemp, transform = (col,val) -> something(val, missing))
+cd("$(homedir())/Documents/Github/dahlin-noisy-mbds/results") do
+  CSV.write("illustrate_trajectories.csv", dftemp, transform = (col,val) -> something(val, missing))
 end
 
 
