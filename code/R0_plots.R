@@ -84,21 +84,23 @@ condition_table <- data_table %>%
 # 5) Save data and visualizations -----------------------------------------
 
 # R0 as a random variate
-summary_plot <- summary_table %>%
+summary_table %>%
   ggplot(aes(x = sigma, y = mean_R0)) +
   geom_line() +
   geom_ribbon(aes(ymin = pmax(0, mean_R0 - 1.96*sd_R0), 
                   ymax = mean_R0 + 1.96*sd_R0),
-              alpha = 0.1) +
+              alpha = 0.25) +
   geom_hline(yintercept = 1, color = "red") +
   scale_x_continuous(unname(TeX("Environmental noise strength $(\\sigma)$")),
                      expand = c(0,0)) +
   scale_y_continuous(unname(TeX("Basic reproduction number ($R_0$)")),
                      expand = c(0,0)) +
   theme_cowplot()
+ggsave("./figures/R0vsnoise.png", height = 6, width = 8)
+
 
 # Proportion of simulations with R0 > 1
-condition_plot <- condition_table %>%
+condition_table %>%
   ggplot(aes(x = sigma, y = prop_end)) +
   geom_line() +
   scale_x_continuous(unname(TeX("Environmental noise strength $(\\sigma)$")),
@@ -107,5 +109,5 @@ condition_plot <- condition_table %>%
                      expand = c(0,0),
                      limits = c(0,1)) +
   theme_cowplot()
-
+ggsave("./figures/propR0greater.png", height = 6, width = 8)
 

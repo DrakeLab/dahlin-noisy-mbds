@@ -393,7 +393,7 @@ ggsave("figures/cones_Tvh.png", height = 7, width = 7)
 
 eps <- .Machine$double.eps
 
-trajectories <- read_csv("results/illustrate_trajectories.csv") %>% 
+trajectories <- read_csv("results/illustrate_trajectories.csv") %>% # run "\code\julia\deterministic_results.jl" to get this file
   ungroup() %>% 
   filter(H >= 0, V >= 0) %>% 
   group_by(trajectory, sigma, R0) %>% 
@@ -428,8 +428,8 @@ appender_sigma <- function(string) TeX(paste("$\\sigma = $", string))
 
 quadrant_df <- trajectories
 quadrant_df$R0 <- factor(quadrant_df$R0,      # Reordering group factor levels
-                         # levels = c("2", "1.25", "1.05", "0.95"))
-                         levels = c("0.95", "1.05", "1.25","2"))
+                         levels = c("2", "1.25", "1.05", "0.95"))
+                         # levels = c("0.95", "1.05", "1.25","2"))
 
 quadrant_plot <- quadrant_df %>% 
   ggplot() +
@@ -454,7 +454,9 @@ quadrant_plot <- quadrant_df %>%
                      expand = c(0,0)) +
   scale_y_continuous("Number of hosts infected", 
                      expand = c(0,0)) +
-  theme(legend.position = "none")
+  theme(legend.position = "none", 
+        panel.spacing = unit(1, "lines"), 
+        strip.background =element_rect(fill=NA))
 
 ggsave("figures/example_quadrants.png", height = 6, width = 8)
 # 

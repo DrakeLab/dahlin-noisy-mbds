@@ -52,7 +52,7 @@ for s in eachindex(THVs)
   R0 = R0s[s]
   p[2]=THVs[s] # Thv value
   # Define ODE problem (no stochasticity)
-  prob = ODEProblem(f,u0, tspan, p, callback=cbs)
+  prob = ODEProblem(f,u0, tspan, p)
   # Solve 
   sol = solve(prob)
 
