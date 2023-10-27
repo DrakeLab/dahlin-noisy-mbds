@@ -33,8 +33,7 @@ p = [0.3, 0.02450000, 0.5, 10000, 100000, 0.1, 0.1, 0.0125, 1.0, 1.0, 1.0]
 
 #Rate of transmission from hosts to vectors-We varied this parameter to get different R0 values
 #Code for calculating Tvh for a given R0 value is in the main R code
-R0s = [0.75, 0.95, 1.05, 1.25, 2, 4, 6.5]
-THVs = tHV_from_R0(p, R0s)
+
 
 #initial conditions->10 infected mosquitos to start
 u0 = [0.0, 10.0]
@@ -42,39 +41,73 @@ u0 = [0.0, 10.0]
 tspan = [0.0, 10*365]
 dt = 1
 
-# Set up SDE solver____________________________________________________________
+
+# Get deterministic ODE solution trajectories______________________________________________
+R0s = [0.95, 1.05, 1.25, 2]
+THVs = tHV_from_R0(p, R0s)
+
+out = DataFrame([Float64[],Float64[], Float64[], Float64[]], [:H, :V, :t, :R0])
+
+for s in eachindex(THVs)
+  R0 = R0s[s]
+  p[2]=THVs[s] # Thv value
+  # Define ODE problem (no stochasticity)
+  prob = ODEProblem(f,u0, tspan, p, callback=cbs)
+  # Solve 
+  sol = solve(prob)
+
+  states = sol.u
+  times = sol.t
+  traj_det = DataFrame(sol)
+  temp = reduce(vcat, transpose(states))
+  temp2 = reduce(hcat, [temp, times])
+  R0_val = repeat([R0], size(temp)[1])
+  temp3 = reduce(hcat, [temp2, R0_val])
+  temp4 = DataFrame(temp3, [:H, :V, :t, :R0])
+
+  append!(out,temp4)
+
+end
+
+# Save trajectories
+cd("$(homedir())/Documents/Github/dahlin-noisy-mbds/results") do
+  CSV.write("deterministic_trajectories.csv", out, transform = (col,val) -> something(val, missing))
+end
+
+
+# Set up SDE problem_____________________________________
 
 # Callback functions
 # Callback 1: if infected host pop. goes negative, replace its value with zero
 function condition1(u, t, integrator)
-    u[1]<0
+  u[1]<0
 end
 function affect1!(integrator)
-    integrator.u[1] = 0
+  integrator.u[1] = 0
 end
 cb1 = DiscreteCallback(condition1, affect1!)
 # Callback 2: if infected vector pop. goes negative, replace its value with zero
 function condition2(u, t, integrator)
-    u[2]<0
+  u[2]<0
 end
 function affect2!(integrator)
-    integrator.u[2] = 0
+  integrator.u[2] = 0
 end
 cb2 = DiscreteCallback(condition2, affect2!)
 # Callback 4: if infected host pop. exceeds carrying capacity (10000), replace its value with carrying capacity
 function condition4(u, t, integrator)
-      u[1]>10000
+    u[1]> p[4]
 end
 function affect4!(integrator)
-      integrator.u[1] = 10000
+    integrator.u[1] = p[4]
 end
 cb4 = DiscreteCallback(condition4, affect4!)
 # Callback 5:  if infected vector pop. exceeds carrying capacity (100000), replace its value with carrying capacity
 function condition5(u, t, integrator)
-    u[2]>100000
+  u[2]>p[5]
 end
 function affect5!(integrator)
-    integrator.u[2] = 100000
+  integrator.u[2] = p[5]
 end
 cb5 = DiscreteCallback(condition5, affect5!)
 # Combine callbacks
@@ -82,70 +115,18 @@ cbs = CallbackSet(cb1, cb2, cb4, cb5)
 
 # Function: reduce to batches
 function reduction(u,batch,I)
-  tmp = sum(cat(batch..., dims = 5), dims = 5)/length(I)
-  length(u) == 0 && return tmp, false
-  cat(u, tmp, dims = 5), false
+tmp = sum(cat(batch..., dims = 5), dims = 5)/length(I)
+length(u) == 0 && return tmp, false
+cat(u, tmp, dims = 5), false
 end
 
-
-# # DIAGNOSTICS: Check deterministic ODE solutions_______
-# # Define ODE problem (no stochasticity)
-# prob = ODEProblem(f,u0, tspan, p, callback=cbs)
-# # Solve 
-# sol = solve(prob)
-# plot(sol, layout=(3,1), legend=true)
-# hline!([10])
-
-# p[3]=TVHs[2]
-# prob = ODEProblem(f,u0, tspan, p, callback=cbs)
-# sol = solve(prob)
-# plot(sol, layout=(3,1), legend=true)
-# hline!([10])
-
-# p[3]=TVHs[3]
-# prob = ODEProblem(f,u0, tspan, p, callback=cbs)
-# sol = solve(prob)
-# plot(sol, layout=(3,1), legend=true)
-# hline!([10])
-
-# p[3]=TVHs[4] #R0=1.25
-# prob = ODEProblem(f,u0, tspan, p, callback=cbs)
-# sol = solve(prob)
-# plot(sol, layout=(3,1), legend=true)
-# hline!([10])
-
-# traj_det = DataFrame(sol)
-# cd("/Users/karinebey/Documents/GitHub/dahlin-noisy-mbds/") do
-#   CSV.write("julia_trajectories_1.05deterministic.csv", traj_det, transform = (col,val) -> something(val, missing))
-# end
-
-# p[2]=THVs[5]
-# prob = ODEProblem(f,u0, tspan, p, callback=cbs)
-# sol = solve(prob)
-# plot(sol, layout=(3,1), legend=true)
-# hline!([10])
-
-# p[2]=THVs[6]
-# prob = ODEProblem(f,u0, tspan, p, callback=cbs)
-# sol = solve(prob)
-# plot(sol, layout=(3,1), legend=true)
-# hline!([10])
-
-# p[2]=THVs[7]
-# prob = ODEProblem(f,u0, tspan, p, callback=cbs)
-# sol = solve(prob)
-# plot(sol, layout=(3,1), legend=true)
-# hline!([10])
-
-# Set up SDE problem_____________________________________
-# Reduce parameter space
-R0s = [1.05, 2]
+# Define parameter space
+# R0s = [1.05, 1.25, 2]
 THVs = tHV_from_R0(p, R0s)
-sigmas = [0.1, 0.4]
+sigmas = [0.05, 0.1, 0.25, 0.4]
 # Create grid to reduce number of for loops
-const parm_grid = collect(Iterators.product(sigmas, THVs))
+const parm_grid = collect(Iterators.product(sigmas, R0s))
 
-num_runs = 100
 num_trajectories = 100
 
 # Drift terms
@@ -177,14 +158,16 @@ end
 noise_rate_prototype = [0.0 0.0 0.0; 0.0 0.0 0.0]
 
 # Define SDE problem
-out = DataFrame([Float64[],Float64[], Float64[], Float64[], Float64[], Float64[]],  [:H, :V, :t, :trajectory, :sigma, :tHV])
+out = DataFrame([Float64[],Float64[], Float64[], Float64[], Float64[], Float64[]],  [:H, :V, :t, :trajectory, :sigma, :R0])
 for s in eachindex(parm_grid)
+  
   p[8]=parm_grid[s][1] # sigma value
-  p[2]=parm_grid[s][2] # Thv value
-  #Sets up empty dataframe for temporary data for each set of runs
-  dftemp2 = DataFrame([Float64[],Float64[], Float64[], Float64[],Float64[], Float64[], Float64[],Float64[], Float64[]], ["eprob", "oprob10","oprob100", "max_cases_all", "max_cases_out", "num_cases", "end_time", "end_time_out", "time_max"])
+  R0=parm_grid[s][2] 
+  tHV = tHV_from_R0(p, R0)
+  p[2] = tHV# Thv value
 
-  total_runs = num_runs
+  
+  total_runs = num_trajectories
   #defines the SDE problem to be solved
   prob = SDEProblem(f, g, u0, tspan, p, noise_rate_prototype=noise_rate_prototype, callback = cbs)
   # Set up an ensemble problem-run 1000 iterations and save only the final time step values
@@ -199,9 +182,9 @@ for s in eachindex(parm_grid)
     temp2 = reduce(hcat, [temp, times[i]])
     trajectory_indexes = repeat([i], size(temp)[1])
     sigma_val = repeat([p[8]], size(temp)[1])
-    tHV_val = repeat([p[2]], size(temp)[1])
-    temp3 = reduce(hcat, [temp2, trajectory_indexes, sigma_val, tHV_val])
-    temp4 = DataFrame(temp3, [:H, :V, :t, :trajectory, :sigma, :tHV])
+    R0_val = repeat([R0], size(temp)[1])
+    temp3 = reduce(hcat, [temp2, trajectory_indexes, sigma_val, R0_val])
+    temp4 = DataFrame(temp3, [:H, :V, :t, :trajectory, :sigma, :R0])
 
     append!(out,temp4)
   end
@@ -209,19 +192,5 @@ end
 
 
 cd("$(homedir())/Documents/Github/dahlin-noisy-mbds/results") do
-  CSV.write("illustrate_trajectories.csv", dftemp, transform = (col,val) -> something(val, missing))
-end
-
-
-cd("/Users/karinebey/Documents/GitHub/NoisyMBDs") do
-  CSV.write("traj_6.5envstoc_2.csv", dftemp, transform = (col,val) -> something(val, missing))
-end
-cd("/Users/karinebey/Documents/GitHub/NoisyMBDs") do
-  CSV.write("traj_6.5envstoc_3.csv", dftemp, transform = (col,val) -> something(val, missing))
-end
-cd("/Users/karinebey/Documents/GitHub/NoisyMBDs") do
-  CSV.write("traj_6.5envstoc_4.csv", dftemp, transform = (col,val) -> something(val, missing))
-end
-cd("/Users/karinebey/Documents/GitHub/NoisyMBDs") do
-  CSV.write("traj_6.5envstoc_5.csv", dftemp, transform = (col,val) -> something(val, missing))
+  CSV.write("illustrate_trajectories.csv", out, transform = (col,val) -> something(val, missing))
 end

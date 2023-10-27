@@ -12,7 +12,7 @@ keep_tex: yes
 knit: (function(inputFile, encoding) {
   rmarkdown::render(inputFile, encoding = encoding, output_dir = "doc") })
 ---
-  
+
 ```{r setup, include=FALSE}
 # Load libraries (trim this list down to the essentials)
 library(ggplot2)
@@ -91,7 +91,7 @@ tHV_calc <- function(R0) {
   NV <- 10000 # vector population size
   gH <- 0.1 # recovery rate of hosts
   mV <- 0.1 # mortality of vectors
-
+  
   tHV <- (R0^2 * NH * gH * mV) / (b^2 * tVH * NV)
   return(tHV)
 }
@@ -103,7 +103,7 @@ b_calc <- function(tHV, R0) {
   NV <- 10000 # vector population size
   gH <- 0.1 # recovery rate of hosts
   mV <- 0.1 # mortality of vectors
-
+  
   b <- sqrt((R0^2 * NH * gH * mV) / (tHV * tVH * NV))
   return(b)
 }
@@ -126,7 +126,7 @@ tvh_calc <- function(tHV, R0) {
   NV <- 10000 # vector population size
   gH <- 0.1 # recovery rate of hosts
   mV <- 0.1 # mortality of vectors
-
+  
   tVH <- (R0^2 * NH * gH * mV) / (b^2 * tHV * NV)
   return(tVH)
 }
@@ -391,61 +391,91 @@ ggsave("figures/cones_Tvh.png", height = 7, width = 7)
 ```{r} 
 # Re-calculate all of these to get more trajectories (maybe like 20?)
 
-jtd_1.05 <- read_csv("results/julia_trajectories_1.05deterministic.csv")
+eps <- .Machine$double.eps
 
-jts1_1.05_0.1 <- read_csv("results/traj_stoc_1.05_0.1_1.csv")
-jts2_1.05_0.1 <- read_csv("results/traj_stoc_1.05_0.1_2.csv")
-jts3_1.05_0.1 <- read_csv("results/traj_stoc_1.05_0.1_3.csv")
-jts4_1.05_0.1 <- read_csv("results/traj_stoc_1.05_0.1_4.csv")
-jts5_1.05_0.1 <- read_csv("results/traj_stoc_1.05_0.1_5.csv")
-jts6_1.05_0.1 <- read_csv("results/traj_stoc_1.05_0.1_6.csv")
-jts7_1.05_0.1 <- read_csv("results/traj_stoc_1.05_0.1_7.csv")
-jts8_1.05_0.1 <- read_csv("results/traj_stoc_1.05_0.1_8.csv")
-jts9_1.05_0.1 <- read_csv("results/traj_stoc_1.05_0.1_9.csv")
-jts10_1.05_0.1 <- read_csv("results/traj_stoc_1.05_0.1_10.csv")
-jts1_1.05_0.1$traj <- 1
-jts2_1.05_0.1$traj <- 4
-jts3_1.05_0.1$traj <- 3
-jts4_1.05_0.1$traj <- 2
-jts5_1.05_0.1$traj <- 5
-jts6_1.05_0.1$traj <- 6
-jts7_1.05_0.1$traj <- 7
-jts8_1.05_0.1$traj <- 8
-jts9_1.05_0.1$traj <- 9
-jts10_1.05_0.1$traj <- 10
+trajectories <- read_csv("results/illustrate_trajectories.csv") %>% 
+  ungroup() %>% 
+  filter(H >= 0, V >= 0) %>% 
+  group_by(trajectory, sigma, R0) %>% 
+  mutate(
+  #   R0 = case_when(
+  #   tHV < 0.03 ~ 1.05,
+  #   tHV > 0.03 & tHV <0.08 ~ 1.25,
+  #   tHV > 0.08 ~ 2
+  # ),
+         rolling_H = rollmean(H, 7, mean, align = "right", fill = NA),
+         rolling_V = rollmean(V, 7, mean, align = "right", fill = NA))
 
-jts_1.05_0.1 <- rbind(jts1_1.05_0.1, jts2_1.05_0.1, jts3_1.05_0.1, jts4_1.05_0.1, jts5_1.05_0.1, jts6_1.05_0.1, jts7_1.05_0.1, jts8_1.05_0.1, jts9_1.05_0.1, jts10_1.05_0.1)
+end_stats <- trajectories %>% 
+  filter(t == 3650) %>% 
+  group_by(trajectory, sigma, R0) %>% 
+  mutate(end_bool = H > 0) %>% 
+  select(trajectory, sigma, R0, end_bool)
 
-jts_1.05_0.1 <- jts_1.05_0.1[jts_1.05_0.1$value2 >= 0, ]
-jts_1.05_0.1 <- jts_1.05_0.1[jts_1.05_0.1$value1 >= 0, ]
+trajectories <- right_join(trajectories, end_stats) %>% 
+  mutate(type = "stochastic")
+
+# Load deterministic results and repeat them for each value of sigma (for plotting)
+deterministic_results <- read_csv("results/deterministic_trajectories.csv") %>% 
+  cross_join(tibble(sigma = unique(trajectories$sigma)))
+
 ```
 
 ```{r trajectories 1.05_0.1, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
-jts_1.05_0.1_rolling <- jts_1.05_0.1 %>%
-  group_by(traj) %>%
-  mutate(
-    rolling_1 = rollmean(value1, 7, mean, align = "right", fill = NA),
-    rolling_2 = rollmean(value2, 7, mean, align = "right", fill = NA), 
-    end_bool = ifelse(value2[timestamp == 3650] == 0, 1, 0)
-  )
 
+appender_R0 <- function(string) TeX(paste("$R_0 = $", string))
+appender_sigma <- function(string) TeX(paste("$\\sigma = $", string))
 
-ggplot(jtd_1.05) +
- geom_line(data = jts_1.05_0.1_rolling,
-            aes(x = timestamp/365, y = rolling_1, color = as.factor(end_bool),
-                group = as.factor(traj)),
-            alpha = 0.8) +
-  scale_color_manual(values = c("seagreen3", "plum4"), breaks = c("0", "1")) +
+quadrant_df <- trajectories
+quadrant_df$R0 <- factor(quadrant_df$R0,      # Reordering group factor levels
+                         # levels = c("2", "1.25", "1.05", "0.95"))
+                         levels = c("0.95", "1.05", "1.25","2"))
+
+quadrant_plot <- quadrant_df %>% 
+  ggplot() +
+  # Plot stochastic trajectories
+  geom_line(aes(x = t/365, y = rolling_H, color = as.factor(end_bool), 
+                group = as.factor(trajectory)),
+            alpha = 0.3) +
+  # Plot mean-field deterministic trajectories
+  geom_line(data = deterministic_results, aes(x = t/365, y = H)) +
+  # Color trajectories according to whether they eventually go to zero (=="plum4")
+  scale_color_manual(values = c("seagreen3", "plum4"), breaks = c("TRUE", "FALSE")) +
+  # Subplots for each combination of environmental noise strength and R0
+  facet_grid(R0 ~ sigma,
+             labeller = labeller(.rows = as_labeller(appender_R0, 
+                                                     default = label_parsed), 
+                                 .cols = as_labeller(appender_sigma, 
+                                                     default = label_parsed)),
+             scales = "free_y") +
   theme_cowplot() +
-  scale_x_continuous("Time (years)", 
+  scale_x_continuous("Time (years)",
+                     breaks = seq(0, 10),
                      expand = c(0,0)) +
   scale_y_continuous("Number of hosts infected", 
                      expand = c(0,0)) +
-  geom_line(aes(x = timestamp/365, y = value1), lwd = 1.5) +
-  theme(legend.position = "none") +
-  ggtitle("R0=1.05; sigma=0.1")
+  theme(legend.position = "none")
 
-ggsave("figures/trajectories_1.05_0.1.png", height = 7, width = 7)
+ggsave("figures/example_quadrants.png", height = 6, width = 8)
+# 
+# ggplot(jtd_1.05) +
+#   geom_line(data = filter(trajectories, 
+#                           sigma == 0.4,
+#                           R0 == 1.05),
+#             aes(x = t/365, y = rolling_H, color = as.factor(end_bool),
+#                 group = as.factor(trajectory)),
+#             alpha = 0.8) +
+#   scale_color_manual(values = c("seagreen3", "plum4"), breaks = c("TRUE", "FALSE")) +
+#   theme_cowplot() +
+#   scale_x_continuous("Time (years)", 
+#                      expand = c(0,0)) +
+#   scale_y_continuous("Number of hosts infected", 
+#                      expand = c(0,0)) +
+#   geom_line(aes(x = timestamp/365, y = value1), lwd = 1.5) +
+#   theme(legend.position = "none") +
+#   ggtitle("R0=1.05; sigma=0.1")
+# 
+# ggsave("figures/trajectories_1.05_0.1.png", height = 7, width = 7)
 ```
 
 ```{r} 
@@ -506,7 +536,7 @@ ggsave("figures/trajectories_1.05_0.4.png", height = 7, width = 7)
 ```
 
 ```{r} 
-jtd_2 <- read_csv("results/julia_trajectories_2deterministic.csv")
+
 
 jts1_2_0.1 <- read_csv("results/traj_stoc_2_0.1_1.csv")
 jts2_2_0.1 <- read_csv("results/traj_stoc_2_0.1_2.csv")

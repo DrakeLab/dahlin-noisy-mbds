@@ -185,7 +185,7 @@ function SDE_solve_func(parms, num_runs, num_trajectories)
         @timeit timer_output "define_SDE" begin 
           prob = SDEProblem(f, g, u0, tspan, p, noise_rate_prototype=noise_rate_prototype, callback = cbs)
           # Set up an ensemble problem-run 1000 iterations and save only the final time step values
-          ensembleprob = EnsembleProblem(prob, output_func=output_func, reduction = reduction) 
+          ensembleprob = EnsembleProblem(prob, output_func=output_func)
         end
         @timeit timer_output "solve_SDE" begin 
           sol = DataFrame
