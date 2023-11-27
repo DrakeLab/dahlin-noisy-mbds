@@ -421,7 +421,7 @@ deterministic_results <- read_csv("results/deterministic_trajectories.csv") %>%
 
 ```
 
-```{r trajectories 1.05_0.1, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
+```{r trajectory quadrants, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
 
 appender_R0 <- function(string) TeX(paste("$R_0 = $", string))
 appender_sigma <- function(string) TeX(paste("$\\sigma = $", string))
