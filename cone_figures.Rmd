@@ -1,0 +1,727 @@
+---
+  title: "Environmental Noise and Ross-Macdonald Transmission Models"
+author: "Karin Ebey, John Vinson and Kyle Dahlin"
+date: "`r Sys.Date()`"
+link-citations: yes
+csl: proceedings-of-the-royal-society-b.csl
+bibliography: bibliography.bib
+output:
+  pdf_document: 
+  extra_dependencies: ["float"]
+keep_tex: yes
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "doc") })
+---
+
+```{r setup, include=FALSE}
+# Load libraries (trim this list down to the essentials)
+library(ggplot2)
+library(tidyverse)
+library(cowplot)
+library(viridis)
+library(latex2exp)
+library(zoo)
+
+# Knitr settings (hides all chunk outputs besides figures and centers figures)
+knitr::opts_chunk$set(
+  echo = FALSE, cache = FALSE, warning = FALSE, message = FALSE, fig.pos = "H",
+  dev = c("pdf", "png"),
+  out.extra = ""
+)
+```
+
+``` {r R0 calculator}
+# solves for b-biting rate based on desired R0 value
+tHV <- 0.02222222 # transmission prob. from V to H
+tVH <- 0.5 # transmission prob. from H to V
+NH <- 1000 # host population size
+NV <- 10000 # vector population size
+gH <- 0.1 # recovery rate of hosts
+mV <- 0.1 # mortality of vectors
+
+R0 <- 1
+b <- sqrt((R0^2 * NH * gH * mV) / (tHV * tVH * NV))
+b
+
+
+# solves for muV-mosquito mortality rate based on desired R0 value
+b <- 0.3 # biting rate arbitrarily chosen baseline b to be 0.3, because that was used in O'Regan 2016 paper, and yeilds TVH values between 0 and 1
+tVH <- 0.5
+tHV <- 0.5 # transmission prob. from V to H
+NH <- 1000 # host population size
+NV <- 10000 # vector population size
+gH <- 0.1 # recovery rate of hosts
+
+R0 <- c(0.75, 0.95, 1, 1.05, 1.25, 2, 4, 6.5)
+mV <- (b^2 * tHV * tVH * NV) / (R0^2 * NH * gH)
+mV
+
+
+
+# solves for tVH-transmission from hosts to mosquitos based on desired R0 value
+b <- 0.3 # biting rate arbitrarily chosen baseline b to be 0.3, because that was used in O'Regan 2016 paper, and yeilds TVH values between 0 and 1
+tHV <- 0.5 # transmission prob. from V to H
+NH <- 1000 # host population size
+NV <- 10000 # vector population size
+gH <- 0.1 # recovery rate of hosts
+mV <- 0.1 # mortality of vectors
+
+R0 <- c(0.75, 0.95, 1, 1.05, 1.25, 2, 4, 6.5)
+tVH <- (R0^2 * NH * gH * mV) / (b^2 * tHV * NV)
+tVH
+
+# solves for tHV-transmission from hosts to mosquitos based on desired R0 value
+b <- 0.3 # biting rate arbitrarily chosen baseline b to be 0.3, because that was used in O'Regan 2016 paper, and yeilds THV values between 0 and 1
+tVH <- 0.5 # transmission prob. from H to V
+NH <- 1000 # host population size
+NV <- 10000 # vector population size
+gH <- 0.1 # recovery rate of hosts
+mV <- 0.1 # mortality of vectors
+
+R0 <- c(1.05, 2)
+tHV <- (R0^2 * NH * gH * mV) / (b^2 * tVH * NV)
+tHV
+
+# This calculates the Thv for each R0 value based on baseline parameter values used in simulations
+# This is how R0 is controlled in simulations
+tHV_calc <- function(R0) {
+  b <- 0.3 # biting rate arbitrarily chosen baseline b to be 0.3, because that was used in O'Regan 2016 paper, and yeilds THV values between 0 and 1
+  tVH <- 0.5 # transmission prob. from H to V
+  NH <- 1000 # host population size
+  NV <- 10000 # vector population size
+  gH <- 0.1 # recovery rate of hosts
+  mV <- 0.1 # mortality of vectors
+  
+  tHV <- (R0^2 * NH * gH * mV) / (b^2 * tVH * NV)
+  return(tHV)
+}
+
+# This calculates the b value to acheive a certain R0 with a selected baseline tHV
+b_calc <- function(tHV, R0) {
+  tVH <- 0.5 # transmission prob. from H to V
+  NH <- 1000 # host population size
+  NV <- 10000 # vector population size
+  gH <- 0.1 # recovery rate of hosts
+  mV <- 0.1 # mortality of vectors
+  
+  b <- sqrt((R0^2 * NH * gH * mV) / (tHV * tVH * NV))
+  return(b)
+}
+
+# This calculates the mortality rate value to acheive a certain R0 with a selected baseline tHV
+mv_calc <- function(tHV, R0) {
+  b <- 0.3 # biting rate arbitrarily chosen baseline b to be 0.3, because that was used in O'Regan 2016 paper, and yeilds TVH values between 0 and 1
+  tVH <- 0.5
+  NH <- 1000 # host population size
+  NV <- 10000 # vector population size
+  gH <- 0.1 # recovery rate of hosts
+  mV <- (b^2 * tHV * tVH * NV) / (R0^2 * NH * gH)
+  return(mV)
+}
+
+# This calculates the tVH value to acheive a certain R0 with a selected baseline tHV
+tvh_calc <- function(tHV, R0) {
+  b <- 0.3 # biting rate arbitrarily chosen baseline b to be 0.3, because that was used in O'Regan 2016 paper, and yeilds TVH values between 0 and 1
+  NH <- 1000 # host population size
+  NV <- 10000 # vector population size
+  gH <- 0.1 # recovery rate of hosts
+  mV <- 0.1 # mortality of vectors
+  
+  tVH <- (R0^2 * NH * gH * mV) / (b^2 * tHV * NV)
+  return(tVH)
+}
+```
+
+
+#Beta cones
+
+```{r}
+# TODO: make it so that the grey only occurs within the cone, since the parameter does not take on values outside of the cone
+
+# make dataframe with upper and lower boundaries of parameter
+mydata <- data.frame(x = seq(0, 0.4, by = 0.001))
+mydata$func1 <- sapply(mydata$x, FUN = function(x) {
+  (1 + x) * 0.3
+})
+mydata$func2 <- sapply(mydata$x, FUN = function(x) {
+  (1 - x) * 0.3
+})
+
+# make 6 plots of baseline R0 values 0.75, 0.95, 1.05, 2, 4
+# red line is the minimum beta value for R0=1 under the different scenarios
+# shading indicates where R0 is greater than 1
+p1 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = b_calc(tHV_calc(0.75), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func1 >= b_calc(tHV_calc(0.75), 1), ], aes(ymin = b_calc(tHV_calc(0.75), 1), ymax = func1), alpha = 0.5) +
+  ggtitle("R0=0.75") +
+  ylab("beta") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 0.5)
+
+p2 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = b_calc(tHV_calc(0.95), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func1 >= b_calc(tHV_calc(0.95), 1), ], aes(ymin = b_calc(tHV_calc(0.95), 1), ymax = func1), alpha = 0.5) +
+  ggtitle("R0=0.95") +
+  ylab("beta") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 0.5)
+
+p3 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = b_calc(tHV_calc(1), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func1 >= b_calc(tHV_calc(1), 1), ], aes(ymin = b_calc(tHV_calc(1), 1), ymax = func1), alpha = 0.5) +
+  ggtitle("R0=1") +
+  ylab("beta") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 0.5)
+
+p4 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = b_calc(tHV_calc(1.05), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func1 >= b_calc(tHV_calc(1.05), 1), ], aes(ymin = b_calc(tHV_calc(1.05), 1), ymax = func1), alpha = 0.5) +
+  ggtitle("R0=1.05") +
+  ylab("beta") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 0.5)
+
+p5 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = b_calc(tHV_calc(2), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func1 >= b_calc(tHV_calc(2), 1), ], aes(ymin = b_calc(tHV_calc(2), 1), ymax = func1), alpha = 0.5) +
+  ggtitle("R0=2") +
+  ylab("beta") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 0.5)
+
+p6 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = b_calc(tHV_calc(4), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func1 >= b_calc(tHV_calc(4), 1), ], aes(ymin = b_calc(tHV_calc(4), 1), ymax = func1), alpha = 0.5) +
+  ggtitle("R0=4") +
+  ylab("beta") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 0.5)
+
+plot_grid(p1, p2, p3, p4, p5, p6)
+ggsave("figures/cones_beta.png", height = 7, width = 7)
+```
+
+
+#MV cones
+```{r}
+# R0=1
+
+mydata <- data.frame(x = seq(0, 0.4, by = 0.001))
+mydata$func1 <- sapply(mydata$x, FUN = function(x) {
+  (1 + x) * 0.1
+})
+mydata$func2 <- sapply(mydata$x, FUN = function(x) {
+  (1 - x) * 0.1
+})
+
+p1 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = mv_calc(tHV_calc(0.75), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func2 <= mv_calc(tHV_calc(0.75), 1), ], aes(ymin = func2, ymax = mv_calc(tHV_calc(0.75), 1)), alpha = 0.5) +
+  ggtitle("R0=0.75") +
+  ylab("mV") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 0.5)
+
+p2 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = mv_calc(tHV_calc(0.95), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func2 <= mv_calc(tHV_calc(0.95), 1), ], aes(ymin = func2, ymax = mv_calc(tHV_calc(0.95), 1)), alpha = 0.5) +
+  ggtitle("R0=0.95") +
+  ylab("mV") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 0.5)
+
+p3 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = mv_calc(tHV_calc(1), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func2 <= mv_calc(tHV_calc(1), 1), ], aes(ymin = func2, ymax = mv_calc(tHV_calc(1), 1)), alpha = 0.5) +
+  ggtitle("R0=1") +
+  ylab("mV") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 0.5)
+
+p4 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = mv_calc(tHV_calc(1.05), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func2 <= mv_calc(tHV_calc(1.05), 1), ], aes(ymin = func2, ymax = mv_calc(tHV_calc(1.05), 1)), alpha = 0.5) +
+  ggtitle("R0=1.05") +
+  ylab("mV") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 0.5)
+
+p5 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = mv_calc(tHV_calc(2), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func2 <= mv_calc(tHV_calc(2), 1), ], aes(ymin = func2, ymax = mv_calc(tHV_calc(2), 1)), alpha = 0.5) +
+  ggtitle("R0=2") +
+  ylab("mV") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 0.5)
+
+p6 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = mv_calc(tHV_calc(4), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func2 <= mv_calc(tHV_calc(4), 1), ], aes(ymin = func2, ymax = mv_calc(tHV_calc(4), 1)), alpha = 0.5) +
+  ggtitle("R0=4") +
+  ylab("mV") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 1.6)
+
+plot_grid(p1, p2, p3, p4, p5, p6)
+ggsave("figures/cones_mV.png", height = 7, width = 7)
+```
+
+
+#TVH cones
+```{r}
+# R0=1
+
+mydata <- data.frame(x = seq(0, 0.4, by = 0.001))
+mydata$func1 <- sapply(mydata$x, FUN = function(x) {
+  (1 + x) * 0.5
+})
+mydata$func2 <- sapply(mydata$x, FUN = function(x) {
+  (1 - x) * 0.5
+})
+
+p1 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = tvh_calc(tHV_calc(0.75), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func1 >= tvh_calc(tHV_calc(0.75), 1), ], aes(ymin = tvh_calc(tHV_calc(0.75), 1), ymax = func1), alpha = 0.5) +
+  ggtitle("R0=0.75") +
+  ylab("Tvh") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 1)
+
+p2 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = tvh_calc(tHV_calc(0.95), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func1 >= tvh_calc(tHV_calc(0.95), 1), ], aes(ymin = tvh_calc(tHV_calc(0.95), 1), ymax = func1), alpha = 0.5) +
+  ggtitle("R0=0.95") +
+  ylab("Tvh") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 1)
+
+p3 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = tvh_calc(tHV_calc(1), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func1 >= tvh_calc(tHV_calc(1), 1), ], aes(ymin = tvh_calc(tHV_calc(1), 1), ymax = func1), alpha = 0.5) +
+  ggtitle("R0=1") +
+  ylab("Tvh") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 1)
+
+p4 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = tvh_calc(tHV_calc(1.05), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func1 >= tvh_calc(tHV_calc(1.05), 1), ], aes(ymin = tvh_calc(tHV_calc(1.05), 1), ymax = func1), alpha = 0.5) +
+  ggtitle("R0=1.05") +
+  ylab("Tvh") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 1)
+
+p5 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = tvh_calc(tHV_calc(2), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func1 >= tvh_calc(tHV_calc(2), 1), ], aes(ymin = tvh_calc(tHV_calc(2), 1), ymax = func1), alpha = 0.5) +
+  ggtitle("R0=2") +
+  ylab("Tvh") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 1)
+
+p6 <- ggplot(mydata, aes(x = x, y = func1)) +
+  geom_line() +
+  geom_line(aes(x = x, y = func2)) +
+  geom_line(aes(x = x, y = tvh_calc(tHV_calc(4), 1)), color = "red") +
+  geom_ribbon(data = mydata[mydata$func1 >= tvh_calc(tHV_calc(4), 1), ], aes(ymin = tvh_calc(tHV_calc(4), 1), ymax = func1), alpha = 0.5) +
+  ggtitle("R0=4") +
+  ylab("Tvh") +
+  xlab("env noise strength") +
+  theme_cowplot() +
+  ylim(0, 1)
+
+plot_grid(p1, p2, p3, p4, p5, p6)
+ggsave("figures/cones_Tvh.png", height = 7, width = 7)
+```
+
+
+#Trajectories
+```{r} 
+# Re-calculate all of these to get more trajectories (maybe like 20?)
+
+eps <- .Machine$double.eps
+
+trajectories <- read_csv("results/illustrate_trajectories.csv") %>% # run "\code\julia\deterministic_results.jl" to get this file
+  ungroup() %>% 
+  filter(H >= 0, V >= 0) %>% 
+  group_by(trajectory, sigma, R0) %>% 
+  mutate(
+  #   R0 = case_when(
+  #   tHV < 0.03 ~ 1.05,
+  #   tHV > 0.03 & tHV <0.08 ~ 1.25,
+  #   tHV > 0.08 ~ 2
+  # ),
+         rolling_H = rollmean(H, 7, mean, align = "right", fill = NA),
+         rolling_V = rollmean(V, 7, mean, align = "right", fill = NA))
+
+end_stats <- trajectories %>% 
+  filter(t == 3650) %>% 
+  group_by(trajectory, sigma, R0) %>% 
+  mutate(end_bool = H > 0) %>% 
+  select(trajectory, sigma, R0, end_bool)
+
+trajectories <- right_join(trajectories, end_stats) %>% 
+  mutate(type = "stochastic")
+
+# Load deterministic results and repeat them for each value of sigma (for plotting)
+deterministic_results <- read_csv("results/deterministic_trajectories.csv") %>% 
+  cross_join(tibble(sigma = unique(trajectories$sigma)))
+
+```
+
+```{r trajectory quadrants, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
+
+appender_R0 <- function(string) TeX(paste("$R_0 = $", string))
+appender_sigma <- function(string) TeX(paste("$\\sigma = $", string))
+
+quadrant_df <- trajectories
+quadrant_df$R0 <- factor(quadrant_df$R0,      # Reordering group factor levels
+                         levels = c("2", "1.25", "1.05", "0.95"))
+                         # levels = c("0.95", "1.05", "1.25","2"))
+
+quadrant_plot <- quadrant_df %>% 
+  ggplot() +
+  # Plot stochastic trajectories
+  geom_line(aes(x = t/365, y = rolling_H, color = as.factor(end_bool), 
+                group = as.factor(trajectory)),
+            alpha = 0.3) +
+  # Plot mean-field deterministic trajectories
+  geom_line(data = deterministic_results, aes(x = t/365, y = H)) +
+  # Color trajectories according to whether they eventually go to zero (=="plum4")
+  scale_color_manual(values = c("seagreen3", "plum4"), breaks = c("TRUE", "FALSE")) +
+  # Subplots for each combination of environmental noise strength and R0
+  facet_grid(R0 ~ sigma,
+             labeller = labeller(.rows = as_labeller(appender_R0, 
+                                                     default = label_parsed), 
+                                 .cols = as_labeller(appender_sigma, 
+                                                     default = label_parsed)),
+             scales = "free_y") +
+  theme_cowplot() +
+  scale_x_continuous("Time (years)",
+                     breaks = seq(0, 10),
+                     expand = c(0,0)) +
+  scale_y_continuous("Number of hosts infected", 
+                     expand = c(0,0)) +
+  theme(legend.position = "none", 
+        panel.spacing = unit(1, "lines"), 
+        strip.background =element_rect(fill=NA))
+
+ggsave("figures/example_quadrants.png", height = 6, width = 8)
+# 
+# ggplot(jtd_1.05) +
+#   geom_line(data = filter(trajectories, 
+#                           sigma == 0.4,
+#                           R0 == 1.05),
+#             aes(x = t/365, y = rolling_H, color = as.factor(end_bool),
+#                 group = as.factor(trajectory)),
+#             alpha = 0.8) +
+#   scale_color_manual(values = c("seagreen3", "plum4"), breaks = c("TRUE", "FALSE")) +
+#   theme_cowplot() +
+#   scale_x_continuous("Time (years)", 
+#                      expand = c(0,0)) +
+#   scale_y_continuous("Number of hosts infected", 
+#                      expand = c(0,0)) +
+#   geom_line(aes(x = timestamp/365, y = value1), lwd = 1.5) +
+#   theme(legend.position = "none") +
+#   ggtitle("R0=1.05; sigma=0.1")
+# 
+# ggsave("figures/trajectories_1.05_0.1.png", height = 7, width = 7)
+```
+
+```{r} 
+jtd_1.05 <- read_csv("results/julia_trajectories_1.05deterministic.csv")
+
+jts1_1.05_0.4 <- read_csv("results/traj_stoc_1.05_0.4_1.csv")
+jts2_1.05_0.4 <- read_csv("results/traj_stoc_1.05_0.4_2.csv")
+jts3_1.05_0.4 <- read_csv("results/traj_stoc_1.05_0.4_3.csv")
+jts4_1.05_0.4 <- read_csv("results/traj_stoc_1.05_0.4_4.csv")
+jts5_1.05_0.4 <- read_csv("results/traj_stoc_1.05_0.4_5.csv")
+jts6_1.05_0.4 <- read_csv("results/traj_stoc_1.05_0.4_6.csv")
+jts7_1.05_0.4 <- read_csv("results/traj_stoc_1.05_0.4_7.csv")
+jts8_1.05_0.4 <- read_csv("results/traj_stoc_1.05_0.4_8.csv")
+jts9_1.05_0.4 <- read_csv("results/traj_stoc_1.05_0.4_9.csv")
+jts10_1.05_0.4 <- read_csv("results/traj_stoc_1.05_0.4_10.csv")
+jts1_1.05_0.4$traj <- 1
+jts2_1.05_0.4$traj <- 4
+jts3_1.05_0.4$traj <- 3
+jts4_1.05_0.4$traj <- 2
+jts5_1.05_0.4$traj <- 5
+jts6_1.05_0.4$traj <- 6
+jts7_1.05_0.4$traj <- 7
+jts8_1.05_0.4$traj <- 8
+jts9_1.05_0.4$traj <- 9
+jts10_1.05_0.4$traj <- 10
+
+jts_1.05_0.4 <- rbind(jts1_1.05_0.4, jts2_1.05_0.4, jts3_1.05_0.4, jts4_1.05_0.4, jts5_1.05_0.4, jts6_1.05_0.4, jts7_1.05_0.4, jts8_1.05_0.4, jts9_1.05_0.4, jts10_1.05_0.4)
+
+jts_1.05_0.4 <- jts_1.05_0.4[jts_1.05_0.4$value2 >= 0, ]
+jts_1.05_0.4 <- jts_1.05_0.4[jts_1.05_0.4$value1 >= 0, ]
+```
+
+```{r trajectories 1.05_0.4, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
+jts_1.05_0.4_rolling <- jts_1.05_0.4 %>%
+  group_by(traj) %>%
+  mutate(
+    rolling_1 = rollmean(value1, 7, mean, align = "right", fill = NA),
+    rolling_2 = rollmean(value2, 7, mean, align = "right", fill = NA), 
+    end_bool = ifelse(value2[timestamp == 3650] == 0, 1, 0)
+  )
+
+ggplot(jtd_1.05) +
+  geom_line(data = jts_1.05_0.4_rolling,
+            aes(x = timestamp/365, y = rolling_1, color = as.factor(end_bool),
+                group = as.factor(traj)),
+            alpha = 0.8) +
+  scale_color_manual(values = c("seagreen3", "plum4"), breaks = c("0", "1")) +
+  theme_cowplot() +
+  scale_x_continuous("Time (years)", 
+                     expand = c(0,0)) +
+  scale_y_continuous("Number of hosts infected", 
+                     expand = c(0,0)) +
+  geom_line(aes(x = timestamp/365, y = value1), lwd = 1.5) +
+  theme(legend.position = "none") +
+  ggtitle("R0=1.05; sigma=0.4")
+
+ggsave("figures/trajectories_1.05_0.4.png", height = 7, width = 7)
+```
+
+```{r} 
+
+
+jts1_2_0.1 <- read_csv("results/traj_stoc_2_0.1_1.csv")
+jts2_2_0.1 <- read_csv("results/traj_stoc_2_0.1_2.csv")
+jts3_2_0.1 <- read_csv("results/traj_stoc_2_0.1_3.csv")
+jts4_2_0.1 <- read_csv("results/traj_stoc_2_0.1_4.csv")
+jts5_2_0.1 <- read_csv("results/traj_stoc_2_0.1_5.csv")
+jts6_2_0.1 <- read_csv("results/traj_stoc_2_0.1_6.csv")
+jts7_2_0.1 <- read_csv("results/traj_stoc_2_0.1_7.csv")
+jts8_2_0.1 <- read_csv("results/traj_stoc_2_0.1_8.csv")
+jts9_2_0.1 <- read_csv("results/traj_stoc_2_0.1_9.csv")
+jts10_2_0.1 <- read_csv("results/traj_stoc_2_0.1_10.csv")
+jts1_2_0.1$traj <- 1
+jts2_2_0.1$traj <- 4
+jts3_2_0.1$traj <- 3
+jts4_2_0.1$traj <- 2
+jts5_2_0.1$traj <- 5
+jts6_2_0.1$traj <- 6
+jts7_2_0.1$traj <- 7
+jts8_2_0.1$traj <- 8
+jts9_2_0.1$traj <- 9
+jts10_2_0.1$traj <- 10
+
+jts_2_0.1 <- rbind(jts1_2_0.1, jts2_2_0.1, jts3_2_0.1, jts4_2_0.1, jts5_2_0.1, jts6_2_0.1, jts7_2_0.1, jts8_2_0.1, jts9_2_0.1, jts10_2_0.1)
+
+jts_2_0.1 <- jts_2_0.1[jts_2_0.1$value2 >= 0, ]
+jts_2_0.1 <- jts_2_0.1[jts_2_0.1$value1 >= 0, ]
+```
+
+```{r trajectories 2_0.1, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
+jts_2_0.1_rolling <- jts_2_0.1 %>%
+  group_by(traj) %>%
+  mutate(
+    rolling_1 = rollmean(value1, 7, mean, align = "right", fill = NA),
+    rolling_2 = rollmean(value2, 7, mean, align = "right", fill = NA), 
+    end_bool = ifelse(value2[timestamp == 3650] == 0, 1, 0)
+  )
+
+ggplot(jtd_2) +
+  geom_line(data = jts_2_0.1_rolling,
+            aes(x = timestamp/365, y = rolling_1, color = as.factor(end_bool),
+                group = as.factor(traj)),
+            alpha = 0.3) +
+  scale_color_manual(values = c("seagreen3", "plum4"), breaks = c("0", "1")) +
+  theme_cowplot() +
+  scale_x_continuous("Time (years)", 
+                     expand = c(0,0)) +
+  scale_y_continuous("Number of hosts infected", 
+                     expand = c(0,0)) +
+  geom_line(aes(x = timestamp/365, y = value1), lwd = 1.5) +
+  theme(legend.position = "none") +
+  ggtitle("R0=2; sigma=0.1")
+
+ggsave("figures/trajectories_2_0.1.png", height = 7, width = 7)
+```
+
+```{r} 
+jtd_2 <- read_csv("results/julia_trajectories_2deterministic.csv")
+
+jts1_2_0.4 <- read_csv("results/traj_stoc_2_0.4_1.csv")
+jts2_2_0.4 <- read_csv("results/traj_stoc_2_0.4_2.csv")
+jts3_2_0.4 <- read_csv("results/traj_stoc_2_0.4_3.csv")
+jts4_2_0.4 <- read_csv("results/traj_stoc_2_0.4_4.csv")
+jts5_2_0.4 <- read_csv("results/traj_stoc_2_0.4_5.csv")
+jts6_2_0.4 <- read_csv("results/traj_stoc_2_0.4_6.csv")
+jts7_2_0.4 <- read_csv("results/traj_stoc_2_0.4_7.csv")
+jts8_2_0.4 <- read_csv("results/traj_stoc_2_0.4_8.csv")
+jts9_2_0.4 <- read_csv("results/traj_stoc_2_0.4_9.csv")
+jts10_2_0.4 <- read_csv("results/traj_stoc_2_0.4_10.csv")
+jts1_2_0.4$traj <- 1
+jts2_2_0.4$traj <- 4
+jts3_2_0.4$traj <- 3
+jts4_2_0.4$traj <- 2
+jts5_2_0.4$traj <- 5
+jts6_2_0.4$traj <- 6
+jts7_2_0.4$traj <- 7
+jts8_2_0.4$traj <- 8
+jts9_2_0.4$traj <- 9
+jts10_2_0.4$traj <- 10
+
+jts_2_0.4 <- rbind(jts1_2_0.4, jts2_2_0.4, jts3_2_0.4, jts4_2_0.4, jts5_2_0.4, jts6_2_0.4, jts7_2_0.4, jts8_2_0.4, jts9_2_0.4, jts10_2_0.4)
+
+jts_2_0.4 <- jts_2_0.4[jts_2_0.4$value2 >= 0, ]
+jts_2_0.4 <- jts_2_0.4[jts_2_0.4$value1 >= 0, ]
+```
+
+```{r trajectories 2_0.4, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
+
+jts_2_0.4_rolling <- jts_2_0.4 %>%
+  group_by(traj) %>%
+  mutate(
+    rolling_1 = rollmean(value1, 7, mean, align = "right", fill = NA),
+    rolling_2 = rollmean(value2, 7, mean, align = "right", fill = NA), 
+    end_bool = ifelse(value2[timestamp == 3650] == 0, 1, 0)
+  )
+
+
+ggplot(jtd_2) +
+  geom_line(data = jts_2_0.4_rolling,
+            aes(x = timestamp/365, y = rolling_1, color = as.factor(end_bool),
+                group = as.factor(traj)),
+            alpha = 0.5) +
+  scale_color_manual(values = c("seagreen3", "plum4"), breaks = c("0", "1")) +
+  theme_cowplot() +
+  scale_x_continuous("Time (years)", 
+                     expand = c(0,0)) +
+  scale_y_continuous("Number of hosts infected", 
+                     expand = c(0,0)) +
+  geom_line(aes(x = timestamp/365, y = value1), lwd = 1.5) +
+  theme(legend.position = "none") +
+  ggtitle("R0=2; sigma=0.4")
+
+ggsave("figures/trajectories_2_0.4.png", height = 7, width = 7)
+```
+
+
+
+```{r}
+jtd <- read_csv("results/julia_trajectories_deterministic.csv")
+jts1 <- read_csv("results/traj_detstoc_1.csv")
+jts2 <- read_csv("results/traj_detstoc_2.csv")
+jts3 <- read_csv("results/traj_detstoc_3.csv")
+jts4 <- read_csv("results/traj_detstoc_4.csv")
+jts5 <- read_csv("results/traj_detstoc_5.csv")
+jts1$traj <- 1
+jts2$traj <- 4
+jts3$traj <- 3
+jts4$traj <- 2
+jts5$traj <- 5
+jtsd <- rbind(jts1, jts2, jts3, jts4, jts5)
+jtsd <- jtsd[jtsd$value2 >= 0, ]
+jtsd <- jtsd[jtsd$value1 >= 0, ]
+
+
+jts1 <- read_csv("results/traj_envstoc_1.csv")
+jts2 <- read_csv("results/traj_envstoc_2.csv")
+jts3 <- read_csv("results/traj_envstoc_3.csv")
+jts4 <- read_csv("results/traj_envstoc_4.csv")
+jts5 <- read_csv("results/traj_envstoc_5.csv")
+jts1$traj <- 1
+jts2$traj <- 5
+jts3$traj <- 3
+jts4$traj <- 4
+jts5$traj <- 2
+jtse <- rbind(jts1, jts2, jts3, jts4, jts5)
+jtse <- jtse[jtse$value2 >= 0, ]
+jtse <- jtse[jtse$value1 >= 0, ]
+```
+
+```{r trajectories, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
+ggplot(jtd) +
+  geom_line(data = jtsd, aes(x = timestamp, y = value1, color = as.factor(traj)), alpha = 0.8) +
+  scale_color_viridis(discrete = TRUE) +
+  theme_cowplot() +
+  xlab("Time (days)") +
+  ylab("Number of hosts infected") +
+  geom_line(aes(x = timestamp, y = value1), lwd = 1.5) +
+  ylim(0, 4500) +
+  theme(legend.position = "none") #+geom_line(data=ahs, aes(x=Group.1, y=x), color='darkgrey', lwd=1.5)#+geom_line(data=ahds,aes(x=Group.1, y=x), color='grey', lwd=1.5)
+
+
+ggsave("figures/trajectories-det.png", height = 7, width = 7)
+```
+
+
+
+
+
+```{r trajectories-2, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories-2} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
+library(ggnewscale)
+
+ggplot(jtd) +
+  ylab("Number of hosts infected") +
+  ylim(0, 4500) +
+  geom_line(data = jtse, aes(x = timestamp, y = value1, alpha = 0.5, color = as.factor(traj))) +
+  scale_color_manual(values = c("orange", "darkorange", "chocolate2", "tan1", "darkorange2")) +
+  new_scale_colour() +
+  geom_line(data = jtsd, aes(x = timestamp, y = value1, alpha = 0.5, color = as.factor(traj))) +
+  scale_color_manual(values = c("darkgreen", "green", "darkolivegreen2", "green3", "olivedrab")) +
+  new_scale_colour() +
+  theme_cowplot() +
+  xlab("Time (days)") +
+  theme(legend.position = "none") +
+  geom_line(aes(x = timestamp, y = value1), lwd = 1)
+
+ggsave("figures/trajectories-combined.png", height = 3, width = 7)
+```

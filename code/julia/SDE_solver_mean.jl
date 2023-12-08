@@ -1,16 +1,15 @@
 # Noisy RM SDE solutions
 # cd("$(homedir())\\GitHub\\NoisyMBDs")
 #cd("/Users/karinebey/Documents/GitHub/NoisyMBDs") # !!! change to work across systems later
-using DifferentialEquations
-#using Plots
+using CSV
 using DataFrames
+using DifferentialEquations
+using NaNStatistics
+using ProgressBars
 using Statistics
 using StatsBase
-using Suppressor # to suppress warnings from SDE solver
-using ProgressBars # to gauge how long the solver will take
-using TimerOutputs # to actually time which commands are taking the most time
-using CSV
-using NaNStatistics
+using Suppressor
+using TimerOutputs
 # using PlotlyJS
 
 # Set constant to keep track of timer
@@ -44,6 +43,9 @@ function g(du,u,p,t)
   du[1,3] = @views (p[8] * p[9] * p[2] * (p[4] - u[1]) / p[4]) * u[2]
   #du[1,3] = σ * αᵦ * τₕᵥ * (Nₕ - H) * V / Nₕ
   du[2,3] = @views p[8] * ((p[9] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + (p[10] * p[1] * (p[5] - u[2]) / p[4]) * u[1] + p[11] * u[2])
+  # Alt formulation: environmental noise causes a *proportional* change in parameters (1 + N) * baseline
+  # du[1,3] = @views (p[8] * p[9] * p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2]
+  # du[2,3] = @views p[8] * ((p[9] * p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + (p[10] * p[3] * p[1] * (p[5] - u[2]) / p[4]) * u[1] + p[11] * p[7] * u[2])
   #du[2,3] = σ * (αᵦ * τᵥₕ * H * (Nᵥ - V) / Nₕ + αₜ * b * H * (Nᵥ - V) / Nₕ + αₘ * V)
   du[3,1] = 0
   du[3,2] = 0
@@ -54,7 +56,7 @@ function g(du,u,p,t)
   return(du)
 end
 
-# Function: Calculate tVH values from specified R0 values
+# Function: Calculate tHV values from specified R0 values
 function tHV_from_R0(p, R0) 
   (b, τₕᵥ, τᵥₕ, Nₕ, Nᵥ, γₕ, μᵥ) = p
   tHV = (R0.^2) / ((b.^2 * τᵥₕ * Nᵥ) / (Nₕ * γₕ * μᵥ))
@@ -173,18 +175,17 @@ function SDE_solve_func(parms, num_runs, num_trajectories)
   for s in ProgressBar(eachindex(parms))
     p[8]=parms[s][1] # sigma value
     p[2]=parms[s][2] # Thv value
-      #Sets up empty dataframe for temporary data for each set of runs
-      dftemp2 = DataFrame([Float64[],Float64[], Float64[], Float64[],Float64[], Float64[], Float64[],Float64[], Float64[]], 
-          ["eprob", "oprob10","oprob100", "max_cases_all", "max_cases_out", "num_cases", "end_time", "end_time_out", "time_max"])
+    #Sets up empty dataframe for temporary data for each set of runs
+    dftemp2 = DataFrame([Float64[],Float64[], Float64[], Float64[],Float64[], Float64[], Float64[],Float64[], Float64[]], ["eprob", "oprob10","oprob100", "max_cases_all", "max_cases_out", "num_cases", "end_time", "end_time_out", "time_max"])
 
       #Loop for each run
       # for r in 1:num_runs
         total_runs = num_runs * num_trajectories
         #defines the SDE problem to be solved
         @timeit timer_output "define_SDE" begin 
-          prob = SDEProblem(f, g, u0, tspan, p, noise_rate_prototype=noise_rate_prototype, callback = cbs, reduction = reduction)
+          prob = SDEProblem(f, g, u0, tspan, p, noise_rate_prototype=noise_rate_prototype, callback = cbs)
           # Set up an ensemble problem-run 1000 iterations and save only the final time step values
-          ensembleprob = EnsembleProblem(prob, output_func=output_func) 
+          ensembleprob = EnsembleProblem(prob, output_func=output_func)
         end
         @timeit timer_output "solve_SDE" begin 
           sol = DataFrame
@@ -267,8 +268,8 @@ end
 
 # Run simulations
 parms = parm_grid
-num_runs = 1000
-num_trajectories = 100
+num_runs = 10
+num_trajectories = 10
 
 # Initialize saved csv
 # df_oprob = DataFrame([Float64[],Float64[],Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[],

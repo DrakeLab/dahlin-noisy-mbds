@@ -244,9 +244,9 @@ end
 
 # Set the distributions for each variable parameter
 # KD: for now, let's use uniform distributions. We just need to decide on ranges. These are temporary, let's talk in more detail about these on Monday
-const range_b = (1/14, 0.45) # biting rate ~= 1 / oviposition cycle length
-const range_muv = (1/28, 2/10) # mortality rate ~= 1 / average lifespan
-const range_tvh = (0.05, 1)
+const range_b = (1/14, 0.45) # biting rate ~= 1 / oviposition cycle length, baseline = 0.3
+const range_muv = (1/28, 2/10) # mortality rate ~= 1 / average lifespan, baseline = 0.1
+const range_tvh = (0.05, 1) # baseline = 0.5
 const range_fake = (1, 100) # vector competency is a probability. stay away from zero
 
 # Latin Hypercube Sampling from the ranges described above
