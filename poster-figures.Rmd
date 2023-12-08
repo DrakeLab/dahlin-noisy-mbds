@@ -169,7 +169,7 @@ ggplot(jop, aes(x = sigma, y = max_cases_all_mean)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ggtitle("All simulations") +
   theme(text = element_text(size = 20))
-ggsave("figures/max_cases.png", height = 7, width = 7.6)
+ggsave("figures/max_cases.png", height = 4, width = 7)
 ```
 ```{r max_cases_out, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations only including simulations where the outbreak died out. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
 ggplot(jop, aes(x = sigma, y = max_cases_out_mean)) +
