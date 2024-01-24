@@ -434,13 +434,13 @@ quadrant_df$R0 <- factor(quadrant_df$R0,      # Reordering group factor levels
 quadrant_plot <- quadrant_df %>% 
   ggplot() +
   # Plot stochastic trajectories
-  geom_line(aes(x = t/365, y = rolling_H, color = as.factor(end_bool), 
+  geom_line(aes(x = t/365, y = H, color = as.factor(end_bool), 
                 group = as.factor(trajectory)),
             alpha = 0.3) +
   # Plot mean-field deterministic trajectories
   geom_line(data = deterministic_results, aes(x = t/365, y = H)) +
   # Color trajectories according to whether they eventually go to zero (=="plum4")
-  scale_color_manual(values = c("seagreen3", "plum4"), breaks = c("TRUE", "FALSE")) +
+  scale_color_manual(values = c("#DF536B", "#61D04F"), breaks = c("TRUE", "FALSE")) + #c("seagreen3", "plum4")
   # Subplots for each combination of environmental noise strength and R0
   facet_grid(R0 ~ sigma,
              labeller = labeller(.rows = as_labeller(appender_R0, 

@@ -31,6 +31,8 @@ knitr::opts_chunk$set(
   dev = c("pdf", "png"),
   out.extra = ""
 )
+
+R0_cols = c("#3A549F", "#5487BD", "#F3E3AB", "#FDC274", "#F89355", "#E45036", "#B00C27")
 ```
 
 ```{r Load and format data from Julia}
@@ -111,14 +113,15 @@ jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[7], 6.5)
 ```
 
 ```{r prob_end, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_end} Probability of the disease becoming endemic by sigma and R0 based on 1000 runs of 100 iterations. Overall, increasing environmental noise strength cases the probability that the disease becomes endemic to decrease. For smaller R0 values (i.e. <1.25), there is a slight increase in endemic disease probability at high environmental noise levels. Above environmental noise strength of 0.4 (where there is up to 40% variation in parameter values), the probability of endemic disease goes to zero. There is a greater probability of the disease going endemic at higher values of R0.'}
+
 ggplot(jop, aes(x = sigma, y = prob_end_mean)) +
   geom_line(aes(color = as.factor(R0))) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = prob_end_25, ymax = prob_end_75, fill = as.factor(R0)), alpha = 0.3) +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+
   # scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) + #c("#4063A8", "#BDE1ED", "#EAECCC", "#FDD687", "#FAA35D", "#EC643F", "#C01E29")) +
   theme_cowplot() +
   ylab("Probability disease becomes endemic") +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
@@ -133,8 +136,8 @@ ggplot(jop, aes(x = sigma, y = prob_out10_mean)) +
   geom_ribbon(aes(ymin = prob_out10_25, ymax = prob_out10_75, fill = as.factor(R0)), alpha = 0.3) +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+
   # scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ylab("Probability of outbreak > 10 hosts") +
@@ -162,8 +165,8 @@ ggplot(jop, aes(x = sigma, y = max_cases_all_mean)) +
   geom_ribbon(aes(ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -178,8 +181,8 @@ ggplot(jop, aes(x = sigma, y = max_cases_out_mean)) +
   geom_ribbon(aes(ymin = max_cases_out_25, ymax = max_cases_out_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -196,8 +199,8 @@ ggplot(jop, aes(x = sigma, y = end_time_mean / 365)) +
   geom_ribbon(aes(ymin = end_time_25 / 365, ymax = end_time_75 / 365, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Outbreak duration (years)") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -212,8 +215,8 @@ ggplot(jop, aes(x = sigma, y = end_time_out_mean / 365)) +
   geom_ribbon(aes(ymin = end_time_out_25 / 365, ymax = end_time_out_75 / 365, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Outbreak duration (years)") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -247,7 +250,7 @@ ggplot(jop, aes(x = sigma, y = num_cases_mean)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$")))
 ```
-```{r num_cases, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEnum_cases} Number of host cases at the end of the simulation by sigma and R0 based on 1000 runs of 100 iterations. This graph looks similar to that of the probability of disease going endemic, because if the disease does not go endemic, then zero hosts are infected at the end. More hosts are infected at higher R0 values.'}
+```{r num_cases2, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEnum_cases} Number of host cases at the end of the simulation by sigma and R0 based on 1000 runs of 100 iterations. This graph looks similar to that of the probability of disease going endemic, because if the disease does not go endemic, then zero hosts are infected at the end. More hosts are infected at higher R0 values.'}
 ggplot(jop, aes(x = sigma, y = num_cases_mean)) +
   geom_line(aes(color = as.factor(R0))) +
   geom_point(aes(color = as.factor(R0))) +
@@ -308,8 +311,8 @@ ggplot(jopmt, aes(x = sigma, y = max_cases_all_mean)) +
   geom_ribbon(data = jopmt, aes(x = sigma, ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$")))
@@ -333,8 +336,8 @@ ggplot(jopmt, aes(x = sigma, y = max_cases_out_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   ylab("Peak number of cases") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -362,8 +365,8 @@ ggplot(jopmt, aes(x = sigma, y = end_time_out_mean / 365)) +
   geom_point(aes(color = as.factor(R0))) +
   ylab("Outbreak duration (years)") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -534,8 +537,8 @@ ggplot(jopab, aes(x = sigma, y = prob_end_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = prob_end_25, ymax = prob_end_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Probability outbreak becomes endemic") +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -555,8 +558,8 @@ ggplot(jopab, aes(x = sigma, y = prob_out10_mean)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ylab("Probability of an outbreak > 10") +
   ylim(0, 1) +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -571,8 +574,8 @@ ggplot(jopab, aes(x = sigma, y = max_cases_all_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -601,8 +604,8 @@ ggplot(jopat, aes(x = sigma, y = prob_end_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = prob_end_25, ymax = prob_end_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Probability outbreak becomes endemic") +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -622,8 +625,8 @@ ggplot(jopat, aes(x = sigma, y = prob_out10_mean)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ylab("Probability of an outbreak > 10") +
   ylim(0, 1) +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -638,8 +641,8 @@ ggplot(jopat, aes(x = sigma, y = max_cases_all_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -671,8 +674,8 @@ ggplot(jopam, aes(x = sigma, y = prob_end_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = prob_end_25, ymax = prob_end_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Probability outbreak becomes endemic") +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -692,8 +695,8 @@ ggplot(jopam, aes(x = sigma, y = prob_out10_mean)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ylab("Probability of an outbreak > 10") +
   ylim(0, 1) +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -708,8 +711,8 @@ ggplot(jopam, aes(x = sigma, y = max_cases_all_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -741,8 +744,8 @@ ggplot(jopabt, aes(x = sigma, y = prob_end_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = prob_end_25, ymax = prob_end_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Probability outbreak becomes endemic") +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -761,8 +764,8 @@ ggplot(jopabt, aes(x = sigma, y = prob_out10_mean)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ylab("Probability of an outbreak > 10") +
   ylim(0, 1) +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -776,8 +779,8 @@ ggplot(jopabt, aes(x = sigma, y = max_cases_all_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -806,8 +809,8 @@ ggplot(jopabm, aes(x = sigma, y = prob_end_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = prob_end_25, ymax = prob_end_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Probability outbreak becomes endemic") +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -826,8 +829,8 @@ ggplot(jopabm, aes(x = sigma, y = prob_out10_mean)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ylab("Probability of an outbreak > 10") +
   ylim(0, 1) +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -841,8 +844,8 @@ ggplot(jopabm, aes(x = sigma, y = max_cases_all_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -871,8 +874,8 @@ ggplot(jopatm, aes(x = sigma, y = prob_end_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = prob_end_25, ymax = prob_end_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Probability outbreak becomes endemic") +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -891,8 +894,8 @@ ggplot(jopatm, aes(x = sigma, y = prob_out10_mean)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ylab("Probability of an outbreak > 10") +
   ylim(0, 1) +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -906,8 +909,8 @@ ggplot(jopatm, aes(x = sigma, y = max_cases_all_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -985,8 +988,8 @@ ggplot(jop, aes(x = sigma, y = prob_end_mean)) +
   geom_ribbon(aes(ymin = prob_end_25, ymax = prob_end_75, fill = as.factor(R0)), alpha = 0.3) +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+
   # scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   ylab("Probability of endemic disease") +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
@@ -1001,8 +1004,8 @@ ggplot(jop, aes(x = sigma, y = prob_out10_mean)) +
   geom_ribbon(aes(ymin = prob_out10_25, ymax = prob_out10_75, fill = as.factor(R0)), alpha = 0.3) +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+
   # scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ylab("Probability of outbreak > 10 hosts") +
@@ -1017,13 +1020,13 @@ ggplot(jop, aes(x = sigma, y = max_cases_all_mean)) +
   geom_ribbon(aes(ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
-  xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
-  ggtitle("All simulations") +
-  theme(text = element_text(size = 20))
+  xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) #+
+  # ggtitle("All simulations") +
+  # theme(text = element_text(size = 20))
 ggsave("figures/max_cases.png", height = 3.5, width = 7)
 ```
 ```{r max_cases_out, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEmax_cases_all} Maximum number of cases during the simulation by sigma and R0 based on 1000 runs of 100 iterations only including simulations where the outbreak died out. For all R0 values, the maximum number of cases increases with environmental noise strength initially and then decreases as environmental noise strength gets too high. For high R0 values, the shift occurs at sigma=~0.15, and for lower R0 values, the shift occurs at sigma=~0.25. R0=1.25 shows intermediate behavior responding at both sigma values. With higher values of R0, more hosts are infected.'}
@@ -1033,8 +1036,8 @@ ggplot(jop, aes(x = sigma, y = max_cases_out_mean)) +
   geom_ribbon(aes(ymin = max_cases_out_25, ymax = max_cases_out_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -1049,8 +1052,8 @@ ggplot(jop, aes(x = sigma, y = end_time_mean / 365)) +
   geom_ribbon(aes(ymin = end_time_25 / 365, ymax = end_time_75 / 365, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Outbreak duration (years)") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -1065,8 +1068,8 @@ ggplot(jop, aes(x = sigma, y = end_time_out_mean / 365)) +
   geom_ribbon(aes(ymin = end_time_out_25 / 365, ymax = end_time_out_75 / 365, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Outbreak duration (years)") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
-  scale_fill_manual(values = c("blue", "cyan2", "lightcoral", "red1", "firebrick3", "darkred", "black")) +
+  scale_color_manual(values = R0_cols) +
+  scale_fill_manual(values = R0_cols) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
