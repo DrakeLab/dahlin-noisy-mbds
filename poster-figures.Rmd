@@ -32,7 +32,8 @@ knitr::opts_chunk$set(
   out.extra = ""
 )
 
-R0_cols = c("#3A549F", "#5487BD", "#F3E3AB", "#FDC274", "#F89355", "#E45036", "#B00C27")
+R0_cols = rev(c("#3A549F", "#5487BD", "#F3E3AB", "#FDC274", "#F89355", "#E45036", "#B00C27"))
+R0_vals = rev(c("0.75", "0.95", "1.05", "1.25", "2", "4", "6.5"))
 ```
 
 ```{r Load and format data from Julia}
@@ -112,6 +113,48 @@ jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[6], 4)
 jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[7], 6.5)
 ```
 
+```{r Fig-3, out.width='100%', fig.align='center', fig.cap='\\label{fig:combined_outputs} Probability of the disease becoming endemic by sigma and R0 based on 1000 runs of 100 iterations. Overall, increasing environmental noise strength cases the probability that the disease becomes endemic to decrease. For smaller R0 values (i.e. <1.25), there is a slight increase in endemic disease probability at high environmental noise levels. Above environmental noise strength of 0.4 (where there is up to 40% variation in parameter values), the probability of endemic disease goes to zero. There is a greater probability of the disease going endemic at higher values of R0.'}
+
+plot_df <- jop %>% 
+  select(sigma, prob_end_mean, prob_end_25, prob_end_75, 
+         prob_out10_mean, prob_out10_25, prob_out10_75,
+         max_cases_all_mean, max_cases_all_25, max_cases_all_75,
+         R0) %>% 
+  pivot_longer(cols = -c(sigma, R0)) %>% 
+  mutate(output = stringr::str_extract(name, "[^_]*_[^_]*"),
+         type = stringi::stri_reverse(str_split_i(stringi::stri_reverse(name), '_', i = 1))
+  ) %>% 
+  mutate(output = case_when(output == "prob_end" ~ "(a) Probability disease is endemic",
+                            output == "prob_out10" ~ "(b) Probability of an outbreak > 10 hosts",
+                            output == "max_cases" ~ "(c) Peak number of cases")) %>% 
+  select(-name) %>%
+  mutate(across(output, ~factor(., levels = c("(a) Probability disease is endemic", "(b) Probability of an outbreak > 10 hosts","(c) Peak number of cases")))) %>% 
+  pivot_wider(id_cols = c(sigma, R0, output), names_from = type) %>% 
+  arrange(sigma, R0)
+
+
+
+plot <- ggplot(plot_df, aes(x = sigma)) +
+  geom_line(aes(y =  mean, color = as.factor(R0), group = as.factor(R0))) +
+  geom_point(aes(y =  mean, color = as.factor(R0), group = as.factor(R0))) +
+  geom_ribbon(aes(ymin = `25`, ymax = `75`, fill = as.factor(R0)), alpha = 0.3) +
+  # scale_color_viridis(discrete=TRUE, guide = "legend")+
+  # scale_fill_viridis(discrete=TRUE)+
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
+  facet_wrap(~ output, ncol = 1, scales = "free", strip.position = "top") +
+  theme_cowplot() +
+  labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
+  xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
+  ylab("") +
+  theme(strip.text.x = element_text(hjust = 0),
+        strip.background = element_blank())
+plot
+
+ggsave("figures/figure_3.png", height = 8, width = 7)
+```
+
+
 ```{r prob_end, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEprob_end} Probability of the disease becoming endemic by sigma and R0 based on 1000 runs of 100 iterations. Overall, increasing environmental noise strength cases the probability that the disease becomes endemic to decrease. For smaller R0 values (i.e. <1.25), there is a slight increase in endemic disease probability at high environmental noise levels. Above environmental noise strength of 0.4 (where there is up to 40% variation in parameter values), the probability of endemic disease goes to zero. There is a greater probability of the disease going endemic at higher values of R0.'}
 
 ggplot(jop, aes(x = sigma, y = prob_end_mean)) +
@@ -120,8 +163,8 @@ ggplot(jop, aes(x = sigma, y = prob_end_mean)) +
   geom_ribbon(aes(ymin = prob_end_25, ymax = prob_end_75, fill = as.factor(R0)), alpha = 0.3) +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+
   # scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) + #c("#4063A8", "#BDE1ED", "#EAECCC", "#FDD687", "#FAA35D", "#EC643F", "#C01E29")) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   ylab("Probability disease becomes endemic") +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
@@ -136,8 +179,8 @@ ggplot(jop, aes(x = sigma, y = prob_out10_mean)) +
   geom_ribbon(aes(ymin = prob_out10_25, ymax = prob_out10_75, fill = as.factor(R0)), alpha = 0.3) +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+
   # scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ylab("Probability of outbreak > 10 hosts") +
@@ -151,8 +194,8 @@ ggplot(jop, aes(x = sigma, y = prob_out100_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = prob_out100_25, ymax = prob_out100_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Probability of an outbreak > 100") +
-  scale_color_viridis(discrete = TRUE, guide = "legend") +
-  scale_fill_viridis(discrete = TRUE) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$")))
@@ -165,8 +208,8 @@ ggplot(jop, aes(x = sigma, y = max_cases_all_mean)) +
   geom_ribbon(aes(ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -181,8 +224,8 @@ ggplot(jop, aes(x = sigma, y = max_cases_out_mean)) +
   geom_ribbon(aes(ymin = max_cases_out_25, ymax = max_cases_out_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -199,8 +242,8 @@ ggplot(jop, aes(x = sigma, y = end_time_mean / 365)) +
   geom_ribbon(aes(ymin = end_time_25 / 365, ymax = end_time_75 / 365, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Outbreak duration (years)") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -215,8 +258,8 @@ ggplot(jop, aes(x = sigma, y = end_time_out_mean / 365)) +
   geom_ribbon(aes(ymin = end_time_out_25 / 365, ymax = end_time_out_75 / 365, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Outbreak duration (years)") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -311,8 +354,8 @@ ggplot(jopmt, aes(x = sigma, y = max_cases_all_mean)) +
   geom_ribbon(data = jopmt, aes(x = sigma, ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$")))
@@ -336,8 +379,8 @@ ggplot(jopmt, aes(x = sigma, y = max_cases_out_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   ylab("Peak number of cases") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -365,8 +408,8 @@ ggplot(jopmt, aes(x = sigma, y = end_time_out_mean / 365)) +
   geom_point(aes(color = as.factor(R0))) +
   ylab("Outbreak duration (years)") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -537,8 +580,8 @@ ggplot(jopab, aes(x = sigma, y = prob_end_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = prob_end_25, ymax = prob_end_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Probability outbreak becomes endemic") +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -558,8 +601,8 @@ ggplot(jopab, aes(x = sigma, y = prob_out10_mean)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ylab("Probability of an outbreak > 10") +
   ylim(0, 1) +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -574,8 +617,8 @@ ggplot(jopab, aes(x = sigma, y = max_cases_all_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -604,8 +647,8 @@ ggplot(jopat, aes(x = sigma, y = prob_end_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = prob_end_25, ymax = prob_end_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Probability outbreak becomes endemic") +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -625,8 +668,8 @@ ggplot(jopat, aes(x = sigma, y = prob_out10_mean)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ylab("Probability of an outbreak > 10") +
   ylim(0, 1) +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -641,8 +684,8 @@ ggplot(jopat, aes(x = sigma, y = max_cases_all_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -674,8 +717,8 @@ ggplot(jopam, aes(x = sigma, y = prob_end_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = prob_end_25, ymax = prob_end_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Probability outbreak becomes endemic") +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -695,8 +738,8 @@ ggplot(jopam, aes(x = sigma, y = prob_out10_mean)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ylab("Probability of an outbreak > 10") +
   ylim(0, 1) +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -711,8 +754,8 @@ ggplot(jopam, aes(x = sigma, y = max_cases_all_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -744,8 +787,8 @@ ggplot(jopabt, aes(x = sigma, y = prob_end_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = prob_end_25, ymax = prob_end_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Probability outbreak becomes endemic") +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -764,8 +807,8 @@ ggplot(jopabt, aes(x = sigma, y = prob_out10_mean)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ylab("Probability of an outbreak > 10") +
   ylim(0, 1) +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -779,8 +822,8 @@ ggplot(jopabt, aes(x = sigma, y = max_cases_all_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -809,8 +852,8 @@ ggplot(jopabm, aes(x = sigma, y = prob_end_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = prob_end_25, ymax = prob_end_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Probability outbreak becomes endemic") +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -829,8 +872,8 @@ ggplot(jopabm, aes(x = sigma, y = prob_out10_mean)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ylab("Probability of an outbreak > 10") +
   ylim(0, 1) +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -844,8 +887,8 @@ ggplot(jopabm, aes(x = sigma, y = max_cases_all_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -874,8 +917,8 @@ ggplot(jopatm, aes(x = sigma, y = prob_end_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = prob_end_25, ymax = prob_end_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Probability outbreak becomes endemic") +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -894,8 +937,8 @@ ggplot(jopatm, aes(x = sigma, y = prob_out10_mean)) +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ylab("Probability of an outbreak > 10") +
   ylim(0, 1) +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -909,8 +952,8 @@ ggplot(jopatm, aes(x = sigma, y = max_cases_all_mean)) +
   geom_point(aes(color = as.factor(R0))) +
   geom_ribbon(aes(ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -919,7 +962,73 @@ ggplot(jopatm, aes(x = sigma, y = max_cases_all_mean)) +
 ggsave("figures/alpha_tm_peak.png", height = 7, width = 7)
 ```
 
+```{r stacked-sensitivity}
 
+disc_sens_df <- rbind(mutate(jopab, label = "a", 
+                             long_label = as.character(unname(TeX("(a) $\\alpha_{\\beta}$ on")))),
+                        mutate(jopat, label = "b", 
+                               long_label = as.character(unname(TeX("(b) $\\alpha_{\\tau}$ on")))),
+                        mutate(jopam, label = "c", 
+                               long_label = as.character(unname(TeX("(c) $\\alpha_{\\mu}$ on")))),
+                        mutate(jopabt, label = "d",
+                               long_label = as.character(unname(TeX("(d) $\\alpha_{\\beta}$ and $\\alpha_{\\tau}$ on")))),
+                        mutate(jopab, label = "e",
+                               long_label = as.character(unname(TeX("(e) $\\alpha_{\\beta}$ and $\\alpha_{\\mu}$ on")))),
+                        mutate(jopab, label = "f",
+                               long_label = as.character(unname(TeX("(f) $\\alpha_{\\tau}$ and $\\alpha_{\\mu}$ on"))))
+                        ) %>% 
+  select(label, long_label, sigma, prob_end_mean, prob_end_25, prob_end_75, R0) %>% 
+  pivot_longer(cols = -c(sigma, R0, label, long_label)) %>% 
+  mutate(#output = stringr::str_extract(name, "[^_]*_[^_]*"),
+         type = stringi::stri_reverse(str_split_i(stringi::stri_reverse(name), '_', i = 1))
+  ) %>% 
+  select(-name) %>% 
+  # mutate(across(label, ~factor(., levels = c("(a) $\\alpha_{\\beta}$ on",
+  #                       "(b) $\\alpha_{\\tau}$ on",
+  #                       "(c) $\\alpha_{\\mu}$ on",
+  #                       "(d) $\\alpha_{\\beta}$ and $\\alpha_{\\tau}$ on",
+  #                       "(e) $\\alpha_{\\beta}$ and $\\alpha_{\\mu}$ on",
+  #                       "(f) $\\alpha_{\\tau}$ and $\\alpha_{\\mu}$ on"
+  # )))) %>% 
+  pivot_wider(id_cols = c(sigma, R0, label, long_label), names_from = type) %>% 
+  arrange(sigma, R0)
+
+strip_labels <- list(TeX("(a) $\\alpha_{\\beta}$ on"),
+                       TeX("(b) $\\alpha_{\\tau}$ on"),
+                        TeX("(c) $\\alpha_{\\mu}$ on"),
+                        TeX("(d) $\\alpha_{\\beta}$ and $\\alpha_{\\tau}$ on"),
+                        TeX("(e) $\\alpha_{\\beta}$ and $\\alpha_{\\mu}$ on"),
+                        TeX("(f) $\\alpha_{\\tau}$ and $\\alpha_{\\mu}$ on"))
+
+sens_labeller <- function(label_in) {
+  out <- distinct(disc_sens_df, label, long_label) %>% 
+    filter(label == label_in) %>% 
+    select(long_label) %>% 
+    c()
+  return(out[[1]])
+}
+
+
+disc_sens_plot <- ggplot(disc_sens_df, aes(x = sigma)) +
+  geom_line(aes(y = mean, color = as.factor(R0), group = as.factor(R0))) +
+  geom_point(aes(y = mean, color = as.factor(R0), group = as.factor(R0))) +
+  geom_ribbon(aes(ymin = `25`, ymax = `75`, fill = as.factor(R0)), alpha = 0.3) +
+  # scale_color_viridis(discrete=TRUE, guide = "legend")+
+  # scale_fill_viridis(discrete=TRUE)+
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
+  facet_wrap(~ long_label, ncol = 3, scales = "free", labeller = label_parsed,  strip.position = "top") +
+  theme_cowplot() +
+  labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
+  xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
+  ylab("Probability disease is endemic") +
+  theme(strip.text.x = element_text(hjust = 0),
+        strip.background = element_blank())
+disc_sens_plot
+
+ggsave("figures/disc_sens.png", plot = disc_sens_plot, height = 4, width = 7)
+
+```
 
 
 
@@ -988,8 +1097,8 @@ ggplot(jop, aes(x = sigma, y = prob_end_mean)) +
   geom_ribbon(aes(ymin = prob_end_25, ymax = prob_end_75, fill = as.factor(R0)), alpha = 0.3) +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+
   # scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   ylab("Probability of endemic disease") +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
@@ -1004,8 +1113,8 @@ ggplot(jop, aes(x = sigma, y = prob_out10_mean)) +
   geom_ribbon(aes(ymin = prob_out10_25, ymax = prob_out10_75, fill = as.factor(R0)), alpha = 0.3) +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+
   # scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ylab("Probability of outbreak > 10 hosts") +
@@ -1020,8 +1129,8 @@ ggplot(jop, aes(x = sigma, y = max_cases_all_mean)) +
   geom_ribbon(aes(ymin = max_cases_all_25, ymax = max_cases_all_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) #+
@@ -1036,8 +1145,8 @@ ggplot(jop, aes(x = sigma, y = max_cases_out_mean)) +
   geom_ribbon(aes(ymin = max_cases_out_25, ymax = max_cases_out_75, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Peak number of cases") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -1052,8 +1161,8 @@ ggplot(jop, aes(x = sigma, y = end_time_mean / 365)) +
   geom_ribbon(aes(ymin = end_time_25 / 365, ymax = end_time_75 / 365, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Outbreak duration (years)") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -1068,8 +1177,8 @@ ggplot(jop, aes(x = sigma, y = end_time_out_mean / 365)) +
   geom_ribbon(aes(ymin = end_time_out_25 / 365, ymax = end_time_out_75 / 365, fill = as.factor(R0)), alpha = 0.3) +
   ylab("Outbreak duration (years)") +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = R0_cols) +
-  scale_fill_manual(values = R0_cols) +
+  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
+  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
@@ -1118,4 +1227,25 @@ ggplot(sa, aes(x = sigma, y = PRCC_b_eprob)) +
   ggtitle("Sensitivity of endemic disease probability") +
   theme(text = element_text(size = 20))
 ggsave("figures/sa_eprob.png", height = 7, width = 7.6)
+```
+
+```{r new_sens_plots}
+
+new_sens <- read.csv("code/julia/sensitivity_analysis_new_all.csv") %>% 
+  pivot_longer(cols = -"sigma", names_prefix = "PRCC_", values_to = "value", names_to = "name") %>% 
+  separate_wider_delim(name, delim = "_", names = c("variable", "output"))
+
+ribbon_df <- right_join(filter(new_sens, variable == "fake") %>% mutate(min = -abs(value)) %>%  select(-value),
+                   filter(new_sens, variable == "fake") %>% mutate(max = abs(value)) %>% select(-value))
+
+new_sens_plot <- filter(new_sens, variable != "fake") %>% 
+  ggplot(aes(x = sigma, color = variable, fill = variable)) +
+  geom_point(aes(y = value)) +
+  geom_line(aes(y = value)) +
+  geom_ribbon(data = ribbon_df, aes(ymin = min, ymax = max), alpha = 0.3) +
+  facet_wrap(~ output)
+new_sens_plot
+
+
+
 ```
