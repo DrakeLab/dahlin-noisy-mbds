@@ -1231,19 +1231,63 @@ ggsave("figures/sa_eprob.png", height = 7, width = 7.6)
 
 ```{r new_sens_plots}
 
+# Helper function: place legends in empty facets of plot grids
+# Code by: Artem Sokolov, found here: https://stackoverflow.com/questions/54438495/shift-legend-into-empty-facets-of-a-faceted-plot-in-ggplot2
+shift_legend <- function(p) {
+  pnls <- cowplot::plot_to_gtable(p) %>%
+    gtable::gtable_filter("panel") %>%
+    with(setNames(grobs, layout$name)) %>%
+    purrr::keep(~ identical(.x, zeroGrob()))
+  
+  if (length(pnls) == 0) stop("No empty facets in the plot")
+  
+  lemon::reposition_legend(p, "center", panel = names(pnls))
+}
+
 new_sens <- read.csv("code/julia/sensitivity_analysis_new_all.csv") %>% 
   pivot_longer(cols = -"sigma", names_prefix = "PRCC_", values_to = "value", names_to = "name") %>% 
-  separate_wider_delim(name, delim = "_", names = c("variable", "output"))
+  separate_wider_delim(name, delim = "_", names = c("variable", "output")) %>% 
+  mutate(output = case_when(
+    output == "eprob" ~ "(a) Probability disease is endemic",
+    output == "o10prob" ~ "(b) Probability of an outbreak > 10 hosts",
+    output == "o100prob" ~ "(c) Probability of an outbreak > 100 hosts",
+    output == "peak" ~ "(d) Peak number of cases",
+    output == "dur" ~ "(e) Outbreak duration",
+  ),
+  variable = case_when(
+    variable == "b" ~ as.character(unname(TeX("$\\beta$"))),
+    variable == "muv" ~ as.character(unname(TeX("$\\mu_V$"))),
+    variable == "tvh" ~ as.character(unname(TeX("$\\tau_{VH}$"))),
+    variable == "fake" ~ "Dummy"
+  ))
 
-ribbon_df <- right_join(filter(new_sens, variable == "fake") %>% mutate(min = -abs(value)) %>%  select(-value),
-                   filter(new_sens, variable == "fake") %>% mutate(max = abs(value)) %>% select(-value))
+var_levs <-  c(as.character(unname(TeX("$\\beta$"))),
+    as.character(unname(TeX("$\\tau_{VH}$"))),
+    as.character(unname(TeX("$\\mu_V$"))),
+    "Dummy")
 
-new_sens_plot <- filter(new_sens, variable != "fake") %>% 
+
+ribbon_df <- right_join(filter(new_sens, variable == "Dummy") %>% mutate(min = -abs(value)) %>%  select(-value),
+                   filter(new_sens, variable == "Dummy") %>% mutate(max = abs(value)) %>% select(-value))
+
+new_sens_plot <- filter(new_sens, variable != "Dummy") %>% 
   ggplot(aes(x = sigma, color = variable, fill = variable)) +
   geom_point(aes(y = value)) +
   geom_line(aes(y = value)) +
   geom_ribbon(data = ribbon_df, aes(ymin = min, ymax = max), alpha = 0.3) +
-  facet_wrap(~ output)
+  facet_wrap(~ output) +
+  theme_cowplot() +
+  ylab("") +
+  labs(color = unname(TeX("Variable")), fill = unname(TeX("Variable"))) +
+  scale_color_discrete(labels = parse_format(),
+                       breaks = var_levs) +
+  scale_fill_discrete(labels = parse_format(),
+                      breaks = var_levs) +
+  xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
+  theme(strip.text.x = element_text(hjust = 0),
+        strip.background = element_blank()) +
+  shift_legend()
+
 new_sens_plot
 
 
