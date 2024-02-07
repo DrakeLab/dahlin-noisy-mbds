@@ -20,6 +20,7 @@ library(tidyverse)
 library(cowplot)
 library(viridis)
 library(latex2exp)
+library(scales)
 
 # # Parallelization settings
 # n_cores <- floor((detectCores() - 1) / 2)
@@ -965,15 +966,15 @@ ggsave("figures/alpha_tm_peak.png", height = 7, width = 7)
 ```{r stacked-sensitivity}
 
 disc_sens_df <- rbind(mutate(jopab, label = "a", 
-                             long_label = as.character(unname(TeX("(a) $\\alpha_{\\beta}$ on")))),
+                             long_label = as.character(unname(TeX("(a) $\\alpha_{b}$ on")))),
                         mutate(jopat, label = "b", 
                                long_label = as.character(unname(TeX("(b) $\\alpha_{\\tau}$ on")))),
                         mutate(jopam, label = "c", 
                                long_label = as.character(unname(TeX("(c) $\\alpha_{\\mu}$ on")))),
                         mutate(jopabt, label = "d",
-                               long_label = as.character(unname(TeX("(d) $\\alpha_{\\beta}$ and $\\alpha_{\\tau}$ on")))),
+                               long_label = as.character(unname(TeX("(d) $\\alpha_{b}$ and $\\alpha_{\\tau}$ on")))),
                         mutate(jopab, label = "e",
-                               long_label = as.character(unname(TeX("(e) $\\alpha_{\\beta}$ and $\\alpha_{\\mu}$ on")))),
+                               long_label = as.character(unname(TeX("(e) $\\alpha_{b}$ and $\\alpha_{\\mu}$ on")))),
                         mutate(jopab, label = "f",
                                long_label = as.character(unname(TeX("(f) $\\alpha_{\\tau}$ and $\\alpha_{\\mu}$ on"))))
                         ) %>% 
@@ -983,21 +984,21 @@ disc_sens_df <- rbind(mutate(jopab, label = "a",
          type = stringi::stri_reverse(str_split_i(stringi::stri_reverse(name), '_', i = 1))
   ) %>% 
   select(-name) %>% 
-  # mutate(across(label, ~factor(., levels = c("(a) $\\alpha_{\\beta}$ on",
+  # mutate(across(label, ~factor(., levels = c("(a) $\\alpha_{b}$ on",
   #                       "(b) $\\alpha_{\\tau}$ on",
   #                       "(c) $\\alpha_{\\mu}$ on",
-  #                       "(d) $\\alpha_{\\beta}$ and $\\alpha_{\\tau}$ on",
-  #                       "(e) $\\alpha_{\\beta}$ and $\\alpha_{\\mu}$ on",
+  #                       "(d) $\\alpha_{b}$ and $\\alpha_{\\tau}$ on",
+  #                       "(e) $\\alpha_{b}$ and $\\alpha_{\\mu}$ on",
   #                       "(f) $\\alpha_{\\tau}$ and $\\alpha_{\\mu}$ on"
   # )))) %>% 
   pivot_wider(id_cols = c(sigma, R0, label, long_label), names_from = type) %>% 
   arrange(sigma, R0)
 
-strip_labels <- list(TeX("(a) $\\alpha_{\\beta}$ on"),
+strip_labels <- list(TeX("(a) $\\alpha_{b}$ on"),
                        TeX("(b) $\\alpha_{\\tau}$ on"),
                         TeX("(c) $\\alpha_{\\mu}$ on"),
-                        TeX("(d) $\\alpha_{\\beta}$ and $\\alpha_{\\tau}$ on"),
-                        TeX("(e) $\\alpha_{\\beta}$ and $\\alpha_{\\mu}$ on"),
+                        TeX("(d) $\\alpha_{b}$ and $\\alpha_{\\tau}$ on"),
+                        TeX("(e) $\\alpha_{b}$ and $\\alpha_{\\mu}$ on"),
                         TeX("(f) $\\alpha_{\\tau}$ and $\\alpha_{\\mu}$ on"))
 
 sens_labeller <- function(label_in) {
@@ -1255,13 +1256,13 @@ new_sens <- read.csv("code/julia/sensitivity_analysis_new_all.csv") %>%
     output == "dur" ~ "(e) Outbreak duration",
   ),
   variable = case_when(
-    variable == "b" ~ as.character(unname(TeX("$\\beta$"))),
+    variable == "b" ~ as.character(unname(TeX("$b$"))),
     variable == "muv" ~ as.character(unname(TeX("$\\mu_V$"))),
     variable == "tvh" ~ as.character(unname(TeX("$\\tau_{VH}$"))),
     variable == "fake" ~ "Dummy"
   ))
 
-var_levs <-  c(as.character(unname(TeX("$\\beta$"))),
+var_levs <-  c(as.character(unname(TeX("$b$"))),
     as.character(unname(TeX("$\\tau_{VH}$"))),
     as.character(unname(TeX("$\\mu_V$"))),
     "Dummy")
@@ -1285,10 +1286,9 @@ new_sens_plot <- filter(new_sens, variable != "Dummy") %>%
                       breaks = var_levs) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   theme(strip.text.x = element_text(hjust = 0),
-        strip.background = element_blank()) +
-  shift_legend()
+        strip.background = element_blank())
 
-new_sens_plot
+shift_legend(new_sens_plot)
 
 
 

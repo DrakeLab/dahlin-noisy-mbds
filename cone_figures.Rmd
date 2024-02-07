@@ -431,6 +431,14 @@ quadrant_df$R0 <- factor(quadrant_df$R0,      # Reordering group factor levels
                          levels = c("2", "1.25", "1.05", "0.95"))
                          # levels = c("0.95", "1.05", "1.25","2"))
 
+summary_df <- quadrant_df %>% 
+  select(sigma, R0, trajectory, end_bool) %>% 
+  distinct() %>% 
+  group_by(sigma, R0) %>% 
+  summarize(num_died = 100 - sum(end_bool)) %>% 
+  mutate(label = paste0("# died out = ", num_died)) %>% 
+  mutate(x = Inf, y = -Inf)
+
 quadrant_plot <- quadrant_df %>% 
   ggplot() +
   # Plot stochastic trajectories
@@ -439,6 +447,9 @@ quadrant_plot <- quadrant_df %>%
             alpha = 0.3) +
   # Plot mean-field deterministic trajectories
   geom_line(data = deterministic_results, aes(x = t/365, y = H)) +
+  # Indicate number that died out
+  geom_label(data = summary_df, aes(x = x, y = y, label = label), 
+             size = 2, hjust = "inward", vjust = "inward") +
   # Color trajectories according to whether they eventually go to zero (=="plum4")
   scale_color_manual(values = c("#DF536B", "#61D04F"), breaks = c("TRUE", "FALSE")) + #c("seagreen3", "plum4")
   # Subplots for each combination of environmental noise strength and R0
