@@ -973,9 +973,9 @@ disc_sens_df <- rbind(mutate(jopab, label = "a",
                                long_label = as.character(unname(TeX("(c) $\\alpha_{\\mu}$ on")))),
                         mutate(jopabt, label = "d",
                                long_label = as.character(unname(TeX("(d) $\\alpha_{b}$ and $\\alpha_{\\tau}$ on")))),
-                        mutate(jopab, label = "e",
+                        mutate(jopabm, label = "e",
                                long_label = as.character(unname(TeX("(e) $\\alpha_{b}$ and $\\alpha_{\\mu}$ on")))),
-                        mutate(jopab, label = "f",
+                        mutate(jopatm, label = "f",
                                long_label = as.character(unname(TeX("(f) $\\alpha_{\\tau}$ and $\\alpha_{\\mu}$ on"))))
                         ) %>% 
   select(label, long_label, sigma, prob_end_mean, prob_end_25, prob_end_75, R0) %>% 

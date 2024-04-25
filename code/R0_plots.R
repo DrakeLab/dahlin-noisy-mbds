@@ -41,8 +41,10 @@ muV_star = 0.1
 # N_H      - host population density
 NV = 100000
 tauHV_125 = 0.03472222
-tauHV_65 = tauHV_125 * 6.5 / 1.25
-tauHV_vals = c(tauHV_125, tauHV_65) # Gives R0 = 1.25 at baseline
+tauHV_2 = tauHV_125 * (2 / 1.25)^2
+tauHV_4 = tauHV_125 * (4 / 1.25)^2
+tauHV_65 = tauHV_125 * (6.5 / 1.25)^2
+tauHV_vals = c(tauHV_125, tauHV_2, tauHV_4, tauHV_65) # Gives R0 = 1.25 at baseline
 gammaH = 0.1
 NH = 10000
 
@@ -56,6 +58,8 @@ NH = 10000
 sample_res = 2 * 1000
 sample_vec1 = tibble(sample = rnorm(sample_res/2), ID = seq(1:(sample_res/2)))
 sample_vec2 = tibble(sample = rnorm(sample_res/2), ID = seq(1:(sample_res/2)))
+sample_vec3 = tibble(sample = rnorm(sample_res/2), ID = seq(1:(sample_res/2)))
+sample_vec4 = tibble(sample = rnorm(sample_res/2), ID = seq(1:(sample_res/2)))
 
 # sigma - strength of environmental noise
 sigma_res = 100
@@ -66,7 +70,9 @@ eps = .Machine$double.eps
 
 # Put together data
 data_table <- rbind(tibble(tauHV = tauHV_125, sample_vec1),
-                    tibble(tauHV = tauHV_65, sample_vec2)) %>% 
+                    tibble(tauHV = tauHV_2, sample_vec2),
+                    tibble(tauHV = tauHV_4, sample_vec3),
+                    tibble(tauHV = tauHV_65, sample_vec4)) %>% 
   cross_join(tibble(sigma = sigma_vec)) %>%
   rowwise() %>%
   mutate(
@@ -79,6 +85,8 @@ data_table <- rbind(tibble(tauHV = tauHV_125, sample_vec1),
   ) %>% 
   mutate(base_R0_label = case_when(
     tauHV == tauHV_125 ~ 1.25,
+    tauHV == tauHV_2 ~ 2,
+    tauHV == tauHV_4 ~ 4,
     tauHV == tauHV_65 ~ 6.5
   ))
 
@@ -129,18 +137,20 @@ data_table %>%
                    expand = c(0,0)) +
   scale_y_continuous(unname(TeX("Basic reproduction number ($R_0$)")),
                      expand = c(0,0)) +
-  theme_cowplot()
+  theme_cowplot() +
+  facet_wrap(~ base_R0_label, scales = "free")
 ggsave("./figures/violin_R0vsnoise.png", height = 6, width = 8)
 
 # Proportion of simulations with R0 > 1
 condition_table %>%
-  ggplot(aes(x = sigma, y = prop_end)) +
+  ggplot(aes(x = sigma, y = prop_end, color = as.factor(base_R0_label))) +
   geom_line() +
   scale_x_continuous(unname(TeX("Environmental noise strength $(\\sigma)$")),
                      expand = c(0,0)) +
-  scale_y_continuous(unname(TeX("$Pr(R_0 > 1)$")),
+  scale_y_continuous(unname(TeX("$Pr(R_0 < 1)$")),
                      expand = c(0,0),
                      limits = c(0,1)) +
+  scale_color_discrete(unname(TeX("Basic reproduction number ($R_0$)"))) +
   theme_cowplot()
 ggsave("./figures/propR0greater.png", height = 6, width = 8)
 
