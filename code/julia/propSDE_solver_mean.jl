@@ -73,29 +73,29 @@ const THVs = tHV_from_R0(p, R0s)
 #initial conditions->10 infected mosquitos to star
 const u0 = [0.0, 10.0, 0, 0]
 #10 year simulation with time step of 1 day
-const tspan = [0.0, 10*365]
+const tspan = [0.0, 10*365.0]
 const noise_rate_prototype = [0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
-const dt = 1
+const dt = 1e-3
 
 #callback 1 makes Host population value 0 if goes negative
 function condition1(u, t, integrator)
-  u[1]<0
+  u[1] < 0
 end
 function affect1!(integrator)
-  integrator.u[1] = 0
+  integrator.u[1] = 0.0
 end
 cb1 = DiscreteCallback(condition1, affect1!)
 #callback 2 makes vector population value 0 if goes negative
 function condition2(u, t, integrator)
-  u[2]<0
+  u[2] < 0
 end
 function affect2!(integrator)
-  integrator.u[2] = 0
+  integrator.u[2] = 0.0
 end
 cb2 = DiscreteCallback(condition2, affect2!)
 #Callback 3 racks the maximum number of hosts infected and saves this value
 function condition3(u, t, integrator)
-  u[3]<u[1]
+  u[3] < u[1]
 end
 function affect3!(integrator)
   integrator.u[3] = integrator.u[1]
@@ -104,7 +104,7 @@ end
 cb3 = DiscreteCallback(condition3, affect3!)
 ##callback 4 makes Host population value 10000 if it exceeds this
 function condition4(u, t, integrator)
-    u[1]> p[4] # 10000
+  u[1] - p[4] > 0 # 10000
 end
 function affect4!(integrator)
     integrator.u[1] = p[4] #10000
@@ -113,7 +113,7 @@ end
 cb4 = DiscreteCallback(condition4, affect4!)
 #callback 5 makes Vector population value 100000 if it exceeds this
 function condition5(u, t, integrator)
-  u[2]> p[5] # 100000
+  u[2] - p[5] > 0 # 100000
 end
 function affect5!(integrator)
   integrator.u[2] = p[5] #100000
@@ -180,7 +180,7 @@ function SDE_solve_func(parms, num_runs, num_trajectories)
         end
         @timeit timer_output "solve_SDE" begin 
           sol = DataFrame
-          sol = @suppress DataFrame(solve(ensembleprob, EM(), dt = dt, EnsembleDistributed(), trajectories = total_runs, batch_size = num_runs, save_everystep = false, verbose = false))#, isoutofdomain = (u,p,t) -> any(x -> x < 0, u))
+          sol = @suppress DataFrame(solve(ensembleprob, EM(), dt = dt, EnsembleDistributed(), trajectories = total_runs, batch_size = num_runs, save_everystep = false, verbose = false, saveat = 0:1:(11*365)))#, isoutofdomain = (u,p,t) -> any(x -> x < 0, u))
         end
 
         for run_index = 1:num_runs        
@@ -352,7 +352,7 @@ end
 #CSV.write("julia_mean_test.csv", save_df)
 #print(["Jobs done. i  = ", i])
 
-final_oprob = combine_simulation_data(parm_grid, num_runs, num_trajectories)
+final_oprob = combine_simulation_data(reverse(parm_grid), num_runs, num_trajectories)
 
 cd("$(homedir())/Documents/Github/dahlin-noisy-mbds/results") do
  CSV.write("propSDE_means.csv", final_oprob, transform = (col,val) -> something(val, missing))
