@@ -392,19 +392,16 @@ ggsave("figures/cones_Tvh.png", height = 7, width = 7)
 # Re-calculate all of these to get more trajectories (maybe like 20?)
 
 eps <- .Machine$double.eps
+roll_amount = 60
 
-trajectories <- read_csv("results/illustrate_trajectories.csv") %>% # run "\code\julia\deterministic_results.jl" to get this file
-  ungroup() %>% 
-  filter(H >= 0, V >= 0) %>% 
+trajectories <- read_csv("results/illustrate_trajectories_proportionalSDE.csv") %>% # run "\code\julia\deterministic_results.jl" to get this file
+  # ungroup() %>% 
+  # filter(H >= 0, V >= 0) %>% 
   group_by(trajectory, sigma, R0) %>% 
   mutate(
-  #   R0 = case_when(
-  #   tHV < 0.03 ~ 1.05,
-  #   tHV > 0.03 & tHV <0.08 ~ 1.25,
-  #   tHV > 0.08 ~ 2
-  # ),
-         rolling_H = rollmean(H, 7, mean, align = "right", fill = NA),
-         rolling_V = rollmean(V, 7, mean, align = "right", fill = NA))
+    rolling_H = rollmean(H, roll_amount, mean, align = "right", fill = 0),
+    rolling_V = rollmean(V, roll_amount, mean, align = "right", fill = 0)) #%>% 
+# mutate(t = t - 365) %>% filter(t > -1)
 
 end_stats <- trajectories %>% 
   filter(t == 3650) %>% 
@@ -416,37 +413,46 @@ trajectories <- right_join(trajectories, end_stats) %>%
   mutate(type = "stochastic")
 
 # Load deterministic results and repeat them for each value of sigma (for plotting)
-deterministic_results <- read_csv("results/deterministic_trajectories.csv") %>% 
+deterministic_results <- read_csv("results/deterministic_trajectories.csv") %>%
   cross_join(tibble(sigma = unique(trajectories$sigma)))
 
 ```
 
 ```{r trajectory quadrants, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
 
+R0s_to_plot = c(0.95, 1.25, 4, 6.5)
+sigmas_to_plot = c(0.05, 0.25, 0.75, 0.95)
+
 appender_R0 <- function(string) TeX(paste("$R_0 = $", string))
 appender_sigma <- function(string) TeX(paste("$\\sigma = $", string))
 
-quadrant_df <- trajectories
-quadrant_df$R0 <- factor(quadrant_df$R0,      # Reordering group factor levels
-                         levels = c("2", "1.25", "1.05", "0.95"))
-                         # levels = c("0.95", "1.05", "1.25","2"))
+quadrant_df <- trajectories %>% 
+  filter(R0 %in% R0s_to_plot,
+         sigma %in% sigmas_to_plot)
 
-summary_df <- quadrant_df %>% 
+quadrant_df$R0 <- factor(quadrant_df$R0,      # Reordering group factor levels
+                         levels = c("6.5", "4", "2", "1.25", "1.05", "0.95"))
+# levels = c("0.95", "1.05", "1.25","2"))
+
+summary_df <- quadrant_df  %>% 
   select(sigma, R0, trajectory, end_bool) %>% 
   distinct() %>% 
   group_by(sigma, R0) %>% 
   summarize(num_died = 100 - sum(end_bool)) %>% 
   mutate(label = paste0("# died out = ", num_died)) %>% 
-  mutate(x = Inf, y = -Inf)
+  mutate(x = Inf, y = Inf)
 
 quadrant_plot <- quadrant_df %>% 
   ggplot() +
   # Plot stochastic trajectories
-  geom_line(aes(x = t/365, y = H, color = as.factor(end_bool), 
+  geom_line(aes(x = (t/365), y = rolling_H, color = as.factor(end_bool), 
                 group = as.factor(trajectory)),
-            alpha = 0.3) +
+            alpha = 0.6) +
   # Plot mean-field deterministic trajectories
-  geom_line(data = deterministic_results, aes(x = t/365, y = H)) +
+  geom_line(data = deterministic_results %>% 
+              filter(R0 %in% R0s_to_plot, 
+                     sigma %in% sigmas_to_plot),
+            aes(x = t/365, y = H)) +
   # Indicate number that died out
   geom_label(data = summary_df, aes(x = x, y = y, label = label), 
              size = 2, hjust = "inward", vjust = "inward") +
@@ -459,17 +465,20 @@ quadrant_plot <- quadrant_df %>%
                                  .cols = as_labeller(appender_sigma, 
                                                      default = label_parsed)),
              scales = "free_y") +
-  theme_cowplot() +
+  theme_minimal_grid() +
   scale_x_continuous("Time (years)",
                      breaks = seq(0, 10),
                      expand = c(0,0)) +
   scale_y_continuous("Number of hosts infected", 
                      expand = c(0,0)) +
+  coord_cartesian(xlim = c(0,10)) +
+  theme_minimal_grid() +
   theme(legend.position = "none", 
         panel.spacing = unit(1, "lines"), 
-        strip.background =element_rect(fill=NA))
+        strip.background = element_rect(fill=NA))
 
-ggsave("figures/example_quadrants.png", height = 6, width = 8)
+ggsave("figures/example_quadrants.png", quadrant_plot, height = 6, width = 8)
+
 # 
 # ggplot(jtd_1.05) +
 #   geom_line(data = filter(trajectories, 

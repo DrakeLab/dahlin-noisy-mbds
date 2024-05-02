@@ -32,13 +32,13 @@ function f(du,u,p,t)
 end
 # stochasticity terms
 function g(du,u,p,t)
-  #(V,H) = u
+  #(H,V) = u
   #(b, τₕᵥ, τᵥₕ, Nₕ, Nᵥ, γₕ, μᵥ, σ, αᵦ, αₜ, αₘ) = p
-  du[1,1] = @views sqrt(max(0,(p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] + p[6] * u[1]))
+  du[1,1] = @views sqrt((p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] + p[6] * u[1])
   #du[1,1] = sqrt(max(0,(b * τₕᵥ * (Nₕ - H) * V / Nₕ) + γₕ * H))
   du[2,1] = 0
   du[1,2] = 0
-  du[2,2] = @views sqrt(max(0,(p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + p[7] * u[2]))
+  du[2,2] = @views sqrt((p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + p[7] * u[2])
   #du[2,2] = sqrt(max(0,(b * τᵥₕ * (Nᵥ - V) * H / Nₕ) + μᵥ * V))
   du[1,3] = @views (p[8] * p[9] * p[2] * (p[4] - u[1]) / p[4]) * u[2]
   #du[1,3] = σ * αᵦ * τₕᵥ * (Nₕ - H) * V / Nₕ
@@ -64,8 +64,7 @@ function tHV_from_R0(p, R0)
 end
 
 #Parameters: biting rate, THV, TVH, NH, NV, recovery, mortality, sigma, alphab, alphat, alpham
-p = [0.3, 0, 0.5, 10000, 100000, 0.1, 0.1, 0, 0.0, 1.0, 1.0]
-
+p = [0.3, 0, 0.5, 10000, 100000, 0.1, 0.1, 0, 1.0, 1.0, 1.0]
 
 #environmental noise strength parameter 
 const sigmas=collect(0:0.02:0.4) # sequence of numbers ranging from 0 to 0.4, incrementing by 0.02 #[0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36, 0.38, 0.4]
@@ -268,8 +267,8 @@ end
 
 # Run simulations
 parms = parm_grid
-num_runs = 10
-num_trajectories = 10
+num_runs = 1000
+num_trajectories = 100
 
 # Initialize saved csv
 # df_oprob = DataFrame([Float64[],Float64[],Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[],
@@ -305,9 +304,10 @@ num_trajectories = 10
 #  CSV.write("julia_mean_test.csv", save_df)
 #  print(["Jobs done. i  = ", i])
 # for i in 1:7
-#   indices = (i-1)*21 .+ (1:21)
-#   parms = parm_grid[indices]
-  df_oprob = SDE_solve_func(parm_grid, num_runs, num_trajectories)
+i = 7
+  indices = (i-1)*21 .+ (1:21)
+  parms = parm_grid[indices]
+  df_oprob = SDE_solve_func(parms, num_runs, num_trajectories)
 
 #save_df = CSV.read("julia_mean_test.csv", DataFrame)
   # save_df = vcat(save_df, df_oprob)
@@ -318,8 +318,9 @@ num_trajectories = 10
 #print(["Jobs done. i  = ", i])
 
 
-cd("/Users/karinebey/Documents/GitHub/dahlin-noisy-mbds/") do
- CSV.write("alpha_test_tm_on.csv", df_oprob, transform = (col,val) -> something(val, missing))
+# cd("/Users/karinebey/Documents/GitHub/dahlin-noisy-mbds/") do
+cd("$(homedir())/Documents/Github/dahlin-noisy-mbds/results") do
+ CSV.write("means_7.csv", df_oprob, transform = (col,val) -> something(val, missing))
 end
 
 # cd("results") do

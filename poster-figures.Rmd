@@ -102,7 +102,16 @@ R0_vals = rev(c("0.75", "0.95", "1.05", "1.25", "2", "4", "6.5"))
 
 #Results from Julia
 ```{r}
-jop <- read.csv("results/julia_mean_test.csv")
+jop <- read.csv("results/propSDE_means.csv")
+  # rbind(read.csv("results/means_1.csv"),
+  #            read.csv("results/means_2.csv"),
+  #            read.csv("results/means_3.csv"),
+  #            read.csv("results/means_4.csv"),
+  #            read.csv("results/means_5.csv"),
+  #            read.csv("results/means_6.csv"),
+  #            read.csv("results/means_7.csv")
+  #            )
+             #read.csv("code/julia/test.csv")
 jop$R0 <- jop$Thv
 Thv_list <- unique(jop$Thv)
 jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[1], 0.75)
