@@ -1,11 +1,6 @@
 
 # Load necessary packages_______________________________________________________
-using CSV
-using DataFrames
-using DifferentialEquations
-using Plots
-using Statistics
-using ProgressBars
+using CSV, DataFrames, DifferentialEquations, Plots, Statistics, ProgressBars
 # using PlotlyJS
 
 # Define functions_____________________________________________________________
@@ -30,7 +25,7 @@ end
 
 # Define parameters___________________________________________________________________________
 #Parameters: biting rate, THV, TVH, NH, NV, recovery, mortality, sigma, alphab, alpham, alphat
-p = [0.3, 0.02450000, 0.5, 10000, 100000, 0.1, 0.1, 0.0125, 1.0, 1.0, 1.0]
+p = [0.3, 0.02450000, 0.9, 10000.0, 100000.0, 1/3, 1/21, 0.0, 1.0, 1.0, 1.0]
 
 #Rate of transmission from hosts to vectors-We varied this parameter to get different R0 values
 #Code for calculating Tvh for a given R0 value is in the main R code
@@ -39,12 +34,11 @@ p = [0.3, 0.02450000, 0.5, 10000, 100000, 0.1, 0.1, 0.0125, 1.0, 1.0, 1.0]
 #initial conditions->10 infected mosquitos to start
 u0 = [0.0, 10.0]
 #10 year simulation with time step of 1 day
-tspan = [0.0, 10*365]
-dt = 1e-3
+tspan = [0.0, 11*365]
 
 
 # Get deterministic ODE solution trajectories______________________________________________
-R0s = [0.95, 1.25, 4, 6.5]
+R0s = [0.95:0.05:1.25; 2.0:1.0:7.0]
 THVs = tHV_from_R0(p, R0s)
 
 out = DataFrame([Float64[],Float64[], Float64[], Float64[]], [:H, :V, :t, :R0])
@@ -71,8 +65,8 @@ for s in eachindex(THVs)
 end
 
 # Save trajectories
-# cd("$(homedir())/Documents/Github/dahlin-noisy-mbds/results") do
-cd("F:/GitHub/dahlin-noisy-mbds/results") do
+cd("$(homedir())/Documents/Github/dahlin-noisy-mbds/results") do
+# cd("F:/GitHub/dahlin-noisy-mbds/results") do
   CSV.write("deterministic_trajectories.csv", out, transform = (col,val) -> something(val, missing))
 end
 
@@ -81,7 +75,7 @@ end
 # Callback functions
 # Callback 1: if infected host pop. goes negative, replace its value with zero
 function condition1(u, t, integrator)
-  u[1] < 0
+  u[1] .< 0.0
 end
 function affect1!(integrator)
   integrator.u[1] = 0.0
@@ -89,7 +83,7 @@ end
 cb1 = DiscreteCallback(condition1, affect1!)
 # Callback 2: if infected vector pop. goes negative, replace its value with zero
 function condition2(u, t, integrator)
-  u[2] < 0
+  u[2] .< 0.0
 end
 function affect2!(integrator)
   integrator.u[2] = 0.0
@@ -97,7 +91,7 @@ end
 cb2 = DiscreteCallback(condition2, affect2!)
 # Callback 4: if infected host pop. exceeds carrying capacity (10000), replace its value with carrying capacity
 function condition4(u, t, integrator)
-    u[1] - p[4] > 0
+    u[1] - p[4] .> 0.0
   end
 function affect4!(integrator)
     integrator.u[1] = p[4]
@@ -105,7 +99,7 @@ end
 cb4 = DiscreteCallback(condition4, affect4!)
 # Callback 5:  if infected vector pop. exceeds carrying capacity (100000), replace its value with carrying capacity
 function condition5(u, t, integrator)
-  u[2] - p[5] > 0
+  u[2] - p[5] .> 0.0
 end
 function affect5!(integrator)
   integrator.u[2] = p[5]
@@ -124,7 +118,7 @@ end
 # Define parameter space
 # R0s = [1.05, 1.25, 2]
 THVs = tHV_from_R0(p, R0s)
-sigmas = [0.05, 0.1, 0.2, 0.4, 0.6]#[0.05, 0.25, 0.75, 0.95]
+sigmas = 0.0:0.025:0.30 #[0.05, 0.1, 0.2, 0.4, 0.6]#[0.05, 0.25, 0.75, 0.95]
 # Create grid to reduce number of for loops
 const parm_grid = collect(Iterators.product(sigmas, R0s))
 
@@ -143,11 +137,11 @@ end
 function g(du,u,p,t)
   #(V,H) = u
   #(b, τₕᵥ, τᵥₕ, Nₕ, Nᵥ, γₕ, μᵥ, σ, αᵦ, αₜ, αₘ) = p
-  du[1,1] = sqrt(max(0, ((p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] + p[6] * u[1])))
+  du[1,1] = sqrt((p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] + p[6] * u[1])
   #du[1,1] = sqrt(max(0,(b * τₕᵥ * (Nₕ - H) * V / Nₕ) + γₕ * H))
-  du[2,1] = 0
-  du[1,2] = 0
-  du[2,2] = sqrt(max(0,(p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + p[7] * u[2]))
+  du[2,1] = 0.0
+  du[1,2] = 0.0
+  du[2,2] = sqrt((p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + p[7] * u[2])
   #du[2,2] = sqrt(max(0,(b * τᵥₕ * (Nᵥ - V) * H / Nₕ) + μᵥ * V))
   du[1,3] = (p[8] * p[9] * p[2] * (p[4] - u[1]) / p[4]) * u[2]
   #du[1,3] = σ * αᵦ * τₕᵥ * (Nₕ - H) * V / Nₕ
@@ -174,8 +168,10 @@ for s in ProgressBar(eachindex(parms))
   prob = SDEProblem(f, g, u0, tspan, p, noise_rate_prototype=noise_rate_prototype, callback = cbs)
   # Set up an ensemble problem-run 1000 iterations and save only the final time step values
   ensembleprob = EnsembleProblem(prob) 
-  sol = DataFrame
-  sol = DataFrame(solve(ensembleprob, EM(), dt = dt, EnsembleSplitThreads(), trajectories = total_runs, verbose = false, saveat = 0:1:(11*365), isoutofdomain = (u,p,t) -> any(x -> x < 0, u)))
+  # sol = DataFrame
+  # sol = DataFrame(solve(ensembleprob, LambaEM(), EnsembleSplitThreads(), trajectories = total_runs, verbose = false, saveat = 0:1:(11*365), isoutofdomain = (u,p,t) -> any(x -> x < 0, u)))
+  # SRA1 seems to be the most efficient solver
+  sol = DataFrame(solve(ensembleprob, SRA1(), EnsembleSplitThreads(), trajectories = total_runs, verbose = true, saveat = 0:1:(11*365)))
   states = sol.u
   times = sol.t
 
@@ -194,11 +190,10 @@ end
 return(out)
 end
 
-parms = [parm_grid[20]]
 out = get_oprob(parm_grid)
 
 
-# cd("$(homedir())/Documents/Github/dahlin-noisy-mbds/results") do
-cd("F:/GitHub/dahlin-noisy-mbds/results") do
+cd("$(homedir())/Documents/Github/dahlin-noisy-mbds/results") do
+# cd("F:/GitHub/dahlin-noisy-mbds/results") do
   CSV.write("illustrate_trajectories_proportionalSDE.csv", out, transform = (col,val) -> something(val, missing))
 end

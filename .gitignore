@@ -6,3 +6,4 @@ code/julia/function lorenz\!(du, u, p, t).jl
 code/julia/+\# Noisy RM SDE solutions.jl
 code/julia/using DifferentialEquations.jl
 code/julia/x=10.jl
+results/illustrate_trajectories_proportionalSDE.csv

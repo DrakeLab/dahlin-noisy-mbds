@@ -56,14 +56,15 @@ function tHV_from_R0(p, R0)
 end
 
 #Parameters: biting rate, THV, TVH, NH, NV, recovery, mortality, sigma, alphab, alphat, alpham
-p = [0.3, 0, 0.5, 10000, 100000, 0.1, 0.1, 0, 1.0, 1.0, 1.0]
+# p = [0.3, 0, 0.5, 10000, 100000, 0.1, 0.1, 0, 1.0, 1.0, 1.0]
+p = [0.3, 0.02450000, 0.9, 10000.0, 100000.0, 1/3, 1/21, 0.0, 1.0, 1.0, 1.0]
 
 #environmental noise strength parameter 
-const sigmas = collect(0:0.05:0.95) # sequence of numbers ranging from 0 to 0.4, incrementing by 0.02 #[0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36, 0.38, 0.4]
+const sigmas = collect(0:0.025:0.3) # sequence of numbers ranging from 0 to 0.4, incrementing by 0.02 #[0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36, 0.38, 0.4]
 #Rate of transmission from hosts to vectors-We varied this parameter to get different R0 values
 #Code for calculating Tvh for a given R0 value is in the main R code
 # TVHs=[0.01250000, 0.02005556, 0.02450000, 0.03472222, 0.08888889,  0.35555556, 0.93888889]#R0=0.75, 0.95, 1.05, 1.25, 2, 4, 6.5
-const R0s = [0.75, 0.95, 1.05, 1.25, 2, 4, 6.5]
+const R0s = R0s = [0.95:0.05:1.25; 2.0:1.0:7.0]# [0.75, 0.95, 1.05, 1.25, 2, 4, 6.5]
 const THVs = tHV_from_R0(p, R0s)
 #[0.02005556, 0.02450000, 0.03472222, 0.08888889, 0.35555556, 0.93888889] # These are for R0=0.95, 1.05, 1.25, 2, 4, 6.5
 #[ 0.02450000, 0.03472222, 0.05000000, 0.08888889, 0.35555556] #These are for R0=1.05, 1.25,1.5, 2, 4
@@ -75,19 +76,18 @@ const u0 = [0.0, 10.0, 0, 0]
 #10 year simulation with time step of 1 day
 const tspan = [0.0, 10*365.0]
 const noise_rate_prototype = [0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
-const dt = 1e-3
-
-#callback 1 makes Host population value 0 if goes negative
+# const dt = 1e-3
+# Callback 1: if infected host pop. goes negative, replace its value with zero
 function condition1(u, t, integrator)
-  u[1] < 0
+  u[1] .< 0.0
 end
 function affect1!(integrator)
   integrator.u[1] = 0.0
 end
 cb1 = DiscreteCallback(condition1, affect1!)
-#callback 2 makes vector population value 0 if goes negative
+# Callback 2: if infected vector pop. goes negative, replace its value with zero
 function condition2(u, t, integrator)
-  u[2] < 0
+  u[2] .< 0.0
 end
 function affect2!(integrator)
   integrator.u[2] = 0.0
@@ -95,37 +95,38 @@ end
 cb2 = DiscreteCallback(condition2, affect2!)
 #Callback 3 racks the maximum number of hosts infected and saves this value
 function condition3(u, t, integrator)
-  u[3] < u[1]
+  u[3] .< u[1]
 end
 function affect3!(integrator)
   integrator.u[3] = integrator.u[1]
   integrator.u[4] = integrator.t
 end
 cb3 = DiscreteCallback(condition3, affect3!)
-##callback 4 makes Host population value 10000 if it exceeds this
+
+# Callback 4: if infected host pop. exceeds carrying capacity (10000), replace its value with carrying capacity
 function condition4(u, t, integrator)
-  u[1] - p[4] > 0 # 10000
-end
+    u[1] - p[4] .> 0.0
+  end
 function affect4!(integrator)
-    integrator.u[1] = p[4] #10000
-    integrator.u[3] = p[4] #10000
+    integrator.u[1] = p[4]
 end
 cb4 = DiscreteCallback(condition4, affect4!)
-#callback 5 makes Vector population value 100000 if it exceeds this
+# Callback 5:  if infected vector pop. exceeds carrying capacity (100000), replace its value with carrying capacity
 function condition5(u, t, integrator)
-  u[2] - p[5] > 0 # 100000
+  u[2] - p[5] .> 0.0
 end
 function affect5!(integrator)
-  integrator.u[2] = p[5] #100000
+  integrator.u[2] = p[5]
 end
 cb5 = DiscreteCallback(condition5, affect5!)
+# Combine callbacks
 #This callback terminates the simulation if the outbreak dies out defined as less than 1 host and vector infected
 function terminate_affect!(integrator)
-  integrator.u[1] = 0
+  integrator.u[1] = 0.0
   terminate!(integrator)
 end
 function terminate_condition(u,t,integrator)
-  u[2]<1 && u[1]<1
+  u[2] < 1.0 && u[1] < 1.0
 end
 terminate_cb = DiscreteCallback(terminate_condition,terminate_affect!)
 cbs = CallbackSet(cb1, cb2, cb3, cb4, cb5, terminate_cb)
@@ -173,18 +174,18 @@ function SDE_solve_func(parms, num_runs, num_trajectories)
       # for r in 1:num_runs
         total_runs = num_runs * num_trajectories
         #defines the SDE problem to be solved
-        @timeit timer_output "define_SDE" begin 
+        # @timeit timer_output "define_SDE" begin 
           prob = SDEProblem(f, g, u0, tspan, p, noise_rate_prototype=noise_rate_prototype, callback = cbs)
           # Set up an ensemble problem-run 1000 iterations and save only the final time step values
           ensembleprob = EnsembleProblem(prob, output_func=output_func)
-        end
-        @timeit timer_output "solve_SDE" begin 
-          sol = DataFrame
-          sol = @suppress DataFrame(solve(ensembleprob, EM(), dt = dt, EnsembleDistributed(), trajectories = total_runs, batch_size = num_runs, save_everystep = false, verbose = false, saveat = 0:1:(11*365)))#, isoutofdomain = (u,p,t) -> any(x -> x < 0, u))
-        end
+        # end
+        # @timeit timer_output "solve_SDE" begin 
+          # sol = DataFrame
+          sol = @suppress sol = DataFrame(solve(ensembleprob, SRA1(), EnsembleDistributed(), trajectories = total_runs, verbose = true, save_everystep = false,  saveat = 0:1:(11*365)))
+        # end
 
-        for run_index = 1:num_runs        
-          row_indices = 10*(run_index-1) .+ (1:num_trajectories)
+        for run_index in 1:num_runs 
+          row_indices = ((run_index-1) * num_trajectories + 1):1:((run_index) * num_trajectories) # 1:100, 101:200, 201:300,
           temp_df = sol[row_indices, [1,2,4,5]]
           temp_df = rename(temp_df, :timestamp => :end_time, :value1 => :num_cases, :value3 => :max_cases_all, :value4 => :time_max)
 
@@ -220,7 +221,7 @@ function SDE_solve_func(parms, num_runs, num_trajectories)
         # dftemp2 = vcat(dftemp2, (DataFrame([[mean(temp_df.eprob)],[mean(temp_df.oprob10)], [mean(temp_df.oprob100)],[mean(temp_df.max_cases)], [mean(temp_df.H)],[mean(temp_df.t)], [mean(temp_df.time_max)]], ["eprob", "oprob10","oprob100", "max_cases_all",  "num_cases", "end_time", "time_max"])))
       # end
 
-      @timeit timer_output "saving solutions" begin
+      # @timeit timer_output "saving solutions" begin
           #calculates the summary results of all runs for this parameter combination-mean and 25th & 75th percentiles for all variables tracked
           # Load the dataset up calculated for previous parameters
           # df_oprob = CSV.read("julia_mean_test.csv", DataFrame)
@@ -250,7 +251,7 @@ function SDE_solve_func(parms, num_runs, num_trajectories)
           #       "max_cases_all_25", "max_cases_all_75", "num_cases_mean", "num_cases_25", "num_cases_75", "end_time_mean", "end_time_25", "end_time_75", 
           #       "time_max_mean", "time_max_25", "time_max_75"])
           # end
-        end
+        # end
     end
   #Returns the NaNs to NaNs
   return(df_oprob)
@@ -259,7 +260,7 @@ end
 
 # Run simulations
 parms = parm_grid
-num_runs = 1000
+num_runs = 10
 num_trajectories = 100
 
 # Initialize saved csv
@@ -308,7 +309,7 @@ function combine_simulation_data(parm_grid, num_runs, num_trajectories)
   "time_max_mean", "time_max_25", "time_max_75"])
 
   for i in ProgressBar(1:length(parm_grid))
-    parms = [reverse(parm_grid)[i]]
+    parms = [parm_grid[i]]
     df_oprob = SDE_solve_func(parms, num_runs, num_trajectories)
 
     final_oprob.Thv[i] = df_oprob.Thv[1]

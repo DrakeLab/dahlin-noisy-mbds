@@ -127,7 +127,7 @@ jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[7], 6.5)
 
 plot_df <- jop %>% 
   select(sigma, prob_end_mean, prob_end_25, prob_end_75, 
-         prob_out10_mean, prob_out10_25, prob_out10_75,
+         prob_out100_mean, prob_out100_25, prob_out100_75,
          max_cases_all_mean, max_cases_all_25, max_cases_all_75,
          R0) %>% 
   pivot_longer(cols = -c(sigma, R0)) %>% 
@@ -135,10 +135,10 @@ plot_df <- jop %>%
          type = stringi::stri_reverse(str_split_i(stringi::stri_reverse(name), '_', i = 1))
   ) %>% 
   mutate(output = case_when(output == "prob_end" ~ "(a) Probability disease is endemic",
-                            output == "prob_out10" ~ "(b) Probability of an outbreak > 10 hosts",
+                            output == "prob_out100" ~ "(b) Probability of an outbreak > 100 hosts",
                             output == "max_cases" ~ "(c) Peak number of cases")) %>% 
   select(-name) %>%
-  mutate(across(output, ~factor(., levels = c("(a) Probability disease is endemic", "(b) Probability of an outbreak > 10 hosts","(c) Peak number of cases")))) %>% 
+  mutate(across(output, ~factor(., levels = c("(a) Probability disease is endemic", "(b) Probability of an outbreak > 100 hosts","(c) Peak number of cases")))) %>% 
   pivot_wider(id_cols = c(sigma, R0, output), names_from = type) %>% 
   arrange(sigma, R0)
 
@@ -158,7 +158,8 @@ plot <- ggplot(plot_df, aes(x = sigma)) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ylab("") +
   theme(strip.text.x = element_text(hjust = 0),
-        strip.background = element_blank())
+        strip.background = element_blank()) +
+  theme_minimal_grid()
 plot
 
 ggsave("figures/figure_3.png", height = 8, width = 7)
