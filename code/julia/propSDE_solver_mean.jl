@@ -7,45 +7,45 @@ using CSV, DataFrames, DifferentialEquations, NaNStatistics, ProgressBars, Stati
 # Set constant to keep track of timer
 const timer_output = TimerOutput()
 
-# base function for mosquito borne disease
-function f(du,u,p,t)
+# Drift terms
+function f!(du,u,p,t)
   #(H,V) = u
   #(b, τₕᵥ, τᵥₕ, Nₕ, Nᵥ, γₕ, μᵥ) = p
-  du[1] = @views (p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] - p[6] * u[1]
+  du[1] = (p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] - p[6] * u[1]
   #du[1] = (b * τₕᵥ * (Nₕ - H) * V / Nₕ) - γₕ * H
-  du[2] = @views (p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] - p[7] * u[2]
+  du[2] = (p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] - p[7] * u[2]
   #du[2] = (b * τᵥₕ * (Nᵥ - V) * H / Nₕ) - μᵥ * V]
 
   #u[3] is a fake variable to track the maximum number of cases during a simulation
-  du[3] = 0
+  du[3] = 0.0
   #u[4] is a fake variable to track the time when the maximum number of cases occurs during a simulation 
-  du[4] = 0
-  return(du)
+  du[4] = 0.0
+  nothing
 end
-# stochasticity terms
-function g(du,u,p,t)
+# Diffusion terms
+function g!(du,u,p,t)
   #(H,V) = u
   #(b, τₕᵥ, τᵥₕ, Nₕ, Nᵥ, γₕ, μᵥ, σ, αᵦ, αₜ, αₘ) = p
-  du[1,1] = @views sqrt((p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] + p[6] * u[1])
+  du[1,1] = sqrt((p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] + p[6] * u[1])
   #du[1,1] = sqrt(max(0,(b * τₕᵥ * (Nₕ - H) * V / Nₕ) + γₕ * H))
-  du[2,1] = 0
-  du[1,2] = 0
-  du[2,2] = @views sqrt((p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + p[7] * u[2])
+  du[2,1] = 0.0
+  du[1,2] = 0.0
+  du[2,2] = sqrt((p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + p[7] * u[2])
   #du[2,2] = sqrt(max(0,(b * τᵥₕ * (Nᵥ - V) * H / Nₕ) + μᵥ * V))
-  du[1,3] = @views (p[1] * p[8] * p[9] * p[2] * (p[4] - u[1]) / p[4]) * u[2]
+  du[1,3] = (p[1] * p[8] * p[9] * p[2] * (p[4] - u[1]) / p[4]) * u[2]
   #du[1,3] = σ * αᵦ * τₕᵥ * (Nₕ - H) * V / Nₕ
-  du[2,3] = @views p[8] * ((p[1] * p[9] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + (p[3] * p[10] * p[1] * (p[5] - u[2]) / p[4]) * u[1] + p[7] * p[11] * u[2])
+  du[2,3] = p[8] * ((p[1] * p[9] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + (p[3] * p[10] * p[1] * (p[5] - u[2]) / p[4]) * u[1] + p[7] * p[11] * u[2])
   # Alt formulation: environmental noise causes a *proportional* change in parameters (1 + N) * baseline
   # du[1,3] = @views (p[8] * p[9] * p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2]
   # du[2,3] = @views p[8] * ((p[9] * p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + (p[10] * p[3] * p[1] * (p[5] - u[2]) / p[4]) * u[1] + p[11] * p[7] * u[2])
   #du[2,3] = σ * (αᵦ * τᵥₕ * H * (Nᵥ - V) / Nₕ + αₜ * b * H * (Nᵥ - V) / Nₕ + αₘ * V)
-  du[3,1] = 0
-  du[3,2] = 0
-  du[3,3] = 0
-  du[4,1] = 0
-  du[4,2] = 0
-  du[4,3] = 0
-  return(du)
+  du[3,1] = 0.0
+  du[3,2] = 0.0
+  du[3,3] = 0.0
+  du[4,1] = 0.0
+  du[4,2] = 0.0
+  du[4,3] = 0.0
+  nothing
 end
 
 # Function: Calculate tHV values from specified R0 values
@@ -138,7 +138,7 @@ function reduction(u,batch,I)
   cat(u, tmp, dims = 5), false
 end
 
-#Output function saves only the value of the variabes at the final time step
+#Output function saves only the value of the variables at the final time step
 function output_func(sol, i)
   last(DataFrame(sol)), false
 end
@@ -181,7 +181,7 @@ function SDE_solve_func(parms, num_runs, num_trajectories)
         # end
         # @timeit timer_output "solve_SDE" begin 
           # sol = DataFrame
-          sol = @suppress sol = DataFrame(solve(ensembleprob, SRA1(), EnsembleDistributed(), trajectories = total_runs, verbose = true, save_everystep = false,  saveat = 0:1:(11*365)))
+          sol = @suppress sol = DataFrame(solve(ensembleprob, SRA1(), EnsembleSplitThreads(), trajectories = total_runs, verbose = true, save_everystep = false,  saveat = 0:1:(11*365)))
         # end
 
         for run_index in 1:num_runs 
@@ -226,7 +226,7 @@ function SDE_solve_func(parms, num_runs, num_trajectories)
           # Load the dataset up calculated for previous parameters
           # df_oprob = CSV.read("julia_mean_test.csv", DataFrame)
           # Add in the new data
-          df_oprob = vcat(df_oprob, (DataFrame([[p[2]],[p[8]], [mean(dftemp2.eprob)], [percentile(dftemp2.eprob,25)], [percentile(dftemp2.eprob,75)], 
+          df_oprob = vcat(df_oprob,(DataFrame([[p[2]],[p[8]], [mean(dftemp2.eprob)], [percentile(dftemp2.eprob,25)], [percentile(dftemp2.eprob,75)], 
           [mean(dftemp2.oprob10)], [percentile(dftemp2.oprob10,25)], [percentile(dftemp2.oprob10,75)], [mean(dftemp2.oprob100)], [percentile(dftemp2.oprob100,25)],
           [percentile(dftemp2.oprob100,75)],[mean(dftemp2.max_cases_all)], [percentile(dftemp2.max_cases_all,25)], [percentile(dftemp2.max_cases_all,75)],  
           [nanmean(dftemp2.max_cases_out)], [nanpctile(dftemp2.max_cases_out, 25)], 
@@ -260,7 +260,7 @@ end
 
 # Run simulations
 parms = parm_grid
-num_runs = 10
+num_runs = 1000
 num_trajectories = 100
 
 # Initialize saved csv

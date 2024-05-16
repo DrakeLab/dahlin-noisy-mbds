@@ -392,7 +392,7 @@ ggsave("figures/cones_Tvh.png", height = 7, width = 7)
 # Re-calculate all of these to get more trajectories (maybe like 20?)
 
 eps <- .Machine$double.eps
-roll_amount = 120
+roll_amount = 1
 
 trajectories <- read_csv("results/illustrate_trajectories_proportionalSDE.csv", show_col_types = FALSE) %>% # run "\code\julia\deterministic_results.jl" to get this file
   # ungroup() %>%
@@ -413,6 +413,8 @@ end_stats <- trajectories %>%
 trajectories <- right_join(trajectories, end_stats) %>% 
   mutate(type = "stochastic")
 
+saveRDS(trajectories, "results/formatted_trajectories.rds")
+
 # Load deterministic results and repeat them for each value of sigma (for plotting)
 deterministic_results <- read_csv("results/deterministic_trajectories.csv", show_col_types = FALSE) %>%
   cross_join(tibble(sigma = unique(trajectories$sigma)))
@@ -421,8 +423,12 @@ deterministic_results <- read_csv("results/deterministic_trajectories.csv", show
 
 ```{r trajectory quadrants, out.width='100%', fig.align='center', fig.cap='\\label{fig:SDEtrajectories} For R0=1.25 and sigma=0.08, the number of hosts infected at each time period in deterministic solution (black line) and 5 stochastic solutions (colored lines) are plotted.'}
 
-R0s_to_plot = unique(trajectories$R0) #c(0.95, 1.25, 4, 6.5)
-sigmas_to_plot = unique(trajectories$sigma) #c(0.05, 0.25, 0.75, 0.95)
+R0s_to_plot = c(0.75, 0.95, 1.05, 1.25, 2) #unique(trajectories$R0) #
+sigmas_to_plot = c(0.0, 0.05, 0.1, 0.15, 0.2, 0.25) #unique(trajectories$sigma) #
+
+trajectories <- trajectories %>% 
+  filter(R0 %in% R0s_to_plot,
+         sigma %in% sigmas_to_plot)
 
 appender_R0 <- function(string) TeX(paste("$R_0 = $", string))
 appender_sigma <- function(string) TeX(paste("$\\sigma = $", string))
@@ -460,7 +466,7 @@ quadrant_plot <- quadrant_df %>%
   # Color trajectories according to whether they eventually go to zero (=="plum4")
   scale_color_manual(values = c("#DF536B", "#61D04F"), breaks = c("TRUE", "FALSE")) + #c("seagreen3", "plum4")
   # Subplots for each combination of environmental noise strength and R0
-  facet_grid(R0 ~ sigma,
+  facet_grid(desc(R0) ~ sigma,
              labeller = labeller(.rows = as_labeller(appender_R0, 
                                                      default = label_parsed), 
                                  .cols = as_labeller(appender_sigma, 
@@ -477,7 +483,7 @@ quadrant_plot <- quadrant_df %>%
         panel.spacing = unit(1, "lines"), 
         strip.background = element_rect(fill=NA))
 
-ggsave("figures/example_quadrants.png", quadrant_plot, height = 20, width = 20)
+ggsave("figures/example_quadrants_reduced.png", quadrant_plot, height = 20, width = 20)
 
 # 
 # ggplot(jtd_1.05) +

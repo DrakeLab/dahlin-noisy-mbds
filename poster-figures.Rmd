@@ -112,15 +112,15 @@ jop <- read.csv("results/propSDE_means.csv")
   #            read.csv("results/means_7.csv")
   #            )
              #read.csv("code/julia/test.csv")
-jop$R0 <- jop$Thv
-Thv_list <- unique(jop$Thv)
-jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[1], 0.75)
-jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[2], 0.95)
-jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[3], 1.05)
-jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[4], 1.25)
-jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[5], 2)
-jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[6], 4)
-jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[7], 6.5)
+# jop$R0 <- jop$Thv
+# Thv_list <- unique(jop$Thv)
+# jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[1], 0.75)
+# jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[2], 0.95)
+# jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[3], 1.05)
+# jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[4], 1.25)
+# jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[5], 2)
+# jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[6], 4)
+# jop$R0 <- replace(jop$R0, jop$R0 == Thv_list[7], 6.5)
 ```
 
 ```{r Fig-3, out.width='100%', fig.align='center', fig.cap='\\label{fig:combined_outputs} Probability of the disease becoming endemic by sigma and R0 based on 1000 runs of 100 iterations. Overall, increasing environmental noise strength cases the probability that the disease becomes endemic to decrease. For smaller R0 values (i.e. <1.25), there is a slight increase in endemic disease probability at high environmental noise levels. Above environmental noise strength of 0.4 (where there is up to 40% variation in parameter values), the probability of endemic disease goes to zero. There is a greater probability of the disease going endemic at higher values of R0.'}
@@ -142,19 +142,20 @@ plot_df <- jop %>%
   pivot_wider(id_cols = c(sigma, R0, output), names_from = type) %>% 
   arrange(sigma, R0)
 
+R0_colors = rev(c4a("tableau.classic_orange_blue", 20))[c(1:3, 10:20)]
 
-
+library(cols4all)
 plot <- ggplot(plot_df, aes(x = sigma)) +
   geom_line(aes(y =  mean, color = as.factor(R0), group = as.factor(R0))) +
   geom_point(aes(y =  mean, color = as.factor(R0), group = as.factor(R0))) +
   geom_ribbon(aes(ymin = `25`, ymax = `75`, fill = as.factor(R0)), alpha = 0.3) +
   # scale_color_viridis(discrete=TRUE, guide = "legend")+
   # scale_fill_viridis(discrete=TRUE)+
-  scale_color_manual(values = R0_cols, breaks = R0_vals) + 
-  scale_fill_manual(values = R0_cols, breaks = R0_vals) +
+  scale_color_manual(values = R0_colors) + #, breaks = R0_vals) +
+  scale_fill_manual(values = R0_colors)  +#, breaks = R0_vals) +
   facet_wrap(~ output, ncol = 1, scales = "free", strip.position = "top") +
   theme_cowplot() +
-  labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
+  # labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
   ylab("") +
   theme(strip.text.x = element_text(hjust = 0),

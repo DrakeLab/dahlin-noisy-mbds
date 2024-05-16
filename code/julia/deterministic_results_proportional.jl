@@ -38,7 +38,7 @@ tspan = [0.0, 11*365]
 
 
 # Get deterministic ODE solution trajectories______________________________________________
-R0s = [0.95:0.05:1.25; 2.0:1.0:7.0]
+R0s = [0.5; 0.95:0.05:1.25; 2.0:1.0:7.0]
 THVs = tHV_from_R0(p, R0s)
 
 out = DataFrame([Float64[],Float64[], Float64[], Float64[]], [:H, :V, :t, :R0])
