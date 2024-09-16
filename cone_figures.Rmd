@@ -395,23 +395,26 @@ eps <- .Machine$double.eps
 roll_amount = 1
 
 trajectories <- read_csv("results/illustrate_trajectories_proportionalSDE.csv", show_col_types = FALSE) %>% # run "\code\julia\deterministic_results.jl" to get this file
-  # ungroup() %>%
-  filter(t %in% 1:(11*365)) %>% 
+  ungroup() %>%
+  filter(t %in% 1:(11*365)) %>%quad
   filter(H >= 0, V >= 0) %>%
-  group_by(trajectory, sigma, R0) %>% 
-  mutate(
-    rolling_H = rollmean(H, roll_amount, mean, align = "right", fill = 0),
-    rolling_V = rollmean(V, roll_amount, mean, align = "right", fill = 0)) #%>% 
+  group_by(trajectory, sigma, R0) # %>%
+  # mutate(
+  #   rolling_H = rollmean(H, roll_amount, mean, align = "right", fill = 0),
+  #   rolling_V = rollmean(V, roll_amount, mean, align = "right", fill = 0)) #%>% 
 # mutate(t = t - 365) %>% filter(t > -1)
 
 end_stats <- trajectories %>% 
   filter(t == 3650) %>% 
   group_by(trajectory, sigma, R0) %>% 
   mutate(end_bool = H > 0) %>% 
-  select(trajectory, sigma, R0, end_bool)
+  select(trajectory, sigma, R0, end_bool) #%>% 
+  # group_by(sigma, R0) %>%
+  # summarise(num_end = sum(end_bool), .groups = "keep")
 
-trajectories <- right_join(trajectories, end_stats) %>% 
-  mutate(type = "stochastic")
+trajectories <- left_join(trajectories, end_stats) %>% 
+  mutate(type = "stochastic") %>% 
+  mutate(end_bool = replace_na(end_bool, FALSE))
 
 saveRDS(trajectories, "results/formatted_trajectories.rds")
 
@@ -450,9 +453,10 @@ summary_df <- quadrant_df  %>%
   mutate(x = Inf, y = Inf)
 
 quadrant_plot <- quadrant_df %>% 
+  filter(trajectory < 21) %>% 
   ggplot() +
   # Plot stochastic trajectories
-  geom_line(aes(x = (t/365), y = rolling_H, color = as.factor(end_bool), 
+  geom_line(aes(x = (t/365), y = H, color = as.factor(end_bool), 
                 group = as.factor(trajectory)),
             alpha = 0.6) +
   # Plot mean-field deterministic trajectories

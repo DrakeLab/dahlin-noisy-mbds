@@ -38,10 +38,10 @@ function inner_solver(ensemble_problem, run_count::Int64)
 end
 
 ## Set up ensemble problem
+const u0 = [0.0, 10.0, 0, 0]
+const tspan = [0.0, 10*365.0]
+const noise_rate_prototype = [0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
 function ensemble_setup(drift, diffusion, parameters, callbacks, output_function)
-        u0 = [0.0, 10.0, 0, 0]
-        tspan = [0.0, 10*365.0]
-        noise_rate_prototype = [0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
         prob = SDEProblem(drift, diffusion, u0, tspan, parameters, noise_rate_prototype = noise_rate_prototype, callback = callbacks)
         ensemble_problem = EnsembleProblem(prob, output_func = output_function)
         return(ensemble_problem)
@@ -220,10 +220,40 @@ const parm_grid = collect(Iterators.product(sigmas, R0s))
 
 # Run functions to get data
 # # Re-write to use R0 instead of Thv
-final_data = main_function(parm_grid[1:2], 2, 2, f!, g!, cbs, output_func, p)
-final_data = main_function(reverse(parm_grid), 1000, 100, f!, g!, cbs, output_func, p)
+prealloc_data = main_function(parm_grid[1:2], 2, 2, f!, g!, cbs, output_func, p)
+# final_data = main_function(reverse(parm_grid), 1000, 100, f!, g!, cbs, output_func, p)
 
-# Save data
-cd("$(homedir())/Documents/Github/dahlin-noisy-mbds/results") do
-        CSV.write("propSDE_means.csv", final_data, transform = (col,val) -> something(val, missing))
+parm_grid_size = size(eachindex(parm_grid))[1]
+chunk_size = 30
+chunks = collect(1:chunk_size:parm_grid_size)
+push!(chunks, parm_grid_size)
+
+# Set dataframe up
+delete!(prealloc_data, [1,2])
+push!(prealloc_data, repeat([0.0], 29))
+# cd("$(homedir())/Documents/Github/dahlin-noisy-mbds/results") do
+# # cd("F:/GitHub/dahlin-noisy-mbds/results") do
+#         CSV.write("propSDE_means.csv", prealloc_data, transform = (col,val) -> something(val, missing))
+# end
+
+num_chunks = size(chunks)[1]
+
+for i in 9:12
+        print_pre = "Chunk # "
+        print_end = " out of "
+        println(join([print_pre, i, print_end, (size(chunks)[1]-1)]))
+        idx_set = chunks[i]:chunks[i+1]-1
+        parm_set = reverse(parm_grid)[idx_set]
+
+        cd("$(homedir())/Documents/Github/dahlin-noisy-mbds/results") do
+                final_data = CSV.read("propSDE_means.csv", DataFrame)
+                append!(final_data, main_function(parm_set, 1000, 100, f!, g!, cbs, output_func, p))
+                CSV.write("propSDE_means.csv", final_data, transform = (col,val) -> something(val, missing))
+                final_data = nothing
+        end
 end
+
+# # Save data
+# cd("$(homedir())/Documents/Github/dahlin-noisy-mbds/results") do
+#         CSV.write("propSDE_means.csv", final_data, transform = (col,val) -> something(val, missing))
+# end
