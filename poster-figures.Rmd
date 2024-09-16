@@ -143,65 +143,68 @@ plot_df <- jop %>%
   pivot_wider(id_cols = c(sigma, R0, output), names_from = type) %>% 
   arrange(sigma, R0)
 
-R0_colors = rev(c4a("tableau.classic_orange_blue", 20))[c(1:3, 10:20)]
+# R0_colors = rev(c4a("tableau.classic_orange_blue", 20))[c(1:3, 10:20)]
+R0_colors = (c4a("tableau.classic_orange_blue", 20))[c(1:10, 16:20)]
 
-# plot <- ggplot(plot_df, aes(x = sigma)) +
-#   geom_line(aes(y =  mean, color = as.factor(R0), group = as.factor(R0))) +
-#   geom_point(aes(y =  mean, color = as.factor(R0), group = as.factor(R0))) +
-#   geom_ribbon(aes(ymin = `25`, ymax = `75`, fill = as.factor(R0)), alpha = 0.3) +
-#   # scale_color_viridis(discrete=TRUE, guide = "legend")+
-#   # scale_fill_viridis(discrete=TRUE)+
-#   # scale_color_manual(values = R0_colors) + #, breaks = R0_vals) +
-#   # scale_fill_manual(values = R0_colors)  +#, breaks = R0_vals) +
-#   facet_wrap(~ output, ncol = 1, scales = "free", strip.position = "top") +
+plot_df$R0 <- factor(plot_df$R0, levels = c(6, 5, 4, 3, 2, 1.25, 1.2, 1.15, 1.1, 1.05, 1, 0.95, 0.75, 0.5, 0))
+
+plot <- ggplot(plot_df, aes(x = sigma)) +
+  geom_line(aes(y =  mean, color = as.factor(R0), group = as.factor(R0))) +
+  geom_point(aes(y =  mean, color = as.factor(R0), group = as.factor(R0))) +
+  geom_ribbon(aes(ymin = `25`, ymax = `75`, fill = as.factor(R0)), alpha = 0.3) +
+  # scale_color_viridis(discrete=TRUE, guide = "legend")+
+  # scale_fill_viridis(discrete=TRUE)+
+  scale_color_manual(values = R0_colors) + #, breaks = R0_vals) +
+  scale_fill_manual(values = R0_colors)  +#, breaks = R0_vals) +
+  facet_wrap(~ output, ncol = 1, scales = "free", strip.position = "top") +
+  theme_cowplot() +
+  labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
+  xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
+  ylab("") +
+  theme(strip.text.x = element_text(hjust = 0),
+        strip.background = element_blank()) +
+  theme_minimal_grid()
+plot
+
+# plot1 <- filter(plot_df, output == "(a) Probability disease is endemic") %>% 
+#   ggplot() +
+#   geom_contour_filled(aes(x = sigma, y = R0, z = mean)) +
 #   theme_cowplot() +
 #   # labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
 #   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
-#   ylab("") +
+#   ylab(TeX("Basic reproduction number $\\,(R_0)$")) +
+#   labs(fill = "Pr(disease is endemic)") +
 #   theme(strip.text.x = element_text(hjust = 0),
 #         strip.background = element_blank()) +
 #   theme_minimal_grid()
-# plot
-
-plot1 <- filter(plot_df, output == "(a) Probability disease is endemic") %>% 
-  ggplot() +
-  geom_contour_filled(aes(x = sigma, y = R0, z = mean)) +
-  theme_cowplot() +
-  # labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
-  xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
-  ylab(TeX("Basic reproduction number $\\,(R_0)$")) +
-  labs(fill = "Pr(disease is endemic)") +
-  theme(strip.text.x = element_text(hjust = 0),
-        strip.background = element_blank()) +
-  theme_minimal_grid()
-
-plot2 <- filter(plot_df, output == "(b) Probability of an outbreak > 100 hosts") %>% 
-  ggplot() +
-  geom_contour_filled(aes(x = sigma, y = R0, z = mean)) +
-  theme_cowplot() +
-  # labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
-  xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
-  ylab(TeX("Basic reproduction number $\\,(R_0)$")) +
-  labs(fill = "Pr(outbreak > 100 hosts)") +
-  theme(strip.text.x = element_text(hjust = 0),
-        strip.background = element_blank()) +
-  theme_minimal_grid()
-plot2
-
-plot3 <- filter(plot_df, output == "(c) Peak number of cases") %>% 
-  ggplot() +
-  geom_contour_filled(aes(x = sigma, y = R0, z = mean)) +
-  theme_cowplot() +
-  # labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
-  xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
-  ylab(TeX("Basic reproduction number $\\,(R_0)$")) +
-  labs(fill = "Peak number of cases") +
-  theme(strip.text.x = element_text(hjust = 0),
-        strip.background = element_blank()) +
-  theme_minimal_grid()
-plot3
-
-final_plot = plot_grid(plot1, plot2, plot3, align = 'h')
+# 
+# plot2 <- filter(plot_df, output == "(b) Probability of an outbreak > 100 hosts") %>% 
+#   ggplot() +
+#   geom_contour_filled(aes(x = sigma, y = R0, z = mean)) +
+#   theme_cowplot() +
+#   # labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
+#   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
+#   ylab(TeX("Basic reproduction number $\\,(R_0)$")) +
+#   labs(fill = "Pr(outbreak > 100 hosts)") +
+#   theme(strip.text.x = element_text(hjust = 0),
+#         strip.background = element_blank()) +
+#   theme_minimal_grid()
+# plot2
+# 
+# plot3 <- filter(plot_df, output == "(c) Peak number of cases") %>% 
+#   ggplot() +
+#   geom_contour_filled(aes(x = sigma, y = R0, z = mean)) +
+#   theme_cowplot() +
+#   # labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
+#   xlab(unname(TeX("Environmental noise strength $(\\sigma)$"))) +
+#   ylab(TeX("Basic reproduction number $\\,(R_0)$")) +
+#   labs(fill = "Peak number of cases") +
+#   theme(strip.text.x = element_text(hjust = 0),
+#         strip.background = element_blank()) +
+#   theme_minimal_grid()
+# plot3
+# 
+# final_plot = plot_grid(plot1, plot2, plot3, align = 'h')
 
 ggsave("figures/figure_3.png", height = 8, width = 7)
 ```
