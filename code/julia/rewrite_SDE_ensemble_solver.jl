@@ -30,8 +30,108 @@ using CSV, DataFrames, DifferentialEquations, NaNStatistics, ProgressBars, Stati
 
 
 # Define relevant functions
+# Drift terms
+function f!(du,u,p,t)
+        #(H,V) = u
+        #(b, τₕᵥ, τᵥₕ, Nₕ, Nᵥ, γₕ, μᵥ) = p
+        du[1] = (p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] - p[6] * u[1]
+        #du[1] = (b * τₕᵥ * (Nₕ - H) * V / Nₕ) - γₕ * H
+        du[2] = (p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] - p[7] * u[2]
+        #du[2] = (b * τᵥₕ * (Nᵥ - V) * H / Nₕ) - μᵥ * V]
 
-## Start with innermost solver and work outwards
+        #u[3] is a fake variable to track the maximum number of cases during a simulation
+        du[3] = 0.0
+        #u[4] is a fake variable to track the time when the maximum number of cases occurs during a simulation 
+        du[4] = 0.0
+        nothing
+end
+# Diffusion terms
+function g!(du,u,p,t)
+        #(H,V) = u
+        #(b, τₕᵥ, τᵥₕ, Nₕ, Nᵥ, γₕ, μᵥ, σ, αᵦ, αₜ, αₘ) = p
+        du[1,1] = sqrt((p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] + p[6] * u[1])
+        #du[1,1] = sqrt(max(0,(b * τₕᵥ * (Nₕ - H) * V / Nₕ) + γₕ * H))
+        du[2,1] = 0.0
+        du[1,2] = 0.0
+        du[2,2] = sqrt((p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + p[7] * u[2])
+        #du[2,2] = sqrt(max(0,(b * τᵥₕ * (Nᵥ - V) * H / Nₕ) + μᵥ * V))
+        du[1,3] = (p[1] * p[8] * p[9] * p[2] * (p[4] - u[1]) / p[4]) * u[2]
+        #du[1,3] = σ * αᵦ * τₕᵥ * (Nₕ - H) * V / Nₕ
+        du[2,3] = p[8] * ((p[1] * p[9] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + (p[3] * p[10] * p[1] * (p[5] - u[2]) / p[4]) * u[1] + p[7] * p[11] * u[2])
+        # Alt formulation: environmental noise causes a *proportional* change in parameters (1 + N) * baseline
+        # du[1,3] = @views (p[8] * p[9] * p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2]
+        # du[2,3] = @views p[8] * ((p[9] * p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + (p[10] * p[3] * p[1] * (p[5] - u[2]) / p[4]) * u[1] + p[11] * p[7] * u[2])
+        #du[2,3] = σ * (αᵦ * τᵥₕ * H * (Nᵥ - V) / Nₕ + αₜ * b * H * (Nᵥ - V) / Nₕ + αₘ * V)
+        du[3,1] = 0.0
+        du[3,2] = 0.0
+        du[3,3] = 0.0
+        du[4,1] = 0.0
+        du[4,2] = 0.0
+        du[4,3] = 0.0
+        nothing
+end
+
+### Define callbacks
+# Callback 1: if infected host pop. goes negative, replace its value with zero
+function condition1(u, t, integrator)
+        u[1] .< 0.0
+end
+function affect1!(integrator)
+        integrator.u[1] = 0.0
+end
+cb1 = DiscreteCallback(condition1, affect1!)
+# Callback 2: if infected vector pop. goes negative, replace its value with zero
+function condition2(u, t, integrator)
+        u[2] .< 0.0
+end
+function affect2!(integrator)
+        integrator.u[2] = 0.0
+end
+cb2 = DiscreteCallback(condition2, affect2!)
+#Callback 3 racks the maximum number of hosts infected and saves this value
+function condition3(u, t, integrator)
+        u[3] .< u[1]
+end
+function affect3!(integrator)
+        integrator.u[3] = integrator.u[1]
+        integrator.u[4] = integrator.t
+end
+cb3 = DiscreteCallback(condition3, affect3!)
+
+# Callback 4: if infected host pop. exceeds carrying capacity (10000), replace its value with carrying capacity
+function condition4(u, t, integrator)
+        u[1] - p[4] .> 0.0
+end
+function affect4!(integrator)
+        integrator.u[1] = p[4]
+end
+cb4 = DiscreteCallback(condition4, affect4!)
+# Callback 5:  if infected vector pop. exceeds carrying capacity (100000), replace its value with carrying capacity
+function condition5(u, t, integrator)
+        u[2] - p[5] .> 0.0
+end
+function affect5!(integrator)
+        integrator.u[2] = p[5]
+end
+cb5 = DiscreteCallback(condition5, affect5!)
+# Combine callbacks
+#This callback terminates the simulation if the outbreak dies out defined as less than 1 host and vector infected
+function terminate_condition(u,t,integrator)
+        u[2] < 1.0 && u[1] < 1.0
+end
+function terminate_affect!(integrator)
+        integrator.u[1] = 0.0
+terminate!(integrator)
+end
+terminate_cb = DiscreteCallback(terminate_condition,terminate_affect!)
+cbs = CallbackSet(cb1, cb2, cb3, cb4, cb5, terminate_cb)
+
+### Output function saves only the value of the variables at the final time step
+function output_func(sol, i)
+        last(DataFrame(sol)), false
+end
+
+## Innermost solver
 function inner_solver(ensemble_problem, run_count::Int64)
         solution = solve(ensemble_problem, SRA1(), EnsembleSplitThreads(), trajectories = run_count, verbose = true, save_everystep = false)
         return(solution)
@@ -102,107 +202,6 @@ function batch_stats(R0, number_runs, number_trajectories, parameters, drift, di
               "time_max_mean", "time_max_25", "time_max_75"])
 end
 
-### Output function saves only the value of the variables at the final time step
-function output_func(sol, i)
-        last(DataFrame(sol)), false
-end
-
-### Define callbacks
-# Callback 1: if infected host pop. goes negative, replace its value with zero
-function condition1(u, t, integrator)
-        u[1] .< 0.0
-end
-function affect1!(integrator)
-        integrator.u[1] = 0.0
-end
-cb1 = DiscreteCallback(condition1, affect1!)
-# Callback 2: if infected vector pop. goes negative, replace its value with zero
-function condition2(u, t, integrator)
-        u[2] .< 0.0
-end
-function affect2!(integrator)
-        integrator.u[2] = 0.0
-end
-cb2 = DiscreteCallback(condition2, affect2!)
-#Callback 3 racks the maximum number of hosts infected and saves this value
-function condition3(u, t, integrator)
-        u[3] .< u[1]
-end
-function affect3!(integrator)
-        integrator.u[3] = integrator.u[1]
-        integrator.u[4] = integrator.t
-end
-cb3 = DiscreteCallback(condition3, affect3!)
-
-# Callback 4: if infected host pop. exceeds carrying capacity (10000), replace its value with carrying capacity
-function condition4(u, t, integrator)
-        u[1] - p[4] .> 0.0
-end
-function affect4!(integrator)
-        integrator.u[1] = p[4]
-end
-cb4 = DiscreteCallback(condition4, affect4!)
-# Callback 5:  if infected vector pop. exceeds carrying capacity (100000), replace its value with carrying capacity
-function condition5(u, t, integrator)
-        u[2] - p[5] .> 0.0
-end
-function affect5!(integrator)
-        integrator.u[2] = p[5]
-end
-cb5 = DiscreteCallback(condition5, affect5!)
-# Combine callbacks
-#This callback terminates the simulation if the outbreak dies out defined as less than 1 host and vector infected
-function terminate_condition(u,t,integrator)
-        u[2] < 1.0 && u[1] < 1.0
-end
-function terminate_affect!(integrator)
-        integrator.u[1] = 0.0
-terminate!(integrator)
-end
-terminate_cb = DiscreteCallback(terminate_condition,terminate_affect!)
-cbs = CallbackSet(cb1, cb2, cb3, cb4, cb5, terminate_cb)
-
-# Drift terms
-function f!(du,u,p,t)
-        #(H,V) = u
-        #(b, τₕᵥ, τᵥₕ, Nₕ, Nᵥ, γₕ, μᵥ) = p
-        du[1] = (p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] - p[6] * u[1]
-        #du[1] = (b * τₕᵥ * (Nₕ - H) * V / Nₕ) - γₕ * H
-        du[2] = (p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] - p[7] * u[2]
-        #du[2] = (b * τᵥₕ * (Nᵥ - V) * H / Nₕ) - μᵥ * V]
-
-        #u[3] is a fake variable to track the maximum number of cases during a simulation
-        du[3] = 0.0
-        #u[4] is a fake variable to track the time when the maximum number of cases occurs during a simulation 
-        du[4] = 0.0
-        nothing
-end
-# Diffusion terms
-function g!(du,u,p,t)
-        #(H,V) = u
-        #(b, τₕᵥ, τᵥₕ, Nₕ, Nᵥ, γₕ, μᵥ, σ, αᵦ, αₜ, αₘ) = p
-        du[1,1] = sqrt((p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] + p[6] * u[1])
-        #du[1,1] = sqrt(max(0,(b * τₕᵥ * (Nₕ - H) * V / Nₕ) + γₕ * H))
-        du[2,1] = 0.0
-        du[1,2] = 0.0
-        du[2,2] = sqrt((p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + p[7] * u[2])
-        #du[2,2] = sqrt(max(0,(b * τᵥₕ * (Nᵥ - V) * H / Nₕ) + μᵥ * V))
-        du[1,3] = (p[1] * p[8] * p[9] * p[2] * (p[4] - u[1]) / p[4]) * u[2]
-        #du[1,3] = σ * αᵦ * τₕᵥ * (Nₕ - H) * V / Nₕ
-        du[2,3] = p[8] * ((p[1] * p[9] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + (p[3] * p[10] * p[1] * (p[5] - u[2]) / p[4]) * u[1] + p[7] * p[11] * u[2])
-        # Alt formulation: environmental noise causes a *proportional* change in parameters (1 + N) * baseline
-        # du[1,3] = @views (p[8] * p[9] * p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2]
-        # du[2,3] = @views p[8] * ((p[9] * p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + (p[10] * p[3] * p[1] * (p[5] - u[2]) / p[4]) * u[1] + p[11] * p[7] * u[2])
-        #du[2,3] = σ * (αᵦ * τᵥₕ * H * (Nᵥ - V) / Nₕ + αₜ * b * H * (Nᵥ - V) / Nₕ + αₘ * V)
-        du[3,1] = 0.0
-        du[3,2] = 0.0
-        du[3,3] = 0.0
-        du[4,1] = 0.0
-        du[4,2] = 0.0
-        du[4,3] = 0.0
-        nothing
-end
-
 # Define parameters
 function tHV_from_R0(p, R0) 
         (b, τₕᵥ, τᵥₕ, Nₕ, Nᵥ, γₕ, μᵥ) = p
@@ -218,12 +217,12 @@ const THVs = tHV_from_R0(p, R0s)
 const parm_grid = collect(Iterators.product(sigmas, R0s))
 # Define function arguments
 
-# Run functions to get data
-# # Re-write to use R0 instead of Thv
-final_data = main_function(parm_grid[1:2], 2, 2, f!, g!, cbs, output_func, p)
-final_data = main_function(reverse(parm_grid), 1000, 100, f!, g!, cbs, output_func, p)
+# # Run functions to get data
+# # # Re-write to use R0 instead of Thv
+# final_data = main_function(parm_grid[1:2], 2, 2, f!, g!, cbs, output_func, p)
+# final_data = main_function(reverse(parm_grid), 1000, 100, f!, g!, cbs, output_func, p)
 
-# Save data
-cd("$(homedir())/Documents/Github/dahlin-noisy-mbds/results") do
-        CSV.write("propSDE_means.csv", final_data, transform = (col,val) -> something(val, missing))
-end
+# # Save data
+# cd("$(homedir())/Documents/Github/dahlin-noisy-mbds/results") do
+#         CSV.write("propSDE_means.csv", final_data, transform = (col,val) -> something(val, missing))
+# end

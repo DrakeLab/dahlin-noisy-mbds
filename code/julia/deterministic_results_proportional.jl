@@ -5,15 +5,15 @@ using CSV, DataFrames, DifferentialEquations, Plots, Statistics, ProgressBars
 
 # Define functions_____________________________________________________________
 # base function for mosquito borne disease
-function f(du,u,p,t)
+function f!(u,p,t)
   #(H,V) = u
   #(b, τₕᵥ, τᵥₕ, Nₕ, Nᵥ, γₕ, μᵥ) = p
-  du[1] = @views (p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] - p[6] * u[1]
+  dH = @views (p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] - p[6] * u[1]
   #du[1] = (b * τₕᵥ * (Nₕ - H) * V / Nₕ) - γₕ * H
-  du[2] = @views (p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] - p[7] * u[2]
+  dV = @views (p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] - p[7] * u[2]
   #du[2] = (b * τᵥₕ * (Nᵥ - V) * H / Nₕ) - μᵥ * V]
 
-  return(du)
+  SA[dH, dV]
 end
 
 # Function: Calculate tVH values from specified R0 values
@@ -32,9 +32,10 @@ p = [0.3, 0.02450000, 0.9, 10000.0, 100000.0, 1/3, 1/21, 0.0, 1.0, 1.0, 1.0]
 
 
 #initial conditions->10 infected mosquitos to start
-u0 = [0.0, 10.0]
+u0 = SA[0.0, 10.0]
 #10 year simulation with time step of 1 day
-tspan = [0.0, 11*365]
+tspan = (0.0, 11*365.0)
+dt = 1e-3
 
 
 # Get deterministic ODE solution trajectories______________________________________________
@@ -47,7 +48,7 @@ for s in eachindex(THVs)
   R0 = R0s[s]
   p[2]=THVs[s] # Thv value
   # Define ODE problem (no stochasticity)
-  prob = ODEProblem(f,u0, tspan, p)
+  prob = ODEProblem{false}(f!,u0, tspan, p)
   # Solve 
   sol = solve(prob)
 
@@ -80,7 +81,7 @@ end
 function affect1!(integrator)
   integrator.u[1] = 0.0
 end
-cb1 = DiscreteCallback(condition1, affect1!)
+cb1 = ContinuousCallback(condition1, affect1!, save_positions=(false,false))
 # Callback 2: if infected vector pop. goes negative, replace its value with zero
 function condition2(u, t, integrator)
   u[2] .< 0.0
@@ -88,7 +89,7 @@ end
 function affect2!(integrator)
   integrator.u[2] = 0.0
 end
-cb2 = DiscreteCallback(condition2, affect2!)
+cb2 = ContinuousCallback(condition2, affect2!, save_positions=(false,false))
 # Callback 4: if infected host pop. exceeds carrying capacity (10000), replace its value with carrying capacity
 function condition4(u, t, integrator)
     u[1] - p[4] .> 0.0
@@ -96,7 +97,7 @@ function condition4(u, t, integrator)
 function affect4!(integrator)
     integrator.u[1] = p[4]
 end
-cb4 = DiscreteCallback(condition4, affect4!)
+cb4 = ContinuousCallback(condition4, affect4!, save_positions=(false,false))
 # Callback 5:  if infected vector pop. exceeds carrying capacity (100000), replace its value with carrying capacity
 function condition5(u, t, integrator)
   u[2] - p[5] .> 0.0
@@ -104,7 +105,7 @@ end
 function affect5!(integrator)
   integrator.u[2] = p[5]
 end
-cb5 = DiscreteCallback(condition5, affect5!)
+cb5 = ContinuousCallback(condition5, affect5!, save_positions=(false,false))
 # Combine callbacks
 cbs = CallbackSet(cb1, cb2, cb4, cb5)
 
@@ -125,32 +126,39 @@ const parm_grid = collect(Iterators.product(sigmas, R0s))
 num_trajectories = 100
 
 # Drift terms
-function f(du,u,p,t)
+function f!(u,p,t)
   #(V,H) = u
   #(b, τₕᵥ, τᵥₕ, Nₕ, Nᵥ, γₕ, μᵥ) = p
-  du[1] = (p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] - p[6] * u[1]
+  dH = (p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] - p[6] * u[1]
   #du[1] = (b * τₕᵥ * (Nₕ - H) * V / Nₕ) - γₕ * H
-  du[2] = (p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] - p[7] * u[2]
+  dV = (p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] - p[7] * u[2]
   #du[2] = (b * τᵥₕ * (Nᵥ - V) * H / Nₕ) - μᵥ * V]
+  MVector{2}(dH, dV)
 end
 # Diffusion terms
-function g(du,u,p,t)
+function g!(u,p,t)
+  delta = 0.25
+  phi_factorH = ifelse(u[1] > delta, 1, u[1] / delta)
+  phi_factorV = ifelse(u[2] > delta, 1, u[2] / delta)
   #(V,H) = u
   #(b, τₕᵥ, τᵥₕ, Nₕ, Nᵥ, γₕ, μᵥ, σ, αᵦ, αₜ, αₘ) = p
-  du[1,1] = sqrt((p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] + p[6] * u[1])
+  dH1 = sqrt((p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2] + p[6] * u[1])
   #du[1,1] = sqrt(max(0,(b * τₕᵥ * (Nₕ - H) * V / Nₕ) + γₕ * H))
-  du[2,1] = 0.0
-  du[1,2] = 0.0
-  du[2,2] = sqrt((p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + p[7] * u[2])
+  dV1 = 0.0
+  dH2 = 0.0
+  dV2 = sqrt((p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + p[7] * u[2])
   #du[2,2] = sqrt(max(0,(b * τᵥₕ * (Nᵥ - V) * H / Nₕ) + μᵥ * V))
-  du[1,3] = (p[8] * p[9] * p[2] * (p[4] - u[1]) / p[4]) * u[2]
+  dH3 = (p[8] * p[9] * p[2] * (p[4] - u[1]) / p[4]) * u[2]
   #du[1,3] = σ * αᵦ * τₕᵥ * (Nₕ - H) * V / Nₕ
-  du[2,3] = p[8] * ((p[9] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + (p[10] * p[1] * (p[5] - u[2]) / p[4]) * u[1] + p[11] * u[2])
+  dV3 = p[8] * ((p[9] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + (p[10] * p[1] * (p[5] - u[2]) / p[4]) * u[1] + p[11] * u[2])
   #du[2,3] = σ * (αᵦ * τᵥₕ * H * (Nᵥ - V) / Nₕ + αₜ * b * H * (Nᵥ - V) / Nₕ + αₘ * V)
+  MArray{Tuple{2,3}}(dH1, dV1, dH2, dV2, dH3, dV3)
 end
 
 # Diffusion parameters
-noise_rate_prototype = [0.0 0.0 0.0; 0.0 0.0 0.0]
+noise_rate_prototype = MArray{Tuple{2,3}}(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+u0 = MVector{2}(0.0, 10.0)
+dt = 0.002 
 
 function get_oprob(parms)
 # Define SDE problem
@@ -165,7 +173,7 @@ for s in ProgressBar(eachindex(parms))
   
   total_runs = num_trajectories
   #defines the SDE problem to be solved
-  prob = SDEProblem(f, g, u0, tspan, p, noise_rate_prototype=noise_rate_prototype, callback = cbs)
+  prob = SDEProblem{false}(f!, g!, u0, tspan, p, noise_rate_prototype = noise_rate_prototype)#, callback = cbs)
   # Set up an ensemble problem-run 1000 iterations and save only the final time step values
   ensembleprob = EnsembleProblem(prob) 
   # sol = DataFrame
@@ -175,9 +183,9 @@ for s in ProgressBar(eachindex(parms))
   states = sol.u
   times = sol.t
 
-  for i in 1:size(states)[1]
-    temp = reduce(vcat, transpose(states[i]))
-    temp2 = reduce(hcat, [temp, times[i]])
+  for i in 1:size(sol)[3]
+    temp = reduce(hcat, (sol[:,i].u))' #reduce(vcat, transpose(states[i]))
+    temp2 = reduce(hcat, [temp, (sol[:,i].t)])
     trajectory_indexes = repeat([i], size(temp)[1])
     sigma_val = repeat([p[8]], size(temp)[1])
     R0_val = repeat([R0], size(temp)[1])
@@ -186,6 +194,7 @@ for s in ProgressBar(eachindex(parms))
 
     append!(out,temp4)
   end
+  
 end
 return(out)
 end
