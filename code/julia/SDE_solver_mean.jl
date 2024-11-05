@@ -43,6 +43,7 @@ function g(du,u,p,t)
   du[1,3] = @views (p[8] * p[9] * p[2] * (p[4] - u[1]) / p[4]) * u[2]
   #du[1,3] = σ * αᵦ * τₕᵥ * (Nₕ - H) * V / Nₕ
   du[2,3] = @views p[8] * ((p[9] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + (p[10] * p[1] * (p[5] - u[2]) / p[4]) * u[1] + p[11] * u[2])
+                   p[8] * ((p[1] * p[9] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + (p[3] * p[10] * p[1] * (p[5] - u[2]) / p[4]) * u[1] + p[7] * p[11] * u[2])
   # Alt formulation: environmental noise causes a *proportional* change in parameters (1 + N) * baseline
   # du[1,3] = @views (p[8] * p[9] * p[1] * p[2] * (p[4] - u[1]) / p[4]) * u[2]
   # du[2,3] = @views p[8] * ((p[9] * p[1] * p[3] * (p[5] - u[2]) / p[4]) * u[1] + (p[10] * p[3] * p[1] * (p[5] - u[2]) / p[4]) * u[1] + p[11] * p[7] * u[2])
