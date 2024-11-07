@@ -5,11 +5,15 @@ using DifferentialEquations
 using Plots
 using DataFrames
 using DifferentialEquations.EnsembleAnalysis
+using Main.Threads
+using CSV
+using ProgressBars
+# using DiffEqMonteCarlo
 
 # [] Later set this up as a function to parameters can be varied
 
 # Set simulation parameters 
-const num_sims = 1e5 # number of simulations to Run
+const num_sims = 10000::Int# number of simulations to Run
 const deltat = 1.0 # timestep for Euler-Maruyama (EM) algorithm
 const maxtime = 3650.0 # final time point
 const time_vec = 1:deltat:maxtime # vector of timepoints at which to evaluate SDE
@@ -50,13 +54,11 @@ const sigmas = 0:0.05:1 # levels of environmental noise
 
 # Define the Ross-Macdonald Reflected SDE 
 
-p = [b, Thvs[1], Tvh, Nh, Nv, muv, gammah,  sigmas[10], alphab, alphat, alpham] # !!! temp for testing. will vary from a dataframe later
-
 ## Deterministic part
-function dF_det(du,u,p,t)
+function dF_det!(du,u,p,t)
     # Name the variables
     (H,V) = u
-    (b, Thv, Tvh, Nh, Nv, muv, gammah, sigma, alphab, alphat, alpham) = p
+    (Thv, sigma) = p#, b, Tvh, Nh, Nv, muv, gammah, alphab, alphat, alpham) = p
     
     du[1] = @views (b * Thv * (Nh - H) / Nh) * V - gammah * H
     du[2] = @views b * (Tvh / Nh) * H * (Nv - V) - muv * V
@@ -64,10 +66,10 @@ function dF_det(du,u,p,t)
   end
 
 ## Stochastic part
-function dF_stoch(du,u,p,t)
+function dF_stoch!(du,u,p,t)
     # Name the variables
     (H,V) = u
-    (b, Thv, Tvh, Nh, Nv, muv, gammah, sigma, alphab, alphat, alpham) = p
+    (Thv, sigma) = p #, b, Tvh, Nh, Nv, muv, gammah, alphab, alphat, alpham) = p
     # Demographic stochasticity
     du[1,1] = @views sqrt((b * Thv * (Nh - H) / Nh) * V + gammah * H)
     du[2,1] = 0
@@ -148,28 +150,101 @@ end
 affect_terminate!(integrator) = terminate!(integrator)
 cb_terminate = ContinuousCallback(condition_terminate, affect_terminate!)
 
+
 ## Collect callbacks
 # cbs = CallbackSet(cb_H0, cb_HNh, cb_V0, cb_VNv, cb_terminate)
 cbs = CallbackSet(cb_H, cb_V, cb_terminate)
 
-# Run simulations
+# Define parameter values to iterate over
+parameter_values = [(Thv, sigma) for Thv in Thvs, sigma in sigmas]
 
-## Set up ensemble SDE problem
-prob = SDEProblem(dF_det, dF_stoch, u0, timespan, p, noise_rate_prototype = noise_rate_prototype, callback = cbs)
+
+# Get example trajectories for grid plot ----------------------------------------------------------------------------
+# Initialize an empty DataFrame to store results
+param_names = ["H", "V"]
+
+function run_sims(num_runs, parameter_values)
+    results = DataFrame(time = Float64[], Thv = Float64[], sigma = Float64[], run = Int[], H = Float64[], V = Float64[])
+
+
+    for i in ProgressBar(eachindex(parameter_values))
+
+        ## Set up ensemble SDE problem
+        prob = SDEProblem(dF_det!, dF_stoch!, u0, timespan, parameter_values[i], noise_rate_prototype = noise_rate_prototype, callback = cbs)
+        ensembleprob = EnsembleProblem(prob)
+        ## Run SDE solver
+        sol = solve(ensembleprob, EM(), dt = deltat, EnsembleThreads(); trajectories = num_runs)
+
+        # Collect results into a tidy DataFrame
+        for run_id in 1:num_runs
+            trajectory = sol[run_id]  # Get the individual trajectory solution
+            
+            results_append = DataFrame(
+                time = trajectory.t,
+                Thv = fill(parameter_values[i][1], length(trajectory.t)),
+                sigma = fill(parameter_values[i][2], length(trajectory.t)),
+                run = fill(run_id, length(trajectory.t)),
+                H = [u[1] for u in trajectory.u],
+                V = [u[2] for u in trajectory.u]
+            )
+            
+            # Append to the main results DataFrame
+            append!(results, results_append)
+        end
+
+    end
+    return results
+end
+
+# trajectories_for_grid_plot = run_sims(50, parameter_values)
+# CSV.write("trajectories_for_grid_plot.csv", trajectories_for_grid_plot)
+
+# Collect summarized outputs ----------------------------------------------------------------------------
+prob = SDEProblem(dF_det!, dF_stoch!, u0, timespan, parameter_values[1], noise_rate_prototype = noise_rate_prototype, callback = cbs)
 ensembleprob = EnsembleProblem(prob)
-
-
 ## Run SDE solver
-sol = solve(prob, EM(), dt = 1) # works
-# sol = solve(prob, SRA()) # steps too big, makes sqrt stuff go negative
-# sol = solve(prob, SOSRA(), maxiters = 1e10) # needs high maxiters and still flat
-# sol = solve(prob, SOSRA2()) # flat
-# sol = solve(prob, SROCKEM(), dt = 1) # jumps over callbacks, so sqrt goes negative
-# sol = solve(prob, ISSEM()) # jumps over callbacks, so sqrt goes negative
-# sol = solve(prob, ISSEulerHeun())
-sols = solve(ensembleprob, EM(), dt = 1, trajectories = 1)
-sols = solve(ensembleprob, EM(), dt = deltat, EnsembleSplitThreads(), trajectories = 10000)
-## Calculate summary statistics over time? [avoid this because it'll likely be much easier to do in R]
+sol = solve(ensembleprob, EM(), dt = deltat, EnsembleThreads(); trajectories = 1)
 
+function collect_outputs(num_runs, parameter_values)
 
-# Save simulations
+    # Initialize a DataFrame to store results for each trajectory and parameter combination
+    results = DataFrame(Thv = Float32[], sigma = Float32[], run = Int[], max_value = Float32[], exceeded_10 = Bool[],
+    exceeded_100 = Bool[], positive_at_final = Bool[], positive_duration = Float32[])
+
+    for i in ProgressBar(eachindex(parameter_values))
+
+        # Get trajectories
+        prob = SDEProblem(dF_det!, dF_stoch!, u0, timespan, parameter_values[i], noise_rate_prototype = noise_rate_prototype, callback = cbs)
+        ensembleprob = EnsembleProblem(prob)
+        ## Run SDE solver
+        sol = solve(ensembleprob, EM(), dt = deltat, EnsembleThreads(); trajectories = num_runs)
+
+        
+        # Analyze each trajectory
+        for run_id in 1:num_runs
+            trajectory = sol[run_id]  # Get the individual trajectory solution
+
+            # Extract the values and times for the second state variable (u[2])
+            u2_values = [u[2] for u in trajectory.u]
+            times = trajectory.t
+            
+            # Calculate the required statistics
+            max_value = maximum(u2_values)
+            exceeded_10 = any(v > 10.0f0 for v in u2_values)
+            exceeded_100 = any(v > 100.0f0 for v in u2_values)
+            positive_at_final = u2_values[end] > 0.0f0
+            positive_duration = sum((t2 - t1) for (v1, v2, t1, t2) in zip(u2_values[1:end-1], u2_values[2:end], times[1:end-1], times[2:end]) if v1 > 0.0f0 || v2 > 0.0f0)
+            Thv = parameter_values[i][1]
+            sigma = parameter_values[i][2]
+
+            # Append results for this trajectory to the DataFrame
+            push!(results, (Thv, sigma, run_id, max_value, exceeded_10, exceeded_100, positive_at_final, positive_duration))
+        end
+    end
+    return(results)
+end
+
+test = collect_outputs(1, parameter_values)
+
+collect_all = collect_outputs(num_sims, parameter_values)
+CSV.write("collect_all_outputs.csv", collect_all)
