@@ -13,7 +13,7 @@ using ProgressBars
 # [] Later set this up as a function to parameters can be varied
 
 # Set simulation parameters 
-const num_sims = 10000::Int# number of simulations to Run
+
 const deltat = 1.0 # timestep for Euler-Maruyama (EM) algorithm
 const maxtime = 3650.0 # final time point
 const time_vec = 1:deltat:maxtime # vector of timepoints at which to evaluate SDE
@@ -38,7 +38,8 @@ const H0 = 0 # initial infected humans
 const V0 = 10 # initial infected mosquitoes
 const u0 = [H0, V0]
 
-const R0s = [6, 5, 4, 3, 2, 1.25, 1.2, 1.15, 1.1, 1.05, 1, 0.95, 0.75, 0.5, 0] # values of R0 to consider
+# const R0s = [6, 5, 4, 3, 2, 1.25, 1.2, 1.15, 1.1, 1.05, 1, 0.95, 0.75, 0.5, 0] # values of R0 to consider
+const R0s = 0:0.25:5
 
 function Thv_from_R0(q, R0) 
     (b, Tvh, Nh, Nv, muv, gammah) = q
@@ -48,7 +49,7 @@ function Thv_from_R0(q, R0)
 
 Thvs = Thv_from_R0(q,R0s) # used to vary R0
 
-const sigmas = 0:0.05:1 # levels of environmental noise
+const sigmas = 0:0.1:2 # levels of environmental noise
 
 # Initialize dataframes, if necessary
 
@@ -86,8 +87,8 @@ function dF_stoch!(du,u,p,t)
 # --- In Julia these are done via callbacks
 condition_H(u,t,integrator) = true
 function affect_H!(integrator)
-    if integrator.u[1] < 0.0
-        integrator.u[1] = 0.0
+    if integrator.u[1] < 0.0f0
+        integrator.u[1] = 0.0f0
     elseif integrator.u[1] > Nh
         integrator.u[1] = Nh
     end
@@ -116,8 +117,8 @@ cb_HNh = ContinuousCallback(condition_HNh, affect_HNh!; save_positions = (false,
 
 condition_V(u,t,integrator) = true
 function affect_V!(integrator)
-    if integrator.u[2] < 0.0
-        integrator.u[2] = 0.0
+    if integrator.u[2] < 0.0f0
+        integrator.u[2] = 0.0f0
     elseif integrator.u[2] > Nv
         integrator.u[2] = Nv
     end
@@ -130,7 +131,7 @@ function condition_V0(u, t, integrator) # Event when condition(u,t,integrator) =
 end
 
 function affect_V0!(integrator)
-    integrator.u[2] = 0
+    integrator.u[2] = 0.0f0
 end
 cb_V0 = ContinuousCallback(condition_V0, affect_V0!; save_positions = (false, true))
 
@@ -145,7 +146,7 @@ cb_VNv = ContinuousCallback(condition_VNv, affect_VNv!; save_positions = (false,
 
 ### Stop simulations if case counts are low enough
 function condition_terminate(u, t, integrator)
-    u[2] < 1 && u[1] < 1
+    u[2] < 1.0f0 && u[1] < 1.0f0
 end
 affect_terminate!(integrator) = terminate!(integrator)
 cb_terminate = ContinuousCallback(condition_terminate, affect_terminate!)
@@ -196,9 +197,6 @@ function run_sims(num_runs, parameter_values)
     return results
 end
 
-# trajectories_for_grid_plot = run_sims(50, parameter_values)
-# CSV.write("trajectories_for_grid_plot.csv", trajectories_for_grid_plot)
-
 # Collect summarized outputs ----------------------------------------------------------------------------
 prob = SDEProblem(dF_det!, dF_stoch!, u0, timespan, parameter_values[1], noise_rate_prototype = noise_rate_prototype, callback = cbs)
 ensembleprob = EnsembleProblem(prob)
@@ -219,21 +217,21 @@ function collect_outputs(num_runs, parameter_values)
         ## Run SDE solver
         sol = solve(ensembleprob, EM(), dt = deltat, EnsembleThreads(); trajectories = num_runs)
 
-        
         # Analyze each trajectory
         for run_id in 1:num_runs
             trajectory = sol[run_id]  # Get the individual trajectory solution
 
             # Extract the values and times for the second state variable (u[2])
-            u2_values = [u[2] for u in trajectory.u]
+            H_values = [u[1] for u in trajectory.u]
+            V_values = [u[2] for u in trajectory.u]
             times = trajectory.t
             
             # Calculate the required statistics
-            max_value = maximum(u2_values)
-            exceeded_10 = any(v > 10.0f0 for v in u2_values)
-            exceeded_100 = any(v > 100.0f0 for v in u2_values)
-            positive_at_final = u2_values[end] > 0.0f0
-            positive_duration = sum((t2 - t1) for (v1, v2, t1, t2) in zip(u2_values[1:end-1], u2_values[2:end], times[1:end-1], times[2:end]) if v1 > 0.0f0 || v2 > 0.0f0)
+            max_value = maximum(H_values)
+            exceeded_10 = any(v > 10.0f0 for v in H_values)
+            exceeded_100 = any(v > 100.0f0 for v in H_values)
+            positive_at_final = H_values[end] > 1.0f0
+            positive_duration = sum((t2 - t1) for (v1, v2, t1, t2) in zip(V_values[1:end-1], V_values[2:end], times[1:end-1], times[2:end]) if v1 > 0.0f0 || v2 > 0.0f0)
             Thv = parameter_values[i][1]
             sigma = parameter_values[i][2]
 
@@ -246,5 +244,10 @@ end
 
 test = collect_outputs(1, parameter_values)
 
+num_sims = 10000::Int# number of simulations to Run
+
 collect_all = collect_outputs(num_sims, parameter_values)
 CSV.write("collect_all_outputs.csv", collect_all)
+
+trajectories_for_grid_plot = run_sims(50, parameter_values)
+CSV.write("trajectories_for_grid_plot.csv", trajectories_for_grid_plot)
