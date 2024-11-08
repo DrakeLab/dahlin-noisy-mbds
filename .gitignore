@@ -12,3 +12,5 @@ data/full_sims.rds
 data/some_sims.rds
 code/julia/trajectories_for_grid_plot.csv
 code/julia/collect_all_outputs.csv
+data/trajectories_for_grid_plot.csv
+data/collect_all_outputs.csv

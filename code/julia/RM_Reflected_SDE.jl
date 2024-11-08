@@ -247,7 +247,7 @@ test = collect_outputs(1, parameter_values)
 num_sims = 10000::Int# number of simulations to Run
 
 collect_all = collect_outputs(num_sims, parameter_values)
-CSV.write("collect_all_outputs.csv", collect_all)
+CSV.write(joinpath(dirname(dirname(pwd())), "data", "collect_all_outputs.csv"), collect_all)
 
 trajectories_for_grid_plot = run_sims(50, parameter_values)
-CSV.write("trajectories_for_grid_plot.csv", trajectories_for_grid_plot)
+CSV.write(joinpath(dirname(dirname(pwd())), "data", "trajectories_for_grid_plot.csv"), trajectories_for_grid_plot)

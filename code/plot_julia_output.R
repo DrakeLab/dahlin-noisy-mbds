@@ -24,7 +24,7 @@ gammah <- 0.1 # host recovery rate
 # V0 <- 10
 
 # R0 values to test
-R0s <- rev(c(6, 5, 4, 3, 2, 1.25, 1.2, 1.15, 1.1, 1.05, 1, 0.95, 0.75, 0.5, 0))
+# R0s <- rev(c(6, 5, 4, 3, 2, 1.25, 1.2, 1.15, 1.1, 1.05, 1, 0.95, 0.75, 0.5, 0))
 
 R0_from_Thv_function <- function(Thv) {
   # Thv <- (R0^2) / ((b^2 * Tvh * Nv) / (Nh * gammah * muv)) 
@@ -346,16 +346,17 @@ max_time = 3650
 # Plots ----
 
 
-read_df = read.csv("./code/julia/collect_all_outputs.csv") 
+read_df = read.csv("./data/collect_all_outputs.csv") 
 summary_df = read_df %>%
   rename(
-  max_cases = max_value,
-  duration = positive_duration
+    max_cases = max_value,
+    duration = positive_duration
   ) %>% 
   mutate(
     small_outbreak = ifelse(exceeded_10 == "true", T, F),
     big_outbreak = ifelse(exceeded_100 == "true", T, F),
     endemic = ifelse(positive_at_final == "true", T, F),
+    duration = duration / 365, # convert to years
     R0 = R0_from_Thv_function(Thv),
     .keep = "unused"
   ) %>% 
@@ -395,7 +396,14 @@ stats_df_conts <- summary_df %>%
 stats_df <- rbind(stats_df_binoms, stats_df_conts)
 stats_df$R0_factor = factor(round(stats_df$R0,2), levels = rev(unique(round(stats_df$R0,2))))
 
-R0_colors = c4a("tableau.classic_orange_blue", 20)[c(1:10, 16:20)]
+R0_colors = c(
+  # Hotter colors for R0 > 1
+  rev(c4a("brewer.yl_or_br", 16)),
+  # Black for R0 == 1
+  "black",
+  # Cooler colors for R0 < 1
+  c4a("scico.oslo", 4)
+)
 
 # [] !!! set up nice plotting to match previous figures
 
@@ -408,12 +416,12 @@ generic_plot_function <- function(output_name) {
     # Mean
     geom_line(aes(color = R0_factor), lwd = 1) +
     # Confidence intervals
-    geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci, fill = R0_factor), alpha = 0.15) +
-    scale_color_manual("R0", 
-                       breaks = rev(R0s),
+    geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci, fill = R0_factor), alpha = 0.05) +
+    scale_color_manual("R0",
+                       # breaks = rev(R0s),
                        values = R0_colors) +
-    scale_fill_manual("R0", 
-                      breaks = rev(R0s),
+    scale_fill_manual("R0",
+                      # breaks = rev(R0s),
                       values = R0_colors) +
     scale_x_continuous(TeX("Environmental noise strength [$\\sigma$]"),
                        limits = c(0,NA),
@@ -443,6 +451,76 @@ ggsave("./figures/big_outbreak_prob.png", Big_outbreak_plot, width = 6.5, height
 # Duration
 Duration_plot <- generic_plot_function("duration")
 ggsave("./figures/duration.png", Duration_plot, width = 6.5, height = 3.56525, units = "in")
+
+
+
+# Generic plot function
+generic_heat_function <- function(output_name) {
+  stats_df %>% 
+    ungroup() %>% 
+    filter(name == output_name) %>% 
+    ggplot(aes(x = sigma, y = R0, z = mean)) +
+    geom_contour_filled(bins = 20) +
+    geom_hline(yintercept = 1, color = "red", lwd = 1) +
+    # Confidence intervals
+    scale_x_continuous(TeX("Environmental noise strength [$\\sigma$]"),
+                       limits = c(0,NA),
+                       expand = c(0,0)) +
+    scale_y_continuous("R0",
+                       limits = c(0,NA),
+                       expand = c(0,0)) +    
+    # color:
+    scale_fill_viridis_d(
+      name = output_name,
+      option = "plasma"
+    ) +
+    # legend:
+    guides(fill = guide_coloursteps(
+      title.position = "top",
+      title.hjust = 0.5,
+      barheight = 24,
+      show.limits = TRUE
+    )) +
+    ggtitle(output_name) +
+    theme_half_open()
+}
+
+# Pr(endemic)
+Pr_end_heat <- generic_heat_function("endemic")
+ggsave("./figures/endemic_prob_heat.png", Pr_end_heat, width = 6.5, height = 3.56525, units = "in")
+
+# Peak cases
+Peak_cases_heat <- generic_heat_function("max_cases")
+ggsave("./figures/peak_cases_heat.png", Peak_cases_heat, width = 6.5, height = 3.56525, units = "in")
+
+# Small outbreak
+Small_outbreak_heat <- generic_heat_function("small_outbreak")
+ggsave("./figures/small_outbreak_prob_heat.png", Small_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
+
+# Big outbreak
+Big_outbreak_heat <- generic_heat_function("big_outbreak")
+ggsave("./figures/big_outbreak_prob_heat.png", Big_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
+
+# Duration
+Duration_heat <- generic_heat_function("duration")
+ggsave("./figures/duration_heat.png", Duration_heat, width = 6.5, height = 3.56525, units = "in")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # All simulations by R0 and sigma
 sims_out = read_csv("./code/julia//trajectories_for_grid_plot.csv")
