@@ -1,7 +1,6 @@
 # Numerical simulation of a Ross-Macdonald reflected SDE
 
 # Load libraries
-
 using DifferentialEquations
 # using Plots
 using DataFrames
@@ -9,49 +8,48 @@ using DataFrames
 using Main.Threads
 using CSV
 using ProgressBars
-
-# using DiffEqMonteCarlo
-
-# [] Later set this up as a function to parameters can be varied
+# Distributed computing
+using DiffEqGPU
+using AMDGPU
 
 # Set simulation parameters 
 
-const deltat = 0.1f0 # timestep for Euler-Maruyama (EM) algorithm
-const maxtime = 3650.0f0 # final time point
+const deltat = 1.0 # timestep for Euler-Maruyama (EM) algorithm
+const maxtime = 3650.0 # final time point
 const time_vec = 1:deltat:maxtime # vector of timepoints at which to evaluate SDE
 const num_timesteps = length(time_vec) # total number of timesteps for EM algorithm
-const timespan = (0.0f0, maxtime)
-const noise_rate_prototype = [0.0f0 0.0f0 0.0f0; 0.0f0 0.0f0 0.0f0] # prototype for noise
+const timespan = (0.0, maxtime)
+const noise_rate_prototype = [0.0 0.0 0.0; 0.0 0.0 0.0] # prototype for noise
 
 # Define the parameters
-const b = 0.3f0 # biting rate
-const Tvh = 0.5f0 # to vector transmission probability
-const Nh = 10000f0 # total number of humans
-const Nv = 100000f0 # total number of vectors
-const muv = 0.1f0 # vector mortality rate
-const gammah = 0.1f0 # human recovery rate
+const b = 0.3 # biting rate
+const Tvh = 0.5 # to vector transmission probability
+const Nh = 1E4 # total number of humans
+const Nv = 1E5 # total number of vectors
+const muv = 0.1 # vector mortality rate
+const gammah = 0.1 # human recovery rate
 const alphab = 1 # toggle: environmental stochasticity in b
 const alphat = 1 # toggle: environmental stochasticity in Tvh
 const alpham = 1 # toggle: environmental stochasticity in muv
 const q = [b, Tvh, Nh, Nv, muv, gammah]
 
 ## Initial conditions
-const H0 = 0f0 # initial infected humans
-const V0 = 10f0 # initial infected mosquitoes
+const H0 = 0 # initial infected humans
+const V0 = 10 # initial infected mosquitoes
 const u0 = [H0, V0]
 
 # const R0s = [6, 5, 4, 3, 2, 1.25, 1.2, 1.15, 1.1, 1.05, 1, 0.95, 0.75, 0.5, 0] # values of R0 to consider
-const R0s = 0f0:0.125f0:5f0
+const R0s = 0:0.25:5
 
 function Thv_from_R0(q, R0) 
     (b, Tvh, Nh, Nv, muv, gammah) = q
     Thv = (R0.^2) / ((b.^2 * Tvh * Nv) / (Nh * gammah * muv))
     return(Thv)
-end
+  end
 
-Thvs = Thv_from_R0(q, R0s) # used to vary R0
+Thvs = Thv_from_R0(q,R0s) # used to vary R0
 
-const sigmas = 0f0:0.05f0:2f0 # levels of environmental noise
+const sigmas = 0:0.1:2 # levels of environmental noise
 
 # Initialize dataframes, if necessary
 
@@ -62,11 +60,11 @@ function dF_det!(du,u,p,t)
     # Name the variables
     (H,V) = u
     (Thv, sigma) = p#, b, Tvh, Nh, Nv, muv, gammah, alphab, alphat, alpham) = p
-
+    
     du[1] = @views (b * Thv * (Nh - H) / Nh) * V - gammah * H
     du[2] = @views b * (Tvh / Nh) * H * (Nv - V) - muv * V
     return(du)
-end
+  end
 
 ## Stochastic part
 function dF_stoch!(du,u,p,t)
@@ -79,10 +77,10 @@ function dF_stoch!(du,u,p,t)
     du[1,2] = 0
     du[2,2] = @views sqrt(b * (Tvh / Nh) * H * (Nv - V) + muv * V)
     # Environmental stochasticity
-    du[1,3] = @views sigma * b * (Thv / Nh) * V * (Nh - H)
-    du[2,3] = @views sigma * b * (Tvh / Nh) * H * (Nv - V) + sigma * b  * (Tvh / Nh) * H * (Nv - V) + sigma * muv *V
+    du[1,3] = @views sigma * alphab * b * (Thv / Nh) * V * (Nh - H)
+    du[2,3] = @views sigma * alphab * b * (Tvh / Nh) * H * (Nv - V) + sigma * alphat * b  * (Tvh / Nh) * H * (Nv - V) + sigma * alpham * muv *V
     return(du)
-end
+  end
 
 
 ## Reflections
@@ -103,7 +101,7 @@ function condition_H0(u, t, integrator) # Event when condition(u,t,integrator) =
 end
 
 function affect_H0!(integrator)
-    integrator.u[1] = 0f0
+    integrator.u[1] = 0
 end
 cb_H0 = ContinuousCallback(condition_H0, affect_H0!; save_positions = (false, true))
 
@@ -176,7 +174,7 @@ function run_sims(num_runs, parameter_values)
         prob = SDEProblem(dF_det!, dF_stoch!, u0, timespan, parameter_values[i], noise_rate_prototype = noise_rate_prototype, callback = cbs)
         ensembleprob = EnsembleProblem(prob)
         ## Run SDE solver
-        sol = solve(ensembleprob, EM(), dt = 0.1f0, EnsembleThreads(); trajectories = num_runs, saveat = 30f0)
+        sol = solve(ensembleprob, EM(), dt = deltat, EnsembleThreads(); trajectories = num_runs)
 
         # Collect results into a tidy DataFrame
         for run_id in 1:num_runs
@@ -200,18 +198,15 @@ function run_sims(num_runs, parameter_values)
 end
 
 # Collect summarized outputs ----------------------------------------------------------------------------
-prob = SDEProblem(dF_det!, dF_stoch!, u0, timespan, parameter_values[100], noise_rate_prototype = noise_rate_prototype, callback = cbs)
+prob = SDEProblem(dF_det!, dF_stoch!, u0, timespan, parameter_values[1], noise_rate_prototype = noise_rate_prototype, callback = cbs)
 ensembleprob = EnsembleProblem(prob)
 ## Run SDE solver
+sol = solve(ensembleprob, EM(), dt = deltat, EnsembleThreads(); trajectories = 1)
 
-# Precompile the EM solver
-sol = solve(ensembleprob, EM(), dt = 0.1f0, EnsembleThreads(); trajectories = 10::Int)
-
-# Define outputs to collect
 function collect_outputs(num_runs, parameter_values)
 
     # Initialize a DataFrame to store results for each trajectory and parameter combination
-    results = DataFrame(Thv = Float32[], sigma = Float32[], run = Int[], max_value = Float32[], max_time = Float32[], exceeded_10 = Bool[],
+    results = DataFrame(Thv = Float32[], sigma = Float32[], run = Int[], max_value = Float32[], exceeded_10 = Bool[],
     exceeded_100 = Bool[], positive_at_final = Bool[], positive_duration = Float32[])
 
     for i in ProgressBar(eachindex(parameter_values))
@@ -220,7 +215,7 @@ function collect_outputs(num_runs, parameter_values)
         prob = SDEProblem(dF_det!, dF_stoch!, u0, timespan, parameter_values[i], noise_rate_prototype = noise_rate_prototype, callback = cbs)
         ensembleprob = EnsembleProblem(prob)
         ## Run SDE solver
-        sol = solve(ensembleprob, EM(), dt = 0.1f0, EnsembleThreads(); trajectories = num_runs, saveat = 1f0)
+        sol = solve(ensembleprob, EM(), dt = deltat, EnsembleSplitThreads(); trajectories = num_runs)
 
         # Analyze each trajectory
         for run_id in 1:num_runs
@@ -233,7 +228,6 @@ function collect_outputs(num_runs, parameter_values)
             
             # Calculate the required statistics
             max_value = maximum(H_values)
-            max_time = ifelse(max_value < 1.0f0, 0.0f0, trajectory.t[argmax(trajectory[2, :])])
             exceeded_10 = any(v > 10.0f0 for v in H_values)
             exceeded_100 = any(v > 100.0f0 for v in H_values)
             positive_at_final = H_values[end] > 1.0f0
@@ -242,13 +236,11 @@ function collect_outputs(num_runs, parameter_values)
             sigma = parameter_values[i][2]
 
             # Append results for this trajectory to the DataFrame
-            push!(results, (Thv, sigma, run_id, max_value, max_time, exceeded_10, exceeded_100, positive_at_final, positive_duration))
+            push!(results, (Thv, sigma, run_id, max_value, exceeded_10, exceeded_100, positive_at_final, positive_duration))
         end
     end
     return(results)
 end
-
-
 
 test = collect_outputs(1, parameter_values)
 
@@ -257,5 +249,5 @@ num_sims = 10000::Int# number of simulations to Run
 collect_all = collect_outputs(num_sims, parameter_values)
 CSV.write(joinpath(dirname(dirname(pwd())), "data", "collect_all_outputs.csv"), collect_all)
 
-trajectories_for_grid_plot = run_sims(50::Int, parameter_values)
+trajectories_for_grid_plot = run_sims(50, parameter_values)
 CSV.write(joinpath(dirname(dirname(pwd())), "data", "trajectories_for_grid_plot.csv"), trajectories_for_grid_plot)
