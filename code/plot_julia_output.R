@@ -151,7 +151,8 @@ generic_heat_function <- function(output_name) {
     ungroup() %>% 
     filter(name == output_name) %>% 
     ggplot(aes(x = sigma, y = R0, z = mean)) +
-    geom_contour_filled(bins = 20) +
+    geom_tile(aes(fill = mean)) +
+    # geom_contour_filled(bins = 20) +
     geom_hline(yintercept = 1, color = "red", lwd = 1) +
     # Confidence intervals
     scale_x_continuous(TeX("Environmental noise strength [$\\sigma$]"),
@@ -161,18 +162,17 @@ generic_heat_function <- function(output_name) {
                        limits = c(0,NA),
                        expand = c(0,0)) +    
     # color:
-    scale_fill_viridis_d(
+    scale_fill_viridis_c(
       name = output_name,
       option = "plasma"
     ) +
     # legend:
-    guides(fill = guide_coloursteps(
+    guides(fill = guide_colourbar(
       title.position = "top",
       title.hjust = 0.5,
       barheight = 24,
       show.limits = TRUE
     )) +
-    coord_flip() +
     ggtitle(output_name) +
     theme_half_open()
 }
@@ -239,7 +239,7 @@ All_sims_plot <- All_sims_plot_df %>%
   scale_x_continuous("Time (years)", limits = c(0, NA), expand = c(0,0)) +
   scale_y_continuous("Infected humans", limits = c(0, NA), expand = c(0,0)) +
   guides(color = "none") +
-  theme_half_open(16)
+  theme_half_open()
 
 some_sims_plot <- All_sims_plot_df %>% 
   filter(R0_factor %in% c(1.2, 1.1, 1, 0.95, 0.75),
@@ -251,8 +251,8 @@ some_sims_plot <- All_sims_plot_df %>%
   scale_x_continuous("Time (years)", limits = c(0, NA), expand = c(0,0)) +
   scale_y_continuous("Infected humans", limits = c(0, NA), expand = c(0,0)) +
   guides(color = "none") +
-  theme_half_open(16)
+  theme_half_open()
 
-ggsave("./figures/some_sims.png", some_sims_plot, width = 6.5, height = 3.56525, units = "in")
+ggsave("./figures/some_sims.png", some_sims_plot, width = 15, height = 10, units = "in")
 
-ggsave("./figures/all_sims.png", All_sims_plot, width = 6.5, height = 3.56525, units = "in")
+ggsave("./figures/all_sims.png", All_sims_plot, width = 15, height = 10, units = "in")

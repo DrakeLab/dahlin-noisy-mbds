@@ -14,3 +14,5 @@ code/julia/trajectories_for_grid_plot.csv
 code/julia/collect_all_outputs.csv
 data/trajectories_for_grid_plot.csv
 data/collect_all_outputs.csv
+data/collect_all_outputs_no_demo.csv
+data/trajectories_for_grid_plot_no_demo.csv
