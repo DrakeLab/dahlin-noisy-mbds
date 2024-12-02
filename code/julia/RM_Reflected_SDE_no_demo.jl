@@ -58,7 +58,7 @@ const sigmas = 0f0:0.05f0:2f0 # levels of environmental noise
 # Define the Ross-Macdonald Reflected SDE 
 
 ## Deterministic part
-function dF_det!(du,u,p,t)
+function dF_det_no_demo!(du,u,p,t)
     # Name the variables
     (H,V) = u
     (Thv, sigma) = p#, b, Tvh, Nh, Nv, muv, gammah, alphab, alphat, alpham) = p
@@ -69,7 +69,7 @@ function dF_det!(du,u,p,t)
 end
 
 ## Stochastic part
-function dF_stoch!(du,u,p,t)
+function dF_stoch_no_demo!(du,u,p,t)
     # Name the variables
     (H,V) = u
     (Thv, sigma) = p #, b, Tvh, Nh, Nv, muv, gammah, alphab, alphat, alpham) = p

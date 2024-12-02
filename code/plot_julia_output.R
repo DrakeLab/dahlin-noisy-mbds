@@ -30,7 +30,7 @@ max_time = 3650
 # Plots ----
 
 # Load data from Julia output
-read_df = read.csv("./data/collect_all_outputs.csv") 
+read_df = read.csv("./data/collect_all_outputs_no_demo.csv") 
 
 # Summarize key statistics: calculate mean, variance, and number of positives
 summary_df = read_df %>%
@@ -123,83 +123,128 @@ generic_plot_function <- function(output_name) {
 
 # Pr(endemic)
 Pr_end_plot <- generic_plot_function("endemic")
-ggsave("./figures/endemic_prob.png", Pr_end_plot, width = 6.5, height = 3.56525, units = "in")
+ggsave("./figures/no_demo/endemic_prob.png", Pr_end_plot, width = 6.5, height = 3.56525, units = "in")
 
 # Peak cases
 Peak_cases_plot <- generic_plot_function("max_cases")
-ggsave("./figures/peak_cases.png", Peak_cases_plot, width = 6.5, height = 3.56525, units = "in")
+ggsave("./figures/no_demo/peak_cases.png", Peak_cases_plot, width = 6.5, height = 3.56525, units = "in")
 
 # Peak timing
 Peak_time_plot <- generic_plot_function("peak_time")
-ggsave("./figures/peak_time.png", Peak_time_plot, width = 6.5, height = 3.56525, units = "in")
+ggsave("./figures/no_demo/peak_time.png", Peak_time_plot, width = 6.5, height = 3.56525, units = "in")
 
 # Small outbreak
 Small_outbreak_plot <- generic_plot_function("small_outbreak")
-ggsave("./figures/small_outbreak_prob.png", Small_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
+ggsave("./figures/no_demo/small_outbreak_prob.png", Small_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
 
 # Big outbreak
 Big_outbreak_plot <- generic_plot_function("big_outbreak")
-ggsave("./figures/big_outbreak_prob.png", Big_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
+ggsave("./figures/no_demo/big_outbreak_prob.png", Big_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
 
 # Duration
 Duration_plot <- generic_plot_function("duration")
-ggsave("./figures/duration.png", Duration_plot, width = 6.5, height = 3.56525, units = "in")
+ggsave("./figures/no_demo/duration.png", Duration_plot, width = 6.5, height = 3.56525, units = "in")
+
+
+# Create a "stretched" region at sigma = 0 to show what occurs with no environmental noise
+stretch_sigma <- function(in_df) {
+  # Step size
+  sigma_step = (diff(unique(stats_df$sigma)))[1]
+  
+  # Filter values where sigma = 0
+  zero_sigma <- in_df %>% filter(sigma == 0)
+  
+  # New sigma values
+  negative_sigmas = -seq(0.0, 0.25, by = sigma_step)
+  
+  # Repeat the zero_sigma rows for each negative sigma value
+  stretched <- zero_sigma[rep(1:nrow(zero_sigma), each = length(negative_sigmas)), ]
+  
+  # Assign the new sigma values
+  stretched$sigma <- rep(negative_sigmas, times = nrow(zero_sigma))
+  
+  # Combine original data with stretched region
+  bind_rows(in_df, stretched)
+}
+
 
 # Generic plot function
 generic_heat_function <- function(output_name) {
+  
+  # Set heatmap palette to match unit of output
+  palette = case_when(
+    output_name %in% c("small_outbreak", "big_outbreak", "endemic") ~ "viridis",
+    output_name %in% c("duration", "peak_time") ~ "plasma",
+    output_name %in% c("max_cases") ~ "turbo",
+    )
+  
+  # Label legend appropriately
+  leg_label = case_when(
+    output_name %in% c("small_outbreak", "big_outbreak", "endemic") ~ "Probability",
+    output_name %in% c("duration", "peak_time") ~ "Time [years]",
+    output_name %in% c("max_cases") ~ "Num. cases",
+  )
+  
+  
   stats_df %>% 
     ungroup() %>% 
     filter(name == output_name) %>% 
+    # Stretch out sigma = 0
+    stretch_sigma() %>% 
     ggplot(aes(x = sigma, y = R0, z = mean)) +
     geom_tile(aes(fill = mean)) +
-    # geom_contour_filled(bins = 20) +
     geom_hline(yintercept = 1, color = "red", lwd = 1) +
-    # Confidence intervals
+    geom_vline(xintercept = 0, color = "black", lwd = 1) +
+    # Annotate x-axis for demographic noise
     scale_x_continuous(TeX("Environmental noise strength [$\\sigma$]"),
-                       limits = c(0,NA),
-                       expand = c(0,0)) +
+                       limits = c(-0.25, NA),
+                       expand = c(0,0),
+                       breaks = c(-0.125, seq(0, 2.0, by = 0.25)),
+                       labels = c("No\n noise", seq(0, 2.0, by = 0.25))
+    ) +
     scale_y_continuous("R0",
-                       limits = c(0,NA),
+                       limits = c(0, NA),
                        expand = c(0,0)) +    
     # color:
     scale_fill_viridis_c(
       name = output_name,
-      option = "plasma"
+      option = palette
     ) +
     # legend:
     guides(fill = guide_colourbar(
+      title = leg_label,
       title.position = "top",
       title.hjust = 0.5,
-      barheight = 24,
+      barheight = 10,
       show.limits = TRUE
     )) +
     ggtitle(output_name) +
-    theme_half_open()
+    theme_half_open(10)
 }
 
 # Pr(endemic)
 Pr_end_heat <- generic_heat_function("endemic")
-ggsave("./figures/endemic_prob_heat.png", Pr_end_heat, width = 6.5, height = 3.56525, units = "in")
+ggsave("./figures/no_demo/endemic_prob_heat.png", Pr_end_heat, width = 6.5, height = 3.56525, units = "in")
 
 # Peak cases
 Peak_cases_heat <- generic_heat_function("max_cases")
-ggsave("./figures/peak_cases_heat.png", Peak_cases_heat, width = 6.5, height = 3.56525, units = "in")
+ggsave("./figures/no_demo/peak_cases_heat.png", Peak_cases_heat, width = 6.5, height = 3.56525, units = "in")
 
 # Peak timing
 Peak_time_heat <- generic_heat_function("peak_time")
-ggsave("./figures/peak_time_heat.png", Peak_time_heat, width = 6.5, height = 3.56525, units = "in")
+ggsave("./figures/no_demo/peak_time_heat.png", Peak_time_heat, width = 6.5, height = 3.56525, units = "in")
 
 # Small outbreak
 Small_outbreak_heat <- generic_heat_function("small_outbreak")
-ggsave("./figures/small_outbreak_prob_heat.png", Small_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
+ggsave("./figures/no_demo/small_outbreak_prob_heat.png", Small_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
 
 # Big outbreak
 Big_outbreak_heat <- generic_heat_function("big_outbreak")
-ggsave("./figures/big_outbreak_prob_heat.png", Big_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
+ggsave("./figures/no_demo/big_outbreak_prob_heat.png", Big_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
 
 # Duration
 Duration_heat <- generic_heat_function("duration")
-ggsave("./figures/duration_heat.png", Duration_heat, width = 6.5, height = 3.56525, units = "in")
+ggsave("./figures/no_demo/duration_heat.png", Duration_heat, width = 6.5, height = 3.56525, units = "in")
 
 
 
@@ -215,7 +260,7 @@ ggsave("./figures/duration_heat.png", Duration_heat, width = 6.5, height = 3.565
 
 
 # All simulations by R0 and sigma
-sims_out = read_csv("./data/trajectories_for_grid_plot.csv")
+sims_out = read_csv("./data/trajectories_for_grid_plot_no_demo.csv")
 
 All_sims_plot_df <- sims_out %>% # Just use the first 20 simulations
   mutate(R0 = R0_from_Thv_function(Thv)) %>% 
@@ -253,6 +298,6 @@ some_sims_plot <- All_sims_plot_df %>%
   guides(color = "none") +
   theme_half_open()
 
-ggsave("./figures/some_sims.png", some_sims_plot, width = 15, height = 10, units = "in")
+ggsave("./figures/no_demo/some_sims.png", some_sims_plot, width = 15, height = 10, units = "in")
 
-ggsave("./figures/all_sims.png", All_sims_plot, width = 15, height = 10, units = "in")
+ggsave("./figures/no_demo/all_sims.png", All_sims_plot, width = 15, height = 10, units = "in")
