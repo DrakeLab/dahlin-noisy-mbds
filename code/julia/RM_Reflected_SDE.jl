@@ -184,14 +184,14 @@ parameter_values = [(Thv, sigma) for Thv in Thvs, sigma in sigmas]
 # Initialize an empty DataFrame to store results
 param_names = ["H", "V"]
 
-function run_sims(det_eq, stoch_eq, num_runs, parameter_values)
+function run_sims(det_equations, stoch_equations, num_runs, parameter_values)
     results = DataFrame(time = Float64[], Thv = Float64[], sigma = Float64[], run = Int[], H = Float64[], V = Float64[])
 
 
     for i in ProgressBar(eachindex(parameter_values))
 
         ## Set up ensemble SDE problem
-        prob = SDEProblem(det_eq, stoch_eq, u0, timespan, parameter_values[i], noise_rate_prototype = noise_rate_prototype, callback = cbs)
+        prob = SDEProblem(det_equations, stoch_equations, u0, timespan, parameter_values[i], noise_rate_prototype = noise_rate_prototype, callback = cbs)
         ensembleprob = EnsembleProblem(prob)
         ## Run SDE solver
         sol = solve(ensembleprob, EM(), dt = 0.01f0, EnsembleThreads(); trajectories = num_runs, saveat = 30f0)
@@ -225,7 +225,7 @@ ensembleprob = EnsembleProblem(prob)
 sol = solve(ensembleprob, EM(), dt = 0.1f0, EnsembleThreads(); trajectories = 10::Int)
 
 # Collect outputs from SDE simulations
-function collect_outputs(det_eq, stoch_eq, num_runs, parameter_values)
+function collect_outputs(det_equations, stoch_equations, num_runs, parameter_values)
 
     # Initialize a DataFrame to store results for each trajectory and parameter combination
     results = DataFrame(Thv = Float32[], sigma = Float32[], run = Int[], max_value = Float32[], max_time = Float32[], exceeded_10 = Bool[],
@@ -234,7 +234,7 @@ function collect_outputs(det_eq, stoch_eq, num_runs, parameter_values)
     for i in ProgressBar(eachindex(parameter_values))
 
         # Get trajectories
-        prob = SDEProblem(det_eq, stoch_eq, u0, timespan, parameter_values[i], noise_rate_prototype = noise_rate_prototype, callback = cbs)
+        prob = SDEProblem(det_equations, stoch_equations, u0, timespan, parameter_values[i], noise_rate_prototype = noise_rate_prototype, callback = cbs)
         ensembleprob = EnsembleProblem(prob)
         ## Run SDE solver
         sol = solve(ensembleprob, EM(), dt = 0.1f0, EnsembleThreads(); trajectories = num_runs, saveat = 1.0f0)
@@ -266,7 +266,7 @@ function collect_outputs(det_eq, stoch_eq, num_runs, parameter_values)
 end
 
 # Collect outputs from ODE simulations
-function collect_outputs_det(det_eq, parameter_values)
+function collect_outputs_det(det_equations, parameter_values)
     
     # Initialize a DataFrame to store results for each trajectory and parameter combination
     results = DataFrame(Thv = Float32[], R0 = Float32[], max_value = Float32[], max_time = Float32[], exceeded_10 = Bool[],
@@ -277,7 +277,7 @@ function collect_outputs_det(det_eq, parameter_values)
         R0 = parameter_values[i]
         Thv = Thv_from_R0(q, R0)
         # Get trajectories
-        prob = ODEProblem(det_eq, u0, timespan, [Thv, 0.0f0]) # timespan
+        prob = ODEProblem(det_equations, u0, timespan, [Thv, 0.0f0]) # timespan
         ## Run SDE solver
         sol = solve(prob; saveat = 1.0f0)
 
@@ -311,36 +311,3 @@ function collect_outputs_det(det_eq, parameter_values)
     end
     return(results)
 end
-
-#### Get results and save ####
-
-test = collect_outputs(dF_det!, dF_stoch!, 1, parameter_values)
-test_no_demo = collect_outputs(dF_det_no_demo!, dF_stoch_no_demo!, 1, parameter_values)
-test_det = collect_outputs_det(dF_det!, Thvs)
-
-num_sims = 10000::Int# number of simulations to Run
-
-# Simulations with all types of noise
-print("Simulations with all noise")
-collect_all = collect_outputs(dF_det!, dF_stoch!, num_sims, parameter_values)
-CSV.write(joinpath(dirname(dirname(pwd())), "data", "collect_all_outputs.csv"), collect_all)
-
-trajectories_for_grid_plot = run_sims(dF_det!, dF_stoch!, 50::Int, parameter_values)
-CSV.write(joinpath(dirname(dirname(pwd())), "data", "trajectories_for_grid_plot.csv"), trajectories_for_grid_plot)
-
-# Simulations without demographic noise
-print("Simulations with no demographic noise")
-collect_all_no_demo = collect_outputs(dF_det_no_demo!, dF_stoch_no_demo!, num_sims, parameter_values)
-CSV.write(joinpath(dirname(dirname(pwd())), "data", "collect_all_outputs_no_demo.csv"), collect_all_no_demo)
-
-trajectories_for_grid_plot_no_demo = run_sims(dF_det_no_demo!, dF_stoch_no_demo!, 50::Int, parameter_values)
-CSV.write(joinpath(dirname(dirname(pwd())), "data", "trajectories_for_grid_plot_no_demo.csv"), trajectories_for_grid_plot_no_demo)
-
-# Simulations without any noise
-print("Simulations with no noise at all")
-collect_all_det = collect_outputs_det(dF_det!, R0s)
-CSV.write(joinpath(dirname(dirname(pwd())), "data", "collect_all_outputs_det.csv"), collect_all_det)
-
-parameter_values_det = [(Thv, 0) for Thv in Thvs]
-trajectories_for_grid_plot_det = run_sims(dF_det_no_demo!, dF_stoch_no_demo!, 1::Int, parameter_values_det)
-CSV.write(joinpath(dirname(dirname(pwd())), "data", "trajectories_for_grid_plot_det.csv"), trajectories_for_grid_plot_det)
