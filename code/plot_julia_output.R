@@ -640,7 +640,13 @@ peak_point_plot <- comparison_trajectories %>%
     alpha = "none"
   ) +
   ggtitle("Points show peak number of cases for each run of the stochastic models") +
-  theme_minimal(11)
+  theme_minimal(11) +
+  theme_minimal(11) +
+  theme(
+    legend.position = "bottom",
+    legend.direction = "horizontal"    
+  )
+
 
 peak_point_plot
 ggsave("./figures/peak_cases_comparison.png", peak_point_plot, width = 6.5, height = 4.5, units = "in")
@@ -654,7 +660,9 @@ peak_histogram_plot <- comparison_trajectories %>%
   # Peak points histogram
   geom_histogram(
     aes(x = max_H, group = interaction(type, R0, sigma)),
-    alpha = 0.5) +
+    position = 'dodge', # side-by-side
+    # position = 'identity', # overlapping
+    alpha = 0.7) +
   # Means of distributions
   geom_vline(
     data = comparison_trajectories %>% 
@@ -682,7 +690,11 @@ peak_histogram_plot <- comparison_trajectories %>%
   guides(
     alpha = "none"
   ) +
-  theme_minimal(11)
+  theme_minimal(11) +
+  theme(
+    legend.position = "bottom",
+    legend.direction = "horizontal"    
+  )
 
 peak_histogram_plot
 ggsave("./figures/peak_cases_comparison_histogram.png", peak_histogram_plot, width = 6.5, height = 4.5, units = "in")
