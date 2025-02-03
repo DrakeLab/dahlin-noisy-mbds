@@ -652,17 +652,20 @@ peak_point_plot
 ggsave("./figures/peak_cases_comparison.png", peak_point_plot, width = 6.5, height = 4.5, units = "in")
 
 # Peak histogram plot
+library(ggh4x)
 peak_histogram_plot <- comparison_trajectories %>% 
   filter(type != "Deterministic") %>% 
   dplyr::select(max_time, max_H, type, R0, sigma) %>% 
   unique() %>% 
-  ggplot(aes(color = type, fill = type)) +
+  ggplot(aes(x = max_H, color = type, fill = type)) +
   # Peak points histogram
   geom_histogram(
-    aes(x = max_H, group = interaction(type, R0, sigma)),
-    position = 'dodge', # side-by-side
-    # position = 'identity', # overlapping
-    alpha = 0.7) +
+    aes(y = after_stat(count)),  # Ensure y-axis represents counts per facet
+    # position = "identity",  # Prevent stacking
+    position = 'dodge',
+    alpha = 0.7,
+    bins = 30  # Set fixed bin count (adjustable)
+  ) +
   # Means of distributions
   geom_vline(
     data = comparison_trajectories %>% 
@@ -675,12 +678,14 @@ peak_histogram_plot <- comparison_trajectories %>%
     lwd = 1, lty = 2
   ) +
   # Subplots for each combination of environmental noise strength and R0
-  facet_grid(R0 ~ sigma,
+  ggh4x::facet_grid2(R0 ~ sigma,
+             scales = "free",
+             independent = "all",
              labeller = labeller(.rows = as_labeller(appender_R0,
                                                      default = label_parsed),
                                  .cols = as_labeller(appender_sigma,
-                                                     default = label_parsed)),
-             scales = "free_y") +
+                                                     default = label_parsed))
+             ) +
   scale_color_manual(
     values = c4a("met.lakota",3)[2:3]
   ) + 
@@ -727,7 +732,7 @@ test_vals = rbind(
   unique(dplyr::select(duration_die_out_R0s, sigma, R0))
 )
 
-outbreak_duration_df = enviro_df %>%
+outbreak_duration_df = all_df %>% #enviro_df %>%
   rename(
     max_cases = max_value,
     duration = positive_duration
@@ -761,12 +766,13 @@ duration_dieout_histograms <- outbreak_duration_df %>%
   ggplot(aes(x = duration_dieout, group = interaction(R0_factor, sigma))) +
   geom_histogram() +
   # Subplots for each combination of environmental noise strength and R0
-  facet_grid(R0_factor ~ sigma,
-             labeller = labeller(.rows = as_labeller(appender_R0,
-                                                     default = label_parsed),
-                                 .cols = as_labeller(appender_sigma,
-                                                     default = label_parsed)),
-             scales = "free_y") +
+  ggh4x::facet_grid2(R0_factor ~ sigma,
+                     labeller = labeller(.rows = as_labeller(appender_R0,
+                                                             default = label_parsed),
+                                         .cols = as_labeller(appender_sigma,
+                                                             default = label_parsed)),
+                     scales = "free",
+                     independent = "all") +
   scale_color_manual(
     values = c4a("met.lakota",3)[2:3]
   ) +
@@ -826,15 +832,16 @@ ggplot(fitted_data, aes(x = value)) +
     lwd = 1, lty = 2
   ) +
   # Subplots for each combination of environmental noise strength and R0
-  facet_grid(R0_factor ~ sigma,
+  ggh4x::facet_grid2(R0_factor ~ sigma,
              labeller = labeller(.rows = as_labeller(appender_R0,
                                                      default = label_parsed),
                                  .cols = as_labeller(appender_sigma,
                                                      default = label_parsed)),
-             scales = "free_y") +
+             scales = "free",
+             independent = "all") +
   # scale_x_log10() +
   scale_y_continuous(
-    limits = c(0,1)
+    # limits = c(0,1)
   ) +
   labs(
     title = "Histograms with Fitted Gamma Distributions",
@@ -844,4 +851,4 @@ ggplot(fitted_data, aes(x = value)) +
   theme_minimal() +
   theme(strip.text = element_text(size = 12), panel.spacing = unit(1, "lines"))
 
-ggsave("./figures/duration_dieout_fits_enviro.png", width = 6.5, height = 4.5, units = "in")
+ggsave("./figures/duration_dieout_fits.png", width = 6.5, height = 4.5, units = "in")
