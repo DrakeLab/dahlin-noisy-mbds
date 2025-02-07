@@ -599,6 +599,7 @@ comparison_trajectories$type = factor(
   levels = c("Deterministic", "No_demographic", "All_noise")
 )
 
+# Peak case count explanatory plot ----
 
 # Plot trying to explain difference in peak cases between all noise and no demographic noise
 # Find coordinates of the "cool spot" in the peak cases plots
@@ -651,11 +652,12 @@ peak_point_plot <- comparison_trajectories %>%
 peak_point_plot
 ggsave("./figures/peak_cases_comparison.png", peak_point_plot, width = 6.5, height = 4.5, units = "in")
 
-# Peak histogram plot
+# Peak histogram plot ----
 library(ggh4x)
-peak_histogram_plot <- comparison_trajectories %>% 
+peak_histogram_plot_no_condition <- comparison_trajectories %>% 
   filter(type != "Deterministic") %>% 
   dplyr::select(max_time, max_H, type, R0, sigma) %>% 
+  # filter(max_H > 100) %>% 
   unique() %>% 
   ggplot(aes(x = max_H, color = type, fill = type)) +
   # Peak points histogram
@@ -663,14 +665,15 @@ peak_histogram_plot <- comparison_trajectories %>%
     aes(y = after_stat(count)),  # Ensure y-axis represents counts per facet
     # position = "identity",  # Prevent stacking
     position = 'dodge',
-    alpha = 0.7,
-    bins = 30  # Set fixed bin count (adjustable)
+    alpha = 0.5,
+    # bins = 30  # Set fixed bin count (adjustable)
   ) +
   # Means of distributions
   geom_vline(
     data = comparison_trajectories %>% 
       filter(type != "Deterministic") %>% 
       dplyr::select(max_time, max_H, type, R0, sigma) %>% 
+      # filter(max_H > 100) %>% 
       unique() %>% 
       group_by(type, R0, sigma) %>% 
       summarise(mean_max_H = mean(max_H)),
@@ -701,8 +704,180 @@ peak_histogram_plot <- comparison_trajectories %>%
     legend.direction = "horizontal"    
   )
 
-peak_histogram_plot
-ggsave("./figures/peak_cases_comparison_histogram.png", peak_histogram_plot, width = 6.5, height = 4.5, units = "in")
+peak_histogram_plot_no_condition
+ggsave("./figures/peak_cases_comparison_histogram_no_condition.png", peak_histogram_plot_no_condition, width = 6.5, height = 4.5, units = "in")
+
+# Small outbreaks case
+peak_histogram_plot_small_outbreak <- comparison_trajectories %>% 
+  filter(type != "Deterministic") %>% 
+  dplyr::select(max_time, max_H, type, R0, sigma) %>% 
+  filter(max_H > 10) %>%
+  unique() %>% 
+  ggplot(aes(x = max_H, color = type, fill = type)) +
+  # Peak points histogram
+  geom_histogram(
+    aes(y = after_stat(count)),  # Ensure y-axis represents counts per facet
+    # position = "identity",  # Prevent stacking
+    position = 'dodge',
+    alpha = 0.5,
+    # bins = 30  # Set fixed bin count (adjustable)
+  ) +
+  # Means of distributions
+  geom_vline(
+    data = comparison_trajectories %>% 
+      filter(type != "Deterministic") %>% 
+      dplyr::select(max_time, max_H, type, R0, sigma) %>% 
+      filter(max_H > 10) %>%
+      unique() %>% 
+      group_by(type, R0, sigma) %>% 
+      summarise(mean_max_H = mean(max_H)),
+    aes(xintercept = mean_max_H, color = type),
+    lwd = 1, lty = 2
+  ) +
+  # Subplots for each combination of environmental noise strength and R0
+  ggh4x::facet_grid2(R0 ~ sigma,
+                     scales = "free",
+                     independent = "all",
+                     labeller = labeller(.rows = as_labeller(appender_R0,
+                                                             default = label_parsed),
+                                         .cols = as_labeller(appender_sigma,
+                                                             default = label_parsed))
+  ) +
+  scale_color_manual(
+    values = c4a("met.lakota",3)[2:3]
+  ) + 
+  scale_fill_manual(
+    values = c4a("met.lakota",3)[2:3]
+  ) + 
+  guides(
+    alpha = "none"
+  ) +
+  theme_minimal(11) +
+  theme(
+    legend.position = "bottom",
+    legend.direction = "horizontal"    
+  )
+
+peak_histogram_plot_small_outbreak
+ggsave("./figures/peak_cases_comparison_histogram_small_outbreak.png", peak_histogram_plot_small_outbreak, width = 6.5, height = 4.5, units = "in")
+
+# Big outbreak case
+peak_histogram_plot_big_outbreak <- comparison_trajectories %>% 
+  filter(type != "Deterministic") %>% 
+  dplyr::select(max_time, max_H, type, R0, sigma) %>% 
+  filter(max_H > 100) %>%
+  unique() %>% 
+  ggplot(aes(x = max_H, color = type, fill = type)) +
+  # Peak points histogram
+  geom_histogram(
+    aes(y = after_stat(count)),  # Ensure y-axis represents counts per facet
+    # position = "identity",
+    position = 'dodge',  # Prevent stacking
+    alpha = 0.5,
+    # bins = 30  # Set fixed bin count (adjustable)
+  ) +
+  # Means of distributions
+  geom_vline(
+    data = comparison_trajectories %>% 
+      filter(type != "Deterministic") %>% 
+      dplyr::select(max_time, max_H, type, R0, sigma) %>% 
+      filter(max_H > 100) %>%
+      unique() %>% 
+      group_by(type, R0, sigma) %>% 
+      summarise(mean_max_H = mean(max_H)),
+    aes(xintercept = mean_max_H, color = type),
+    lwd = 1, lty = 2
+  ) +
+  # Subplots for each combination of environmental noise strength and R0
+  ggh4x::facet_grid2(R0 ~ sigma,
+                     scales = "free",
+                     independent = "all",
+                     labeller = labeller(.rows = as_labeller(appender_R0,
+                                                             default = label_parsed),
+                                         .cols = as_labeller(appender_sigma,
+                                                             default = label_parsed))
+  ) +
+  scale_color_manual(
+    values = c4a("met.lakota",3)[2:3]
+  ) + 
+  scale_fill_manual(
+    values = c4a("met.lakota",3)[2:3]
+  ) + 
+  guides(
+    alpha = "none"
+  ) +
+  theme_minimal(11) +
+  theme(
+    legend.position = "bottom",
+    legend.direction = "horizontal"    
+  )
+
+peak_histogram_plot_big_outbreak
+ggsave("./figures/peak_cases_comparison_histogram_big_outbreak.png", peak_histogram_plot_big_outbreak, width = 6.5, height = 4.5, units = "in")
+
+
+# Compare how the distribution changes as we filter out smaller outbreaks
+peak_comparison_df <- comparison_trajectories %>% 
+  filter(type != "Deterministic") %>% 
+  filter(R0 == 1.375, sigma == 0.55) %>% 
+  mutate(
+    max_H_10 = if_else(max_H > 10, max_H, NA),
+    max_H_100 = if_else(max_H > 100, max_H, NA)
+  ) %>% 
+  pivot_longer(cols = c(max_H, max_H_10, max_H_100)) %>% 
+  dplyr::select(max_time, name, value, type, R0, sigma) %>% 
+  unique()
+
+peak_histogram_plot_comparison <- peak_comparison_df %>% 
+  ggplot(aes(x = value, color = type, fill = type)) +
+  # Peak points histogram
+  geom_histogram(
+    aes(y = after_stat(count)),  # Ensure y-axis represents counts per facet
+    # position = "identity",
+    position = 'dodge',  # Prevent stacking
+    alpha = 0.5,
+    # bins = 30  # Set fixed bin count (adjustable)
+  ) +
+  # Means of distributions
+  geom_vline(
+    data = peak_comparison_df %>% 
+      group_by(type, name) %>% 
+      summarise(mean_max_H = mean(value, na.rm = T)),
+    aes(xintercept = mean_max_H, color = type),
+    lwd = 1, lty = 2
+  ) +
+  # Subplots for each combination of environmental noise strength and R0
+  ggh4x::facet_grid2(~name,
+                     scales = "free",
+                     independent = "all",
+                     labeller = labeller(name = c(
+                       max_H = "No conditions",
+                       max_H_10 = "Small outbreak (>10)",
+                       max_H_100 = "Large outbreak (>100)"
+                     ))
+  ) +
+  scale_x_continuous(
+    name = "Peak case count"
+  ) +
+  scale_color_manual(
+    values = c4a("met.lakota",3)[2:3]
+  ) + 
+  scale_fill_manual(
+    values = c4a("met.lakota",3)[2:3]
+  ) + 
+  guides(
+    alpha = "none"
+  ) +
+  theme_minimal(11) +
+  theme(
+    legend.position = "bottom",
+    legend.direction = "horizontal"    
+  )
+
+peak_histogram_plot_comparison
+ggsave("./figures/peak_histogram_plot_comparison.png", peak_histogram_plot_comparison, width = 6.5, height = 4.5, units = "in")
+
+
 
 # Explaining "arc" in outbreak duration in the die out cases
 #    - Find R0 at max(outbreak_dieout), then the same R0 value with sigma = 1 and 1.5
@@ -732,7 +907,7 @@ test_vals = rbind(
   unique(dplyr::select(duration_die_out_R0s, sigma, R0))
 )
 
-outbreak_duration_df = all_df %>% #enviro_df %>%
+all_outbreak_duration_df = all_df %>% #enviro_df %>%
   rename(
     max_cases = max_value,
     duration = positive_duration
@@ -755,13 +930,50 @@ outbreak_duration_df = all_df %>% #enviro_df %>%
     R0 %in% test_vals$R0,
     !is.na(duration_dieout),
     duration_dieout > 0
-  )
-outbreak_duration_df$R0_factor = factor(round(outbreak_duration_df$R0,2), levels = rev(unique(round(outbreak_duration_df$R0,2))))
+  ) %>% 
+  mutate(type = "All noise")
+all_outbreak_duration_df$R0_factor = factor(round(all_outbreak_duration_df$R0,2), levels = rev(unique(round(all_outbreak_duration_df$R0,2))))
 
 # For each of these points, plot distributions of outputs, see how well a Gamma distribution fits.
 
-# Histogram
-duration_dieout_histograms <- outbreak_duration_df %>% 
+enviro_outbreak_duration_df = enviro_df %>% #all_df %>%
+  rename(
+    max_cases = max_value,
+    duration = positive_duration
+  ) %>% 
+  mutate(
+    small_outbreak = ifelse(exceeded_10 == "true", T, F),
+    big_outbreak = ifelse(exceeded_100 == "true", T, F),
+    endemic = ifelse(positive_at_final == "true", T, F),
+    peak_time = max_time / 365, # convert to years
+    duration = duration / 365, # convert to years
+    duration_dieout = if_else(endemic, NA, 
+                              if_else(max_cases <1,
+                                      NA,
+                                      duration)),
+    R0 = R0_from_Thv_function(Thv)
+  ) %>% 
+  dplyr::select(R0, sigma, run, duration_dieout) %>% 
+  filter(
+    sigma %in% test_vals$sigma, 
+    R0 %in% test_vals$R0,
+    !is.na(duration_dieout),
+    duration_dieout > 0
+  ) %>% 
+  mutate(type = "Environmental noise only")
+enviro_outbreak_duration_df$R0_factor = factor(round(enviro_outbreak_duration_df$R0,2), levels = rev(unique(round(enviro_outbreak_duration_df$R0,2))))
+
+outbreak_duration_df = bind_rows(
+  all_outbreak_duration_df,
+  enviro_outbreak_duration_df
+)
+
+
+
+# For each of these points, plot distributions of outputs, see how well a Gamma distribution fits.
+
+# Duration of dieouts Histogram ----
+duration_dieout_histograms <- enviro_outbreak_duration_df %>% 
   # filter(!is.na(duration_dieout)) %>% 
   ggplot(aes(x = duration_dieout, group = interaction(R0_factor, sigma))) +
   geom_histogram() +
@@ -783,7 +995,9 @@ duration_dieout_histograms
 # Fit Gamma distribution, perform tests, and generate plot
 
 fitted_data <- outbreak_duration_df %>%
+  group_by(type) %>% 
   filter(!is.na(duration_dieout)) %>% 
+  # filter(duration_dieout > 1/365) %>%
   dplyr::select(R0_factor, sigma, duration_dieout) %>% 
   rename(value = duration_dieout) %>% 
   group_by(R0_factor, sigma) %>%
@@ -811,24 +1025,34 @@ density_data <- fitted_data %>%
   )
 
 # Create ggplot with faceting
-ggplot(fitted_data, aes(x = value)) +
+fitted_data %>% 
+  filter(value > 1 / 365) %>% 
+  ggplot(aes(x = value)) +
   # Histogram
-  geom_histogram(aes(y = ..density..), bins = 30, fill = "blue", alpha = 0.6, color = "black") +
-  # Fitted Gamma density curve
-  geom_line(data = density_data, aes(x = density_x, y = density_y), color = "red", size = 1) +
-  # Gamma distribution fit parameters
-  geom_text(data = fitted_data, aes(
-    x = Inf, y = Inf,
-    label = paste("Shape =", round(shape, 2), "\nRate =", round(rate, 2), "\np-value =", signif(p_value, 3))
-  ),
-  hjust = 1.1, vjust = 1.1, size = 2, inherit.aes = FALSE
-  ) +
+  geom_histogram(
+    aes(y = ..count.., fill = type), 
+    position = 'identity',
+    # bins = 30, 
+    # fill = "blue", 
+    alpha = 0.6, 
+    # color = "black",
+    color = NA
+    ) +
+  # # Fitted Gamma density curve
+  # geom_line(data = density_data, aes(x = density_x, y = density_y), color = "red", size = 1) +
+  # # Gamma distribution fit parameters
+  # geom_text(data = fitted_data, aes(
+  #   x = Inf, y = Inf,
+  #   label = paste("Shape =", round(shape, 2), "\nRate =", round(rate, 2), "\np-value =", signif(p_value, 3)),
+  # ),
+  # hjust = 1.1, vjust = 1.1, size = 5, inherit.aes = FALSE
+  # ) +
   # Means of distributions
   geom_vline(
-    data = fitted_data %>% 
-      group_by(R0_factor, sigma) %>% 
+    data = fitted_data %>%
+      group_by(R0_factor, sigma,type) %>%
       summarise(mean_value = mean(value)),
-    aes(xintercept = mean_value),
+    aes(xintercept = mean_value, color = type),
     lwd = 1, lty = 2
   ) +
   # Subplots for each combination of environmental noise strength and R0
@@ -837,10 +1061,17 @@ ggplot(fitted_data, aes(x = value)) +
                                                      default = label_parsed),
                                  .cols = as_labeller(appender_sigma,
                                                      default = label_parsed)),
-             scales = "free",
-             independent = "all") +
-  # scale_x_log10() +
+             scales = "free_y",
+             independent = "y"
+             ) +
+  scale_x_continuous(
+    name = "Outbreak duration [years]",
+    trans = 'log10',
+    # breaks = seq(0, 10)
+  ) +
   scale_y_continuous(
+    name = "Count",
+    # trans = 'log10'
     # limits = c(0,1)
   ) +
   labs(
@@ -848,7 +1079,12 @@ ggplot(fitted_data, aes(x = value)) +
     x = "Data Values",
     y = "Density"
   ) +
-  theme_minimal() +
-  theme(strip.text = element_text(size = 12), panel.spacing = unit(1, "lines"))
+  theme_minimal(11) +
+  # theme(strip.text = element_text(size = 11), panel.spacing = unit(1, "lines")) +
+  theme(
+    legend.position = "bottom",
+    legend.direction = "horizontal"    
+  )
+
 
 ggsave("./figures/duration_dieout_fits.png", width = 6.5, height = 4.5, units = "in")
