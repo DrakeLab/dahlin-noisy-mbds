@@ -313,8 +313,8 @@ generic_heat_function <- function(output_name, type_name) {
   
   full_stats_df %>% 
     ungroup() %>% 
-    filter(name == output_name, type == type_name) %>% 
     # Stretch out sigma = 0
+    filter(name == output_name, type == type_name) %>%
     stretch_sigma() %>% 
     ggplot(aes(x = sigma, y = R0, z = mean)) +
     geom_raster(aes(fill = mean),
@@ -924,12 +924,13 @@ all_outbreak_duration_df = all_df %>% #enviro_df %>%
                                       duration)),
     R0 = R0_from_Thv_function(Thv)
   ) %>% 
-  dplyr::select(R0, sigma, run, duration_dieout) %>% 
+  # filter(small_outbreak == T) %>%  # !!! remove this
+  # dplyr::select(R0, sigma, run, duration_dieout) %>% 
   filter(
     sigma %in% test_vals$sigma, 
     R0 %in% test_vals$R0,
-    !is.na(duration_dieout),
-    duration_dieout > 0
+    # !is.na(duration_dieout),
+    # duration_dieout > 0
   ) %>% 
   mutate(type = "All noise")
 all_outbreak_duration_df$R0_factor = factor(round(all_outbreak_duration_df$R0,2), levels = rev(unique(round(all_outbreak_duration_df$R0,2))))
@@ -953,12 +954,13 @@ enviro_outbreak_duration_df = enviro_df %>% #all_df %>%
                                       duration)),
     R0 = R0_from_Thv_function(Thv)
   ) %>% 
-  dplyr::select(R0, sigma, run, duration_dieout) %>% 
+  # filter(small_outbreak == T) %>%  # !!! remove this
+  # dplyr::select(R0, sigma, run, duration_dieout) %>% 
   filter(
     sigma %in% test_vals$sigma, 
     R0 %in% test_vals$R0,
-    !is.na(duration_dieout),
-    duration_dieout > 0
+    # !is.na(duration_dieout),
+    # duration_dieout > 0
   ) %>% 
   mutate(type = "Environmental noise only")
 enviro_outbreak_duration_df$R0_factor = factor(round(enviro_outbreak_duration_df$R0,2), levels = rev(unique(round(enviro_outbreak_duration_df$R0,2))))
@@ -968,7 +970,31 @@ outbreak_duration_df = bind_rows(
   enviro_outbreak_duration_df
 )
 
-
+# Scatterplot of dieout duration vs. peak case count
+# !!! why are the ones lasting ten years missing?
+outbreak_duration_df %>% 
+  # rowwise() %>%
+  # mutate(max_cases = if_else(max_cases > 10000, 10000, max_cases)) %>% 
+  ggplot(aes(x = duration, y = max_cases)) +
+  # geom_point() +
+  geom_density2d_filled(aes(group = interaction(R0_factor, sigma)), n = 5000) +
+  # Subplots for each combination of environmental noise strength and R0
+  ggh4x::facet_grid2(R0_factor ~ sigma,
+                     labeller = labeller(.rows = as_labeller(appender_R0,
+                                                             default = label_parsed),
+                                         .cols = as_labeller(appender_sigma,
+                                                             default = label_parsed))
+  ) +
+  scale_x_continuous(
+    # limits = c(0, 11),
+    expand = c(0,0),
+    # trans = 'log10'
+  ) +
+  scale_y_continuous(
+    # limits = c(0, 10100),
+    # trans = 'log10'
+  ) +
+  theme_half_open(11)
 
 # For each of these points, plot distributions of outputs, see how well a Gamma distribution fits.
 
@@ -990,14 +1016,14 @@ duration_dieout_histograms <- enviro_outbreak_duration_df %>%
   ) +
   theme_minimal()
 
-duration_dieout_histograms
+
 
 # Fit Gamma distribution, perform tests, and generate plot
 
 fitted_data <- outbreak_duration_df %>%
   group_by(type) %>% 
   filter(!is.na(duration_dieout)) %>% 
-  # filter(duration_dieout > 1/365) %>%
+  filter(duration_dieout > 1/365) %>%
   dplyr::select(R0_factor, sigma, duration_dieout) %>% 
   rename(value = duration_dieout) %>% 
   group_by(R0_factor, sigma) %>%
@@ -1026,7 +1052,7 @@ density_data <- fitted_data %>%
 
 # Create ggplot with faceting
 fitted_data %>% 
-  filter(value > 1 / 365) %>% 
+  # filter(value > 1 / 365) %>% 
   ggplot(aes(x = value)) +
   # Histogram
   geom_histogram(
@@ -1038,15 +1064,6 @@ fitted_data %>%
     # color = "black",
     color = NA
     ) +
-  # # Fitted Gamma density curve
-  # geom_line(data = density_data, aes(x = density_x, y = density_y), color = "red", size = 1) +
-  # # Gamma distribution fit parameters
-  # geom_text(data = fitted_data, aes(
-  #   x = Inf, y = Inf,
-  #   label = paste("Shape =", round(shape, 2), "\nRate =", round(rate, 2), "\np-value =", signif(p_value, 3)),
-  # ),
-  # hjust = 1.1, vjust = 1.1, size = 5, inherit.aes = FALSE
-  # ) +
   # Means of distributions
   geom_vline(
     data = fitted_data %>%
@@ -1067,10 +1084,12 @@ fitted_data %>%
   scale_x_continuous(
     name = "Outbreak duration [years]",
     trans = 'log10',
+    expand = c(0,0)
     # breaks = seq(0, 10)
   ) +
   scale_y_continuous(
     name = "Count",
+    expand = c(0,0)
     # trans = 'log10'
     # limits = c(0,1)
   ) +
@@ -1088,3 +1107,23 @@ fitted_data %>%
 
 
 ggsave("./figures/duration_dieout_fits.png", width = 6.5, height = 4.5, units = "in")
+
+
+# Dieout duration heatmap filtering out small outbreaks
+
+outbreak_comparison_df <- comparison_trajectories %>% 
+  filter(type != "Deterministic") %>% 
+  filter(R0 == 1.375, sigma == 0.55) %>% 
+  filter(max_time < 10) %>% 
+  mutate(
+    max_time_10 = if_else(max_H > 10, max_time, NA),
+    max_time_100 = if_else(max_H > 100, max_time, NA)
+  ) #%>% 
+  # pivot_longer(cols = c(max_time, max_time_10, max_time_100)) #%>% 
+  # dplyr::select(max_time, name, value, type, R0, sigma) %>% 
+  # unique()
+
+outbreak_comparison_df %>% 
+  filter(type == "All" )
+ggplot(aes(x = sigma, y = R0, fill = max_time_10)) +
+  geom_tile()
