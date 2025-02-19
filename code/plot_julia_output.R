@@ -1,3 +1,4 @@
+# Load libraries
 library(tidyverse)
 library(GenBinomApps) # to get Clopper-Pearson confidence interval function
 library(cols4all)
@@ -9,11 +10,11 @@ library(cowplot)
 library(latex2exp)
 library(fitdistrplus)
 
-
+# Labeling functions
 appender_R0 <- function(string) TeX(paste("$R_0 = $", string))
 appender_sigma <- function(string) TeX(paste("$\\sigma = $", string))
 
-# # Parameters ---- 
+# Parameters ---- 
 b <- 0.3 # biting rate
 Tvh <- 0.5 # vector transmission-probability susceptible vector being infected after contact with infectious host
 Nh <- 10000 # number of hosts in system
@@ -22,7 +23,6 @@ muv <- 0.1 # vector mortality rate
 gammah <- 0.1 # host recovery rate
 
 R0_from_Thv_function <- function(Thv) {
-  # Thv <- (R0^2) / ((b^2 * Tvh * Nv) / (Nh * gammah * muv)) 
   sqrt(Thv * b^2 * Tvh * Nv / (Nh * gammah * muv))
 }
 
@@ -43,7 +43,7 @@ enviro_df = read.csv("./data/collect_all_outputs_no_demo.csv")
 all_df = read.csv("./data/collect_all_outputs.csv") 
 
 # Summarize key statistics: calculate mean, variance, and number of positives
-all_summary_df = all_df %>%
+all_df_modified <- all_df %>%
   rename(
     max_cases = max_value,
     duration = positive_duration
@@ -54,6 +54,8 @@ all_summary_df = all_df %>%
     endemic = ifelse(positive_at_final == "true", T, F),
     peak_time = max_time / 365, # convert to years
     duration = duration / 365, # convert to years
+    duration_10 = if_else(small_outbreak & !endemic, duration, NA),
+    duration_100 = if_else(big_outbreak & !endemic, duration, NA),
     duration_dieout = if_else(endemic, NA, 
                               if_else(max_cases <1,
                                       NA,
@@ -62,7 +64,9 @@ all_summary_df = all_df %>%
   ) %>% 
   dplyr::select(-c(exceeded_10, exceeded_100, positive_at_final, max_time, Thv)) %>% 
   # Summarise for each combination of R0 and sigma
-  pivot_longer(cols = max_cases:duration_dieout) %>%
+  pivot_longer(cols = max_cases:duration_dieout)
+
+all_summary_df = all_df_modified %>%
   mutate(
     .by = c(R0, sigma, name),
     mean = mean(value, na.rm = TRUE),
@@ -71,7 +75,7 @@ all_summary_df = all_df %>%
   ) %>%
   dplyr::select(-c(run, value)) %>% distinct()
 
-enviro_summary_df = enviro_df %>%
+enviro_df_modified <- enviro_df %>%
   rename(
     max_cases = max_value,
     duration = positive_duration
@@ -82,12 +86,18 @@ enviro_summary_df = enviro_df %>%
     endemic = ifelse(positive_at_final == "true", T, F),
     peak_time = max_time / 365, # convert to years
     duration = duration / 365, # convert to years
-    duration_dieout = if_else(endemic, NA, duration),
-    R0 = R0_from_Thv_function(Thv),
-    .keep = "unused"
+    duration_10 = if_else(small_outbreak & !endemic, duration, NA),
+    duration_100 = if_else(big_outbreak & !endemic, duration, NA),
+    duration_dieout = if_else(endemic, NA, 
+                              if_else(max_cases <1,
+                                      NA,
+                                      duration)),
+    R0 = R0_from_Thv_function(Thv)
   ) %>% 
+  dplyr::select(-c(exceeded_10, exceeded_100, positive_at_final, max_time, Thv)) %>% 
   # Summarise for each combination of R0 and sigma
-  pivot_longer(cols = max_cases:duration_dieout) %>%
+  pivot_longer(cols = max_cases:duration_dieout) 
+enviro_summary_df = enviro_df_modified %>%
   mutate(
     .by = c(R0, sigma, name),
     mean = mean(value, na.rm = TRUE),
@@ -102,7 +112,7 @@ num_sims = max(enviro_df$run)
 
 # For both noise types
 all_stats_df_binoms <- all_summary_df %>%
-  filter(!(name %in% c("max_cases", "duration", "duration_dieout", "peak_time"))) %>%
+  filter(!(name %in% c("max_cases", "duration", "duration_dieout", "peak_time", "duration_10", "duration_100"))) %>%
   rowwise() %>%
   mutate(sum_value = min(sum_value, num_sims)) %>%
   mutate(
@@ -112,7 +122,7 @@ all_stats_df_binoms <- all_summary_df %>%
   ungroup()
 
 all_stats_df_conts <- all_summary_df %>%
-  filter(name %in% c("max_cases", "duration", "duration_dieout", "peak_time")) %>%
+  filter(name %in% c("max_cases", "duration", "duration_dieout", "peak_time", "duration_10", "duration_100")) %>%
   rowwise() %>%
   mutate(
     max_val = if_else(name == "max_cases", Nh, max_time / 365),
@@ -127,7 +137,7 @@ all_stats_df$R0_factor = factor(round(all_stats_df$R0,2), levels = rev(unique(ro
 
 # For environmental noise only
 enviro_stats_df_binoms <- enviro_summary_df %>%
-  filter(!(name %in% c("max_cases", "duration", "duration_dieout", "peak_time"))) %>%
+  filter(!(name %in% c("max_cases", "duration", "duration_dieout", "peak_time", "duration_10", "duration_100"))) %>%
   rowwise() %>%
   mutate(sum_value = min(sum_value, num_sims)) %>%
   mutate(
@@ -137,7 +147,7 @@ enviro_stats_df_binoms <- enviro_summary_df %>%
   ungroup()
 
 enviro_stats_df_conts <- enviro_summary_df %>%
-  filter(name %in% c("max_cases", "duration", "duration_dieout", "peak_time")) %>%
+  filter(name %in% c("max_cases", "duration", "duration_dieout", "peak_time", "duration_10", "duration_100")) %>%
   rowwise() %>%
   mutate(
     max_val = if_else(name == "max_cases", Nh, max_time / 365),
@@ -294,14 +304,14 @@ generic_heat_function <- function(output_name, type_name) {
   # Set heatmap palette to match unit of output
   palette = case_when(
     output_name %in% c("small_outbreak", "big_outbreak", "endemic") ~ "viridis",
-    output_name %in% c("duration", "peak_time", "duration_dieout") ~ "plasma",
+    output_name %in% c("duration", "peak_time", "duration_dieout", "duration_10", "duration_100") ~ "plasma",
     output_name %in% c("max_cases") ~ "turbo",
   )
   
   # Label legend appropriately
   leg_label = case_when(
     output_name %in% c("small_outbreak", "big_outbreak", "endemic") ~ "Probability",
-    output_name %in% c("duration", "peak_time", "duration_dieout") ~ "Time [years]",
+    output_name %in% c("duration", "peak_time", "duration_dieout", "duration_10", "duration_100") ~ "Time [years]",
     output_name %in% c("max_cases") ~ "Num. cases",
   )
   
@@ -318,8 +328,9 @@ generic_heat_function <- function(output_name, type_name) {
     stretch_sigma() %>% 
     ggplot(aes(x = sigma, y = R0, z = mean)) +
     geom_raster(aes(fill = mean),
-                hjust = unique(diff(full_stats_df$sigma))[2] / 2,
-                vjust = unique(diff(full_stats_df$R0))[2] / 2) +
+                # hjust = 2.5 * unique(diff(full_stats_df$sigma))[2],
+                # vjust = 2.5 * unique(diff(full_stats_df$R0))[2]
+    ) +
     geom_hline(yintercept = 1, color = "red", lwd = 1) +
     geom_vline(xintercept = 0, color = "black", lwd = 1) +
     # Annotate x-axis for demographic noise
@@ -329,13 +340,19 @@ generic_heat_function <- function(output_name, type_name) {
                        breaks = c(-0.125, seq(0, 2.0, by = 0.25)),
                        labels = c(noise_label, seq(0, 2.0, by = 0.25))
     ) +
-    scale_y_continuous("R0",
-                       limits = c(0, NA),
-                       expand = c(0,0)) +    
+    scale_y_continuous(
+      TeX("Basic reproduction number  [$R_0$]"),
+      limits = c(0, NA),
+      expand = c(0,0)
+    ) +    
     # color:
     scale_fill_viridis_c(
       name = output_name,
-      option = palette
+      option = palette,
+      limits = case_when(
+        output_name %in% c("duration", "peak_time", "duration_dieout", "duration_10", "duration_100") ~ c(0,10),
+        TRUE ~ c(0,NA)
+      )
     ) +
     # legend:
     guides(fill = guide_colourbar(
@@ -345,7 +362,7 @@ generic_heat_function <- function(output_name, type_name) {
       barheight = 10,
       show.limits = TRUE
     )) +
-    ggtitle(nice_output_labeller(output_name)) +
+    # ggtitle(nice_output_labeller(output_name)) +
     theme_half_open(10)
 }
 
@@ -363,26 +380,26 @@ ggsave("./figures/no_demo/endemic_prob_heat.png", Pr_end_heat, width = 6.5, heig
 # Peak cases
 Peak_cases_heat <- generic_heat_function("max_cases", "all")
 ggsave("./figures/peak_cases_heat.png", Peak_cases_heat, width = 6.5, height = 3.56525, units = "in")
-Pr_end_heat <- generic_heat_function("max_cases", "enviro")
-ggsave("./figures/no_demo/peak_cases_heat.png", Pr_end_heat, width = 6.5, height = 3.56525, units = "in")
+Peak_cases_heat <- generic_heat_function("max_cases", "enviro")
+ggsave("./figures/no_demo/peak_cases_heat.png", Peak_cases_heat, width = 6.5, height = 3.56525, units = "in")
 
 # Peak timing
 Peak_time_heat <- generic_heat_function("peak_time", "all")
 ggsave("./figures/peak_time_heat.png", Peak_time_heat, width = 6.5, height = 3.56525, units = "in")
-Pr_end_heat <- generic_heat_function("peak_time", "enviro")
-ggsave("./figures/no_demo/peak_time_heat.png", Pr_end_heat, width = 6.5, height = 3.56525, units = "in")
+Peak_time_heat <- generic_heat_function("peak_time", "enviro")
+ggsave("./figures/no_demo/peak_time_heat.png", Peak_time_heat, width = 6.5, height = 3.56525, units = "in")
 
 # Small outbreak
 Small_outbreak_heat <- generic_heat_function("small_outbreak", "all")
 ggsave("./figures/small_outbreak_prob_heat.png", Small_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
-Pr_end_heat <- generic_heat_function("small_outbreak", "enviro")
-ggsave("./figures/no_demo/small_outbreak_prob_heat.png", Pr_end_heat, width = 6.5, height = 3.56525, units = "in")
+Small_outbreak_heat <- generic_heat_function("small_outbreak", "enviro")
+ggsave("./figures/no_demo/small_outbreak_prob_heat.png", Small_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
 
 # Big outbreak
 Big_outbreak_heat <- generic_heat_function("big_outbreak", "all")
 ggsave("./figures/big_outbreak_prob_heat.png", Big_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
-Pr_end_heat <- generic_heat_function("big_outbreak", "enviro")
-ggsave("./figures/no_demo/big_outbreak_prob_heat.png", Pr_end_heat, width = 6.5, height = 3.56525, units = "in")
+Big_outbreak_heat <- generic_heat_function("big_outbreak", "enviro")
+ggsave("./figures/no_demo/big_outbreak_prob_heat.png", Big_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
 
 # Duration
 Duration_heat <- generic_heat_function("duration", "all")
@@ -393,8 +410,20 @@ ggsave("./figures/no_demo/duration_heat.png", Pr_end_heat, width = 6.5, height =
 # Duration dieout
 Duration_dieout_heat <- generic_heat_function("duration_dieout", "all")
 ggsave("./figures/duration_dieout_heat.png", Duration_dieout_heat, width = 6.5, height = 3.56525, units = "in")
-Pr_end_heat <- generic_heat_function("duration_dieout", "enviro")
-ggsave("./figures/no_demo/duration_dieout_heat.png", Pr_end_heat, width = 6.5, height = 3.56525, units = "in")
+Duration_dieout_heat <- generic_heat_function("duration_dieout", "enviro")
+ggsave("./figures/no_demo/duration_dieout_heat.png", Duration_dieout_heat, width = 6.5, height = 3.56525, units = "in")
+
+# Duration dieout (> 10 cases)
+Duration_dieout_10_heat <- generic_heat_function("duration_10", "all")
+ggsave("./figures/duration_dieout_10_heat.png", Duration_dieout_10_heat, width = 6.5, height = 3.56525, units = "in")
+Duration_dieout_10_heat <- generic_heat_function("duration_10", "enviro")
+ggsave("./figures/no_demo/duration_dieout_10_heat.png", Duration_dieout_10_heat, width = 6.5, height = 3.56525, units = "in")
+
+# Duration dieout (> 100 cases)
+Duration_dieout_100_heat <- generic_heat_function("duration_100", "all")
+ggsave("./figures/duration_dieout_100_heat.png", Duration_dieout_100_heat, width = 6.5, height = 3.56525, units = "in")
+Duration_dieout_100_heat <- generic_heat_function("duration_100", "enviro")
+ggsave("./figures/no_demo/duration_dieout_100_heat.png", Duration_dieout_100_heat, width = 6.5, height = 3.56525, units = "in")
 
 
 # Comparison plots ----
@@ -410,12 +439,32 @@ compare_heat_function <- function(output_name, in_df, type) {
     
     type_label = "absolute difference (w vs. w/o dem. noise)"
     
+    # Get number of unique values to assign colors to
+    z_vals = in_df %>% 
+      ungroup() %>% 
+      filter(name == output_name) %>% 
+      dplyr::select(abs_diff) %>% unique() %>% 
+      pull()
+    num_cols = length(z_vals)
+    z_min = ifelse(output_name %in% c("small_outbreak", "big_outbreak", "endemic"), -1, min(z_vals, na.rm = T))
+    z_max = ifelse(output_name %in% c("small_outbreak", "big_outbreak", "endemic"), 1, max(z_vals, na.rm = T))
+    act_min = min(z_min, -z_max)
+    act_max = max(z_max, -z_min)
+    mid_val = 0
+    
     # Set heatmap palette to match unit of output
     palette = case_when(
-      output_name %in% c("small_outbreak", "big_outbreak", "endemic") ~ "viridis",
-      output_name %in% c("duration", "peak_time", "duration_dieout") ~ "plasma",
-      output_name %in% c("max_cases") ~ "turbo",
+      output_name %in% c("small_outbreak", "big_outbreak", "endemic") ~ c4a("kovesi.bu_bk_br", num_cols, type = "div"),
+      output_name %in% c("duration", "peak_time", "duration_dieout") ~ rev(c4a("scico.managua", num_cols, type = "div")),
+      output_name %in% c("max_cases") ~ c4a("scico.vanimo", num_cols, type = "div")	
     )
+    # palettes with zero = black
+    # kovesi.bu_bk_br
+    # scico.managua	
+    # scico.vanimo
+    
+    # palettes with zero = white
+    # hcl.red_green matplotlib.seismic cols4all.pu_gn_div
     
   } else {
     leg_label = "% difference"
@@ -428,7 +477,9 @@ compare_heat_function <- function(output_name, in_df, type) {
   
   in_df %>% 
     ungroup() %>% 
-    filter(name == output_name,
+    filter(
+      name == output_name,
+      !is.na(!!sym(type))
     ) %>% 
     # Stretch out sigma = 0
     stretch_sigma() %>% # !!! put deterministic stuff here
@@ -447,21 +498,30 @@ compare_heat_function <- function(output_name, in_df, type) {
                        breaks = c(-0.125, seq(0, 2.0, by = 0.25)),
                        labels = c("No\n noise", seq(0, 2.0, by = 0.25))
     ) +
-    scale_y_continuous("R0",
+    scale_y_continuous(TeX("Basic reproduction number  [$R_0$]"),
                        limits = c(0, NA),
                        expand = c(0,0)) +    
     # color:
-    scale_fill_viridis_c(
-      option = palette
+    scale_fill_gradientn(
+      colors = palette,
+      limits = c(act_min, act_max),
+      values = scales::rescale(c(act_min, mid_val, act_max)),
+      labels = ifelse(
+        output_name %in% c("small_outbreak", "big_outbreak", "endemic"),
+        function(x) paste0(100*x, "%"),
+        function(x) x)
+      # oob = scales::squish
     ) +
     # legend:
-    guides(fill = guide_colourbar(
-      title = leg_label,
-      title.position = "top",
-      title.hjust = 0.5,
-      barheight = 10,
-      show.limits = TRUE
-    )) +
+    guides(
+      fill = guide_colourbar(
+        title = leg_label,
+        title.position = "top",
+        title.hjust = 0.5,
+        barheight = 10,
+        show.limits = TRUE
+      )
+    ) +
     ggtitle(paste0(nice_output_labeller(output_name), " ", type_label)) +
     theme_half_open(10)
 }
@@ -469,44 +529,44 @@ compare_heat_function <- function(output_name, in_df, type) {
 # Pr(endemic)
 Pr_end_plot <- compare_heat_function("endemic", comp_stats_df, "abs_diff")
 ggsave("./figures/endemic_prob_abs_comparison.png", Pr_end_plot, width = 6.5, height = 3.56525, units = "in")
-perc_Pr_end_plot <- compare_heat_function("endemic", comp_stats_df, "perc_diff")
-ggsave("./figures/endemic_prob_perc_comparison.png", perc_Pr_end_plot, width = 6.5, height = 3.56525, units = "in")
+# perc_Pr_end_plot <- compare_heat_function("endemic", comp_stats_df, "perc_diff")
+# ggsave("./figures/endemic_prob_perc_comparison.png", perc_Pr_end_plot, width = 6.5, height = 3.56525, units = "in")
 
 # Peak cases
 Peak_cases_plot <- compare_heat_function("max_cases", comp_stats_df, "abs_diff")
 ggsave("./figures/peak_cases_abs_comparison.png", Peak_cases_plot, width = 6.5, height = 3.56525, units = "in")
-perc_Peak_cases_plot <- compare_heat_function("max_cases", comp_stats_df, "perc_diff")
-ggsave("./figures/peak_cases_perc_comparison.png", perc_Peak_cases_plot, width = 6.5, height = 3.56525, units = "in")
+# perc_Peak_cases_plot <- compare_heat_function("max_cases", comp_stats_df, "perc_diff")
+# ggsave("./figures/peak_cases_perc_comparison.png", perc_Peak_cases_plot, width = 6.5, height = 3.56525, units = "in")
 
 # Peak timing
 Peak_time_plot <- compare_heat_function("peak_time", comp_stats_df, "abs_diff")
 ggsave("./figures/peak_time_abs_comparison.png", Peak_time_plot, width = 6.5, height = 3.56525, units = "in")
-perc_Peak_time_plot <- compare_heat_function("peak_time", comp_stats_df, "perc_diff")
-ggsave("./figures/peak_time_perc_comparison.png", perc_Peak_time_plot, width = 6.5, height = 3.56525, units = "in")
+# perc_Peak_time_plot <- compare_heat_function("peak_time", comp_stats_df, "perc_diff")
+# ggsave("./figures/peak_time_perc_comparison.png", perc_Peak_time_plot, width = 6.5, height = 3.56525, units = "in")
 
 # Small outbreak
 Small_outbreak_plot <- compare_heat_function("small_outbreak", comp_stats_df, "abs_diff")
 ggsave("./figures/small_outbreak_prob_abs_comparison.png", Small_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
-perc_Small_outbreak_plot <- compare_heat_function("small_outbreak", comp_stats_df, "perc_diff")
-ggsave("./figures/small_outbreak_prob_perc_comparison.png", perc_Small_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
+# perc_Small_outbreak_plot <- compare_heat_function("small_outbreak", comp_stats_df, "perc_diff")
+# ggsave("./figures/small_outbreak_prob_perc_comparison.png", perc_Small_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
 
 # Big outbreak
 Big_outbreak_plot <- compare_heat_function("big_outbreak", comp_stats_df, "abs_diff")
 ggsave("./figures/big_outbreak_prob_abs_comparison.png", Big_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
-perc_Big_outbreak_plot <- compare_heat_function("big_outbreak", comp_stats_df, "perc_diff")
-ggsave("./figures/big_outbreak_prob_perc_comparison.png", perc_Big_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
+# perc_Big_outbreak_plot <- compare_heat_function("big_outbreak", comp_stats_df, "perc_diff")
+# ggsave("./figures/big_outbreak_prob_perc_comparison.png", perc_Big_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
 
 # Duration
 Duration_plot <- compare_heat_function("duration", comp_stats_df, "abs_diff")
 ggsave("./figures/duration_abs_comparison.png", Duration_plot, width = 6.5, height = 3.56525, units = "in")
-perc_Duration_plot <- compare_heat_function("duration", comp_stats_df, "perc_diff")
-ggsave("./figures/duration_perc_comparison.png", perc_Duration_plot, width = 6.5, height = 3.56525, units = "in")
+# perc_Duration_plot <- compare_heat_function("duration", comp_stats_df, "perc_diff")
+# ggsave("./figures/duration_perc_comparison.png", perc_Duration_plot, width = 6.5, height = 3.56525, units = "in")
 
 # Duration dieout
 Duration_dieout_plot <- compare_heat_function("duration_dieout", comp_stats_df, "abs_diff")
 ggsave("./figures/duration_dieout_abs_comparison.png", Duration_dieout_plot, width = 6.5, height = 3.56525, units = "in")
-perc_Duration_dieout_plot <- compare_heat_function("duration_dieout", comp_stats_df, "perc_diff")
-ggsave("./figures/duration_dieout_perc_comparison.png", perc_Duration_dieout_plot, width = 6.5, height = 3.56525, units = "in")
+# perc_Duration_dieout_plot <- compare_heat_function("duration_dieout", comp_stats_df, "perc_diff")
+# ggsave("./figures/duration_dieout_perc_comparison.png", perc_Duration_dieout_plot, width = 6.5, height = 3.56525, units = "in")
 
 
 # All simulations by R0 and sigma
@@ -682,13 +742,13 @@ peak_histogram_plot_no_condition <- comparison_trajectories %>%
   ) +
   # Subplots for each combination of environmental noise strength and R0
   ggh4x::facet_grid2(R0 ~ sigma,
-             scales = "free",
-             independent = "all",
-             labeller = labeller(.rows = as_labeller(appender_R0,
-                                                     default = label_parsed),
-                                 .cols = as_labeller(appender_sigma,
-                                                     default = label_parsed))
-             ) +
+                     scales = "free",
+                     independent = "all",
+                     labeller = labeller(.rows = as_labeller(appender_R0,
+                                                             default = label_parsed),
+                                         .cols = as_labeller(appender_sigma,
+                                                             default = label_parsed))
+  ) +
   scale_color_manual(
     values = c4a("met.lakota",3)[2:3]
   ) + 
@@ -833,8 +893,8 @@ peak_histogram_plot_comparison <- peak_comparison_df %>%
   # Peak points histogram
   geom_histogram(
     aes(y = after_stat(count)),  # Ensure y-axis represents counts per facet
-    # position = "identity",
-    position = 'dodge',  # Prevent stacking
+    position = "identity",
+    # position = 'dodge',  # Prevent stacking
     alpha = 0.5,
     # bins = 30  # Set fixed bin count (adjustable)
   ) +
@@ -844,25 +904,35 @@ peak_histogram_plot_comparison <- peak_comparison_df %>%
       group_by(type, name) %>% 
       summarise(mean_max_H = mean(value, na.rm = T)),
     aes(xintercept = mean_max_H, color = type),
-    lwd = 1, lty = 2
+    lwd = 1, lty = 2,
+    show.legend = F
   ) +
   # Subplots for each combination of environmental noise strength and R0
-  ggh4x::facet_grid2(~name,
-                     scales = "free",
-                     independent = "all",
-                     labeller = labeller(name = c(
-                       max_H = "No conditions",
-                       max_H_10 = "Small outbreak (>10)",
-                       max_H_100 = "Large outbreak (>100)"
-                     ))
+  facet_wrap(
+    ~name,
+    ncol = 1,
+    # scales = "free",
+    # independent = "all",
+    labeller = labeller(name = c(
+      max_H = "All simulations",
+      max_H_10 = "Small outbreaks (>10)",
+      max_H_100 = "Large outbreaks (>100)"
+    ))
   ) +
   scale_x_continuous(
-    name = "Peak case count"
+    name = "Peak case count",
+    expand = c(0,0)
+  ) +
+  scale_y_continuous(
+    "Count",
+    expand = c(0,0)
   ) +
   scale_color_manual(
+    name = "Noise type:",
     values = c4a("met.lakota",3)[2:3]
   ) + 
   scale_fill_manual(
+    name = "Noise type:",
     values = c4a("met.lakota",3)[2:3]
   ) + 
   guides(
@@ -870,7 +940,7 @@ peak_histogram_plot_comparison <- peak_comparison_df %>%
   ) +
   theme_minimal(11) +
   theme(
-    legend.position = "bottom",
+    legend.position = "top",
     legend.direction = "horizontal"    
   )
 
@@ -907,61 +977,25 @@ test_vals = rbind(
   unique(dplyr::select(duration_die_out_R0s, sigma, R0))
 )
 
-all_outbreak_duration_df = all_df %>% #enviro_df %>%
-  rename(
-    max_cases = max_value,
-    duration = positive_duration
-  ) %>% 
-  mutate(
-    small_outbreak = ifelse(exceeded_10 == "true", T, F),
-    big_outbreak = ifelse(exceeded_100 == "true", T, F),
-    endemic = ifelse(positive_at_final == "true", T, F),
-    peak_time = max_time / 365, # convert to years
-    duration = duration / 365, # convert to years
-    duration_dieout = if_else(endemic, NA, 
-                              if_else(max_cases <1,
-                                      NA,
-                                      duration)),
-    R0 = R0_from_Thv_function(Thv)
-  ) %>% 
-  # filter(small_outbreak == T) %>%  # !!! remove this
-  # dplyr::select(R0, sigma, run, duration_dieout) %>% 
+all_outbreak_duration_df = all_df_modified %>% 
   filter(
     sigma %in% test_vals$sigma, 
-    R0 %in% test_vals$R0,
-    # !is.na(duration_dieout),
-    # duration_dieout > 0
+    R0 %in% test_vals$R0
   ) %>% 
+  pivot_wider() %>% 
+  dplyr::select(sigma, R0, max_cases, duration) %>% 
   mutate(type = "All noise")
 all_outbreak_duration_df$R0_factor = factor(round(all_outbreak_duration_df$R0,2), levels = rev(unique(round(all_outbreak_duration_df$R0,2))))
 
-# For each of these points, plot distributions of outputs, see how well a Gamma distribution fits.
-
-enviro_outbreak_duration_df = enviro_df %>% #all_df %>%
-  rename(
-    max_cases = max_value,
-    duration = positive_duration
-  ) %>% 
-  mutate(
-    small_outbreak = ifelse(exceeded_10 == "true", T, F),
-    big_outbreak = ifelse(exceeded_100 == "true", T, F),
-    endemic = ifelse(positive_at_final == "true", T, F),
-    peak_time = max_time / 365, # convert to years
-    duration = duration / 365, # convert to years
-    duration_dieout = if_else(endemic, NA, 
-                              if_else(max_cases <1,
-                                      NA,
-                                      duration)),
-    R0 = R0_from_Thv_function(Thv)
-  ) %>% 
-  # filter(small_outbreak == T) %>%  # !!! remove this
-  # dplyr::select(R0, sigma, run, duration_dieout) %>% 
+enviro_outbreak_duration_df = enviro_df_modified %>% 
   filter(
     sigma %in% test_vals$sigma, 
     R0 %in% test_vals$R0,
     # !is.na(duration_dieout),
     # duration_dieout > 0
   ) %>% 
+  pivot_wider() %>% 
+  dplyr::select(sigma, R0, max_cases, duration) %>% 
   mutate(type = "Environmental noise only")
 enviro_outbreak_duration_df$R0_factor = factor(round(enviro_outbreak_duration_df$R0,2), levels = rev(unique(round(enviro_outbreak_duration_df$R0,2))))
 
@@ -971,30 +1005,62 @@ outbreak_duration_df = bind_rows(
 )
 
 # Scatterplot of dieout duration vs. peak case count
-# !!! why are the ones lasting ten years missing?
-outbreak_duration_df %>% 
-  # rowwise() %>%
-  # mutate(max_cases = if_else(max_cases > 10000, 10000, max_cases)) %>% 
+library(ggpointdensity)
+duration_peak_scatter_all <- outbreak_duration_df %>% 
+  filter(type == "All noise") %>% 
   ggplot(aes(x = duration, y = max_cases)) +
-  # geom_point() +
-  geom_density2d_filled(aes(group = interaction(R0_factor, sigma)), n = 5000) +
+  # geom_hex() +
+  geom_pointdensity() +
   # Subplots for each combination of environmental noise strength and R0
-  ggh4x::facet_grid2(R0_factor ~ sigma,
-                     labeller = labeller(.rows = as_labeller(appender_R0,
-                                                             default = label_parsed),
-                                         .cols = as_labeller(appender_sigma,
-                                                             default = label_parsed))
+  ggh4x::facet_grid2(
+    R0_factor ~ sigma,
+    labeller = labeller(.rows = as_labeller(appender_R0, default = label_parsed),
+                        .cols = as_labeller(appender_sigma, default = label_parsed))
+  ) +
+  scale_color_viridis_c(
+    name = "Number of\n neighbors"
   ) +
   scale_x_continuous(
-    # limits = c(0, 11),
     expand = c(0,0),
-    # trans = 'log10'
   ) +
   scale_y_continuous(
-    # limits = c(0, 10100),
-    # trans = 'log10'
   ) +
-  theme_half_open(11)
+  # legend:
+  theme_half_open(11) +
+  theme(
+    strip.background = element_rect(color = "white", fill = "white")
+  )
+
+duration_peak_scatter_all
+ggsave("./figures/duration_peak_scatter_all.png", duration_peak_scatter_all, width = 6.5, height = 4.5, units = "in")
+
+duration_peak_scatter_enviro <- outbreak_duration_df %>% 
+  filter(type == "Environmental noise only") %>% 
+  ggplot(aes(x = duration, y = max_cases)) +
+  # geom_hex() +
+  geom_pointdensity() +
+  # Subplots for each combination of environmental noise strength and R0
+  ggh4x::facet_grid2(
+    R0_factor ~ sigma,
+    labeller = labeller(.rows = as_labeller(appender_R0, default = label_parsed),
+                        .cols = as_labeller(appender_sigma, default = label_parsed))
+  ) +
+  scale_color_viridis_c(
+    name = "Number of\n neighbors"
+  ) +
+  scale_x_continuous(
+    expand = c(0,0),
+  ) +
+  scale_y_continuous(
+  ) +
+  # legend:
+  theme_half_open(11) +
+  theme(
+    strip.background = element_rect(color = "white", fill = "white")
+  )
+
+duration_peak_scatter_enviro
+ggsave("./figures/duration_peak_scatter_enviro.png", duration_peak_scatter_enviro, width = 6.5, height = 4.5, units = "in")
 
 # For each of these points, plot distributions of outputs, see how well a Gamma distribution fits.
 
@@ -1063,7 +1129,7 @@ fitted_data %>%
     alpha = 0.6, 
     # color = "black",
     color = NA
-    ) +
+  ) +
   # Means of distributions
   geom_vline(
     data = fitted_data %>%
@@ -1074,13 +1140,13 @@ fitted_data %>%
   ) +
   # Subplots for each combination of environmental noise strength and R0
   ggh4x::facet_grid2(R0_factor ~ sigma,
-             labeller = labeller(.rows = as_labeller(appender_R0,
-                                                     default = label_parsed),
-                                 .cols = as_labeller(appender_sigma,
-                                                     default = label_parsed)),
-             scales = "free_y",
-             independent = "y"
-             ) +
+                     labeller = labeller(.rows = as_labeller(appender_R0,
+                                                             default = label_parsed),
+                                         .cols = as_labeller(appender_sigma,
+                                                             default = label_parsed)),
+                     scales = "free_y",
+                     independent = "y"
+  ) +
   scale_x_continuous(
     name = "Outbreak duration [years]",
     trans = 'log10',
@@ -1111,19 +1177,79 @@ ggsave("./figures/duration_dieout_fits.png", width = 6.5, height = 4.5, units = 
 
 # Dieout duration heatmap filtering out small outbreaks
 
-outbreak_comparison_df <- comparison_trajectories %>% 
-  filter(type != "Deterministic") %>% 
-  filter(R0 == 1.375, sigma == 0.55) %>% 
-  filter(max_time < 10) %>% 
+outbreak_comparison_df <- all_df %>% 
+  filter(positive_at_final == "false") %>% 
   mutate(
-    max_time_10 = if_else(max_H > 10, max_time, NA),
-    max_time_100 = if_else(max_H > 100, max_time, NA)
-  ) #%>% 
-  # pivot_longer(cols = c(max_time, max_time_10, max_time_100)) #%>% 
-  # dplyr::select(max_time, name, value, type, R0, sigma) %>% 
-  # unique()
+    duration_10 = if_else(exceeded_10 == "false", positive_duration / 365, NA),
+    duration_100 = if_else(exceeded_100 == "false", positive_duration / 365, NA),
+    R0 = R0_from_Thv_function(Thv)
+  ) %>% 
+  dplyr::select(run, R0, sigma, duration_10, duration_100) %>% 
+  # Summarise for each combination of R0 and sigma
+  pivot_longer(cols = duration_10:duration_100) %>%
+  mutate(
+    .by = c(R0, sigma, name),
+    mean = mean(value, na.rm = TRUE),
+    variance = var(value, na.rm = TRUE),
+    sum_value = as.integer(sum(value, na.rm = TRUE)) # needed for Clopper-Pearon confidence intervals
+  ) %>%
+  dplyr::select(-c(run, value)) %>% distinct()
+
+
+
+# Set heatmap palette to match unit of output
+palette = "plasma"
+
+# Label legend appropriately
+leg_label = "Time [years]"
+
+# noise_label = case_when(
+#   type_name == "all" ~  "Demo\n noise only",
+#   type_name == "enviro" ~ "No\n noise"
+# )
+
 
 outbreak_comparison_df %>% 
-  filter(type == "All" )
-ggplot(aes(x = sigma, y = R0, fill = max_time_10)) +
+  ungroup() %>% 
+  # Stretch out sigma = 0
+  filter(
+    !is.na(mean),
+    name == "duration_10"
+  ) %>%
+  # stretch_sigma() %>% 
+  ggplot(aes(x = sigma, y = R0, z = mean)) +
+  geom_raster(aes(fill = mean),
+              hjust = unique(diff(outbreak_comparison_df$sigma))[2] / 2,
+              vjust = unique(diff(outbreak_comparison_df$R0))[2] / 2) +
+  geom_hline(yintercept = 1, color = "red", lwd = 1) +
+  geom_vline(xintercept = 0, color = "black", lwd = 1) +
+  # Annotate x-axis for demographic noise
+  scale_x_continuous(TeX("Environmental noise strength [$\\sigma$]"),
+                     limits = c(-0.25, NA),
+                     expand = c(0,0),
+                     breaks = c(-0.125, seq(0, 2.0, by = 0.25)),
+                     labels = c("Demo\n noise only", seq(0, 2.0, by = 0.25))
+  ) +
+  scale_y_continuous("R0",
+                     limits = c(0, NA),
+                     expand = c(0,0)) +    
+  # color:
+  scale_fill_viridis_c(
+    name = "Outbreak duration (not endemic, > 10 cases)",
+    option = "plasma"
+  ) +
+  # legend:
+  guides(fill = guide_colourbar(
+    title = leg_label,
+    title.position = "top",
+    title.hjust = 0.5,
+    barheight = 10,
+    show.limits = TRUE
+  )) +
+  ggtitle(nice_output_labeller(output_name)) +
+  theme_half_open(10)
+
+outbreak_comparison_df %>% 
+  filter(type == "All" ) %>% 
+  ggplot(aes(x = sigma, y = R0, fill = max_time_10)) +
   geom_tile()
