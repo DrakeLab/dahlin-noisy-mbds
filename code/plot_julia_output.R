@@ -11,6 +11,11 @@ library(latex2exp)
 library(fitdistrplus)
 library(data.table)
 library(multidplyr)
+library(scales)
+library(ggpubr)
+library(egg)
+library(ggh4x)
+library(ggpointdensity)
 
 # Labeling functions
 appender_R0 <- function(string) TeX(paste("$R_0 = $", string))
@@ -35,8 +40,8 @@ sigmas <- seq(0, 1, by = 0.05)
 max_time = 3650
 
 # Load data ----
-all_df_modified = read_rds("./data/all_modified.rds")
-enviro_df_modified = read_rds("./data/enviro_modified.rds")
+# all_df_modified = read_rds("./data/all_modified.rds")
+# enviro_df_modified = read_rds("./data/enviro_modified.rds")
 
 all_stats_df = read_rds("./data/all_stats.rds")
 enviro_stats_df = read_rds("./data/enviro_stats.rds")
@@ -174,7 +179,6 @@ stretch_sigma <- function(in_df, include_det = F) {
 
 
 # Generic plot function
-library(scales)
 generic_heat_function <- function(output_name, type_name) {
   
   # Set heatmap palette to match unit of output
@@ -188,14 +192,14 @@ generic_heat_function <- function(output_name, type_name) {
   leg_label = case_when(
     output_name %in% c("small_outbreak", "big_outbreak", "endemic") ~ "Probability",
     output_name %in% c("duration", "peak_time", "duration_dieout", "duration_10", "duration_100") ~ "Time [years]",
-    output_name %in% c("max_cases") ~ "Number\n of cases",
+    output_name %in% c("max_cases") ~ "Number of cases",
   )
   
   # 
   noise_labels = ifelse(
     type_name == "all",
     list(c("Deterministic", "Demographic\n stochasticity")),
-    list("No\n stoch.")
+    list("Deterministic")
   )[[1]]
   
   noise_breaks <- ifelse(
@@ -258,8 +262,8 @@ generic_heat_function <- function(output_name, type_name) {
       fill = guide_colourbar(
         title = leg_label,
         title.position = "top",
-        title.hjust = 0.5,
-        barheight = 10.5,
+        title.hjust = 0,
+        barheight = 9,
         show.limits = TRUE,
         draw.ulim = TRUE,
         draw.llim = TRUE,
@@ -278,96 +282,134 @@ generic_heat_function <- function(output_name, type_name) {
   }
   return(out)
 }
+# 
+# # Pr(endemic)
+# Pr_end_heat = generic_heat_function("endemic", "all")
+# ggsave("./figures/endemic_prob_heat.png", Pr_end_heat, width = 6.5, height = 3.56525, units = "in")
+# Pr_end_heat <- generic_heat_function("endemic", "enviro")
+# ggsave("./figures/no_demo/endemic_prob_heat.png", Pr_end_heat, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Peak cases
+# Peak_cases_heat <- generic_heat_function("max_cases", "all")
+# ggsave("./figures/peak_cases_heat.png", Peak_cases_heat, width = 6.5, height = 3.56525, units = "in")
+# Peak_cases_heat <- generic_heat_function("max_cases", "enviro")
+# ggsave("./figures/no_demo/peak_cases_heat.png", Peak_cases_heat, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Peak timing
+# Peak_time_heat <- generic_heat_function("peak_time", "all")
+# ggsave("./figures/peak_time_heat.png", Peak_time_heat, width = 6.5, height = 3.56525, units = "in")
+# Peak_time_heat <- generic_heat_function("peak_time", "enviro")
+# ggsave("./figures/no_demo/peak_time_heat.png", Peak_time_heat, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Small outbreak
+# Small_outbreak_heat <- generic_heat_function("small_outbreak", "all")
+# ggsave("./figures/small_outbreak_prob_heat.png", Small_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
+# Small_outbreak_heat <- generic_heat_function("small_outbreak", "enviro")
+# ggsave("./figures/no_demo/small_outbreak_prob_heat.png", Small_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Big outbreak
+# Big_outbreak_heat <- generic_heat_function("big_outbreak", "all")
+# ggsave("./figures/big_outbreak_prob_heat.png", Big_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
+# Big_outbreak_heat <- generic_heat_function("big_outbreak", "enviro")
+# ggsave("./figures/no_demo/big_outbreak_prob_heat.png", Big_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Duration
+# Duration_heat <- generic_heat_function("duration", "all")
+# ggsave("./figures/duration_heat.png", Duration_heat, width = 6.5, height = 3.56525, units = "in")
+# Pr_end_heat <- generic_heat_function("duration", "enviro")
+# ggsave("./figures/no_demo/duration_heat.png", Pr_end_heat, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Duration dieout
+# Duration_dieout_heat <- generic_heat_function("duration_dieout", "all")
+# ggsave("./figures/duration_dieout_heat.png", Duration_dieout_heat, width = 6.5, height = 3.56525, units = "in")
+# Duration_dieout_heat <- generic_heat_function("duration_dieout", "enviro")
+# ggsave("./figures/no_demo/duration_dieout_heat.png", Duration_dieout_heat, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Duration dieout (> 10 cases)
+# Duration_dieout_10_heat <- generic_heat_function("duration_10", "all")
+# ggsave("./figures/duration_dieout_10_heat.png", Duration_dieout_10_heat, width = 6.5, height = 3.56525, units = "in")
+# Duration_dieout_10_heat <- generic_heat_function("duration_10", "enviro")
+# ggsave("./figures/no_demo/duration_dieout_10_heat.png", Duration_dieout_10_heat, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Duration dieout (> 100 cases)
+# Duration_dieout_100_heat <- generic_heat_function("duration_100", "all")
+# ggsave("./figures/duration_dieout_100_heat.png", Duration_dieout_100_heat, width = 6.5, height = 3.56525, units = "in")
+# Duration_dieout_100_heat <- generic_heat_function("duration_100", "enviro")
+# ggsave("./figures/no_demo/duration_dieout_100_heat.png", Duration_dieout_100_heat, width = 6.5, height = 3.56525, units = "in")
 
-# Pr(endemic)
-Pr_end_heat = generic_heat_function("endemic", "all")
-ggsave("./figures/endemic_prob_heat.png", Pr_end_heat, width = 6.5, height = 3.56525, units = "in")
-Pr_end_heat <- generic_heat_function("endemic", "enviro")
-ggsave("./figures/no_demo/endemic_prob_heat.png", Pr_end_heat, width = 6.5, height = 3.56525, units = "in")
-
-# Peak cases
-Peak_cases_heat <- generic_heat_function("max_cases", "all")
-ggsave("./figures/peak_cases_heat.png", Peak_cases_heat, width = 6.5, height = 3.56525, units = "in")
-Peak_cases_heat <- generic_heat_function("max_cases", "enviro")
-ggsave("./figures/no_demo/peak_cases_heat.png", Peak_cases_heat, width = 6.5, height = 3.56525, units = "in")
-
-# Peak timing
-Peak_time_heat <- generic_heat_function("peak_time", "all")
-ggsave("./figures/peak_time_heat.png", Peak_time_heat, width = 6.5, height = 3.56525, units = "in")
-Peak_time_heat <- generic_heat_function("peak_time", "enviro")
-ggsave("./figures/no_demo/peak_time_heat.png", Peak_time_heat, width = 6.5, height = 3.56525, units = "in")
-
-# Small outbreak
-Small_outbreak_heat <- generic_heat_function("small_outbreak", "all")
-ggsave("./figures/small_outbreak_prob_heat.png", Small_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
-Small_outbreak_heat <- generic_heat_function("small_outbreak", "enviro")
-ggsave("./figures/no_demo/small_outbreak_prob_heat.png", Small_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
-
-# Big outbreak
-Big_outbreak_heat <- generic_heat_function("big_outbreak", "all")
-ggsave("./figures/big_outbreak_prob_heat.png", Big_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
-Big_outbreak_heat <- generic_heat_function("big_outbreak", "enviro")
-ggsave("./figures/no_demo/big_outbreak_prob_heat.png", Big_outbreak_heat, width = 6.5, height = 3.56525, units = "in")
-
-# Duration
-Duration_heat <- generic_heat_function("duration", "all")
-ggsave("./figures/duration_heat.png", Duration_heat, width = 6.5, height = 3.56525, units = "in")
-Pr_end_heat <- generic_heat_function("duration", "enviro")
-ggsave("./figures/no_demo/duration_heat.png", Pr_end_heat, width = 6.5, height = 3.56525, units = "in")
-
-# Duration dieout
-Duration_dieout_heat <- generic_heat_function("duration_dieout", "all")
-ggsave("./figures/duration_dieout_heat.png", Duration_dieout_heat, width = 6.5, height = 3.56525, units = "in")
-Duration_dieout_heat <- generic_heat_function("duration_dieout", "enviro")
-ggsave("./figures/no_demo/duration_dieout_heat.png", Duration_dieout_heat, width = 6.5, height = 3.56525, units = "in")
-
-# Duration dieout (> 10 cases)
-Duration_dieout_10_heat <- generic_heat_function("duration_10", "all")
-ggsave("./figures/duration_dieout_10_heat.png", Duration_dieout_10_heat, width = 6.5, height = 3.56525, units = "in")
-Duration_dieout_10_heat <- generic_heat_function("duration_10", "enviro")
-ggsave("./figures/no_demo/duration_dieout_10_heat.png", Duration_dieout_10_heat, width = 6.5, height = 3.56525, units = "in")
-
-# Duration dieout (> 100 cases)
-Duration_dieout_100_heat <- generic_heat_function("duration_100", "all")
-ggsave("./figures/duration_dieout_100_heat.png", Duration_dieout_100_heat, width = 6.5, height = 3.56525, units = "in")
-Duration_dieout_100_heat <- generic_heat_function("duration_100", "enviro")
-ggsave("./figures/no_demo/duration_dieout_100_heat.png", Duration_dieout_100_heat, width = 6.5, height = 3.56525, units = "in")
-
-# Figure 4: Stacked heatmap ----
-# Pr(endemic), Pr(> 100 hosts), peak # of cases
-library(ggpubr)
-library(egg)
-Pr_end_heat <- generic_heat_function("endemic", "all") +
-  labs(
-    title = "A) Pr(endemic)"
-  ) +
-  theme(
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(),
-    axis.line.x = element_blank()  # Remove x-axis line
-  )
+# Figure 4: Stacked heatmaps with all noise ----
+# Pr(> 100 hosts), peak # of cases, Duration
 
 Big_outbreak_heat <- generic_heat_function("big_outbreak", "all") +
   labs(
-    title = "B) Pr(> 100 cases)"
+    title = "A. Probability of an outbreak of over 100 cases"
   ) +
   theme(
     axis.title.x = element_blank(),
     axis.text.x = element_blank(),
     axis.ticks.x = element_blank(),
-    axis.line.x = element_blank()  # Remove x-axis line
-  ) +
-  guides(
-    fill = guide_none()
-  )
-Peak_cases_heat <- generic_heat_function("max_cases", "all") +
-  labs(
-    title = "C) Peak number of cases"
+    axis.line.x = element_blank(),  # Remove x-axis line
+    axis.title.y = element_blank()
   )
 
-Figure4 = egg::ggarrange(Pr_end_heat, Big_outbreak_heat, Peak_cases_heat, ncol = 1)
-ggsave("./figures/Figure4.png", Figure4, width = 6.5, height = 8, units = "in")
+Peak_cases_heat <- generic_heat_function("max_cases", "all") +
+  labs(
+    title = "B. Peak number of cases"
+  ) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.line.x = element_blank(),  # Remove x-axis line
+    axis.title.y = element_text(hjust = 0.9)
+  )
+Duration_heat <- generic_heat_function("duration", "all") +
+  labs(
+    title = "C. Duration of outbreak"
+  ) +
+  theme(
+    axis.title.y = element_blank()
+  )
+
+Figure4 = egg::ggarrange(Big_outbreak_heat, Peak_cases_heat, Duration_heat, ncol = 1)
+ggsave("./figures/Figure4.png", Figure4, width = 6.5, height = 7, units = "in")
+
+# Figure 5: Stacked heatmaps with no demographic noise ----
+# Pr(> 100 hosts), peak # of cases, Duration
+
+Big_outbreak_heat <- generic_heat_function("big_outbreak", "enviro") +
+  labs(
+    title = "A. Probability of an outbreak of over 100 cases"
+  ) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.line.x = element_blank(),  # Remove x-axis line
+    axis.title.y = element_blank()
+  )
+
+Peak_cases_heat <- generic_heat_function("max_cases", "enviro") +
+  labs(
+    title = "B. Peak number of cases"
+  ) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.line.x = element_blank(),  # Remove x-axis line
+    axis.title.y = element_text(hjust = 0.9)
+  )
+Duration_heat <- generic_heat_function("duration", "enviro") +
+  labs(
+    title = "C. Duration of outbreak"
+  ) +
+  theme(
+    axis.title.y = element_blank()
+  )
+
+Figure5 = egg::ggarrange(Big_outbreak_heat, Peak_cases_heat, Duration_heat, ncol = 1)
+ggsave("./figures/Figure5.png", Figure5, width = 6.5, height = 7, units = "in")
 
 # Comparison plots ----
 compare_heat_function <- function(output_name, in_df, type) {
@@ -389,17 +431,17 @@ compare_heat_function <- function(output_name, in_df, type) {
       dplyr::select(abs_diff) %>% unique() %>% 
       pull()
     num_cols = length(z_vals)
-    z_min = ifelse(output_name %in% c("small_outbreak", "big_outbreak", "endemic"), -1, min(z_vals, na.rm = T))
-    z_max = ifelse(output_name %in% c("small_outbreak", "big_outbreak", "endemic"), 1, max(z_vals, na.rm = T))
-    act_min = min(z_min, -z_max)
-    act_max = max(z_max, -z_min)
+    z_min = min(z_vals, na.rm = T)
+    z_max = max(z_vals, na.rm = T)
+    act_min = z_min
+    act_max = z_max
     mid_val = 0
     
     # Set heatmap palette to match unit of output
     palette = case_when(
-      output_name %in% c("small_outbreak", "big_outbreak", "endemic") ~ c4a("kovesi.bu_bk_br", num_cols, type = "div"),
-      output_name %in% c("duration", "peak_time", "duration_dieout") ~ rev(c4a("scico.managua", num_cols, type = "div")),
-      output_name %in% c("max_cases") ~ c4a("scico.vanimo", num_cols, type = "div")	
+      output_name %in% c("small_outbreak", "big_outbreak", "endemic") ~ c4a("hcl.red_green", num_cols, type = "div"),
+      output_name %in% c("duration", "peak_time", "duration_dieout") ~ rev(c4a("matplotlib.seismic", num_cols, type = "div")),
+      output_name %in% c("max_cases") ~ c4a("cols4all.pu_gn_div", num_cols, type = "div")	
     )
     # palettes with zero = black
     # kovesi.bu_bk_br
@@ -417,28 +459,83 @@ compare_heat_function <- function(output_name, in_df, type) {
     type_label = "percent difference (w vs. w/o dem. noise)"
   }
   
-  in_df %>% 
-    ungroup() %>% 
-    filter(
-      name == output_name,
-      # !is.na(!!sym(type))
-    ) %>% 
+  # Approximate difference as a continuous function to get smooth contour lines
+  fixed_df = in_df %>%
+    filter(type == "all", name == output_name) %>% 
+    dplyr::select(sigma, R0, abs_diff) %>% 
+    filter(if_all(c(sigma, R0, abs_diff), ~ is.finite(.x) & !is.na(.x)))
+  
+  # Create a grid via interpolation (if your data isn't already on a grid)
+  grid <- with(
+    fixed_df, 
+    akima::interp(
+      jitter(sigma, factor = 0.0001), jitter(R0, factor = 0.0001), abs_diff, 
+      duplicate = "mean",
+      nx = 200, ny = 200)
+    )
+  tidy_grid <- expand.grid(sigma = grid$x, R0 = grid$y) %>%
+    mutate(abs_diff = as.vector(grid$z))
+  
+  cl <- contourLines(x = grid$x, 
+                     y = grid$y, 
+                     z = matrix(tidy_grid$abs_diff, nrow = length(grid$x), byrow = FALSE), 
+                     levels = 0)
+  smooth_contour <- function(contour, group_id, spar = 0.5, min_length = 0.1) {
+    # Compute total length of the contour using Euclidean distance
+    contour_length <- sum(sqrt(diff(contour$x)^2 + diff(contour$y)^2))
+    
+    # If the contour is too short, discard it
+    if (contour_length < min_length) return(NULL)
+    
+    tryCatch({
+      fit <- smooth.spline(contour$x, contour$y, spar = spar)
+      data.frame(sigma = fit$x, R0 = fit$y, group = group_id)
+    }, error = function(e) {
+      # Return NULL if smooth.spline fails
+      NULL
+    })
+  }
+  
+  # Apply the function over each contour
+  min_length_threshold <- 1  # Adjust as needed
+  smooth_list <- map2(cl, seq_along(cl), smooth_contour, spar = 1, min_length = min_length_threshold)
+  smooth_df <- bind_rows(smooth_list)
+  
+  # # Plot the contour line where abs_diff equals 0
+  # ggplot(tidy_grid, aes(x = sigma, y = R0)) +
+  #   geom_raster(aes(fill = abs_diff)) +
+  #   scale_fill_viridis_c(name = "abs_diff") +
+  #   geom_path(data = smooth_df, aes(x = sigma, y = R0, group = group),
+  #             color = "black", size = 1) +
+  #   labs(title = "Smoothed Contours for abs_diff = 0",
+  #        x = expression(sigma),
+  #        y = expression(R[0])) +
+  #   theme_minimal()
+  
+  fixed_df %>% 
     # Stretch out sigma = 0
     stretch_sigma() %>% # !!! put deterministic stuff here
-    ggplot(aes(x = sigma, y = R0, z = !!sym(type))) +
-    geom_tile(aes(fill = !!sym(type)),
-              # hjust = unique(diff(in_df$sigma))[2] / 2,
-              # vjust = unique(diff(in_df$R0))[2] / 2
+    ggplot(aes(x = sigma, y = R0)) +
+    # Tile values across grid
+    geom_tile(aes(fill = !!sym(type))) +
+    # Add a contour where z = 0
+    geom_contour(
+      aes(z = !!sym(type)),
+      breaks = 0.01,
+      color = "orange"
     ) +
+    # geom_path(data = smooth_df,
+    #           aes(group = group),
+    #           color = "black", size = 1) +
     # Add a red line for R0 = 1
     geom_hline(yintercept = 1, color = "red", lwd = 1) +
     # Add a black line for "no environmental noise"
     geom_vline(xintercept = 0, color = "black", lwd = 1) +
     # Annotate x-axis for demographic noise
     scale_x_continuous(TeX("Environmental noise strength [$\\sigma$]"),
-                       # limits = c(-0.25, NA),
-                       breaks = c(-0.125, seq(0, 2.0, by = 0.25)),
-                       labels = c("No\n noise", seq(0, 2.0, by = 0.25)),
+                       limits = c(-0.48, NA),
+                       breaks = c(-0.24, seq(0, 2.0, by = 0.25)),
+                       labels = c("Deterministic", seq(0, 2.0, by = 0.25)),
                        expand = c(0,0),
     ) +
     scale_y_continuous(TeX("Basic reproduction number  [$R_0$]"),
@@ -460,56 +557,98 @@ compare_heat_function <- function(output_name, in_df, type) {
       fill = guide_colourbar(
         title = leg_label,
         title.position = "top",
-        title.hjust = 0.5,
-        barheight = 10,
-        show.limits = TRUE
+        title.hjust = 0,
+        barheight = 8.75,
+        show.limits = TRUE,
+        draw.ulim = TRUE,
+        draw.llim = TRUE,
       )
     ) +
-    # ggtitle(paste0(nice_output_labeller(output_name), " ", type_label)) +
-    theme_half_open(10)
+    # ggtitle(nice_output_labeller(output_name)) +
+    theme_half_open(10) +
+    theme(
+      legend.position = "right",
+      legend.justification = "bottom",
+      legend.box.just = "left"
+    )
 }
 
-# Pr(endemic)
-Pr_end_plot <- compare_heat_function("endemic", comp_stats_df, "abs_diff")
-ggsave("./figures/endemic_prob_abs_comparison.png", Pr_end_plot, width = 6.5, height = 3.56525, units = "in")
-# perc_Pr_end_plot <- compare_heat_function("endemic", comp_stats_df, "perc_diff")
-# ggsave("./figures/endemic_prob_perc_comparison.png", perc_Pr_end_plot, width = 6.5, height = 3.56525, units = "in")
+# Figure 6: stacked comparison heatmaps ----
+Big_outbreak_plot <- compare_heat_function("big_outbreak", comp_stats_df, "abs_diff") +
+  labs(
+    title = "A. Probability of an outbreak of over 100 cases"
+  ) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.line.x = element_blank(),  # Remove x-axis line
+    axis.title.y = element_blank()
+  )
 
-# Peak cases
-Peak_cases_plot <- compare_heat_function("max_cases", comp_stats_df, "abs_diff")
-ggsave("./figures/peak_cases_abs_comparison.png", Peak_cases_plot, width = 6.5, height = 3.56525, units = "in")
-# perc_Peak_cases_plot <- compare_heat_function("max_cases", comp_stats_df, "perc_diff")
-# ggsave("./figures/peak_cases_perc_comparison.png", perc_Peak_cases_plot, width = 6.5, height = 3.56525, units = "in")
+Peak_cases_plot <- compare_heat_function("max_cases", comp_stats_df, "abs_diff") +
+  labs(
+    title = "B. Peak number of cases"
+  ) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.line.x = element_blank(),  # Remove x-axis line
+    axis.title.y = element_text(hjust = 0.9)
+  )
+Duration_plot <- compare_heat_function("duration", comp_stats_df, "abs_diff") +
+  labs(
+    title = "C. Duration of outbreak"
+  ) +
+  theme(
+    axis.title.y = element_blank()
+  )
 
-# Peak timing
-Peak_time_plot <- compare_heat_function("peak_time", comp_stats_df, "abs_diff")
-ggsave("./figures/peak_time_abs_comparison.png", Peak_time_plot, width = 6.5, height = 3.56525, units = "in")
-# perc_Peak_time_plot <- compare_heat_function("peak_time", comp_stats_df, "perc_diff")
-# ggsave("./figures/peak_time_perc_comparison.png", perc_Peak_time_plot, width = 6.5, height = 3.56525, units = "in")
+Figure6 = egg::ggarrange(Big_outbreak_plot, Peak_cases_plot, Duration_plot, ncol = 1)
+ggsave("./figures/Figure6.png", Figure6, width = 6.5, height = 7, units = "in")
 
-# Small outbreak
-Small_outbreak_plot <- compare_heat_function("small_outbreak", comp_stats_df, "abs_diff")
-ggsave("./figures/small_outbreak_prob_abs_comparison.png", Small_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
-# perc_Small_outbreak_plot <- compare_heat_function("small_outbreak", comp_stats_df, "perc_diff")
-# ggsave("./figures/small_outbreak_prob_perc_comparison.png", perc_Small_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
-
-# Big outbreak
-Big_outbreak_plot <- compare_heat_function("big_outbreak", comp_stats_df, "abs_diff")
-ggsave("./figures/big_outbreak_prob_abs_comparison.png", Big_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
-# perc_Big_outbreak_plot <- compare_heat_function("big_outbreak", comp_stats_df, "perc_diff")
-# ggsave("./figures/big_outbreak_prob_perc_comparison.png", perc_Big_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
-
-# Duration
-Duration_plot <- compare_heat_function("duration", comp_stats_df, "abs_diff")
-ggsave("./figures/duration_abs_comparison.png", Duration_plot, width = 6.5, height = 3.56525, units = "in")
-# perc_Duration_plot <- compare_heat_function("duration", comp_stats_df, "perc_diff")
-# ggsave("./figures/duration_perc_comparison.png", perc_Duration_plot, width = 6.5, height = 3.56525, units = "in")
-
-# Duration dieout
-Duration_dieout_plot <- compare_heat_function("duration_dieout", comp_stats_df, "abs_diff")
-ggsave("./figures/duration_dieout_abs_comparison.png", Duration_dieout_plot, width = 6.5, height = 3.56525, units = "in")
-# perc_Duration_dieout_plot <- compare_heat_function("duration_dieout", comp_stats_df, "perc_diff")
-# ggsave("./figures/duration_dieout_perc_comparison.png", perc_Duration_dieout_plot, width = 6.5, height = 3.56525, units = "in")
+# # Pr(endemic)
+# Pr_end_plot <- compare_heat_function("endemic", comp_stats_df, "abs_diff")
+# ggsave("./figures/endemic_prob_abs_comparison.png", Pr_end_plot, width = 6.5, height = 3.56525, units = "in")
+# # perc_Pr_end_plot <- compare_heat_function("endemic", comp_stats_df, "perc_diff")
+# # ggsave("./figures/endemic_prob_perc_comparison.png", perc_Pr_end_plot, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Peak cases
+# Peak_cases_plot <- compare_heat_function("max_cases", comp_stats_df, "abs_diff")
+# ggsave("./figures/peak_cases_abs_comparison.png", Peak_cases_plot, width = 6.5, height = 3.56525, units = "in")
+# # perc_Peak_cases_plot <- compare_heat_function("max_cases", comp_stats_df, "perc_diff")
+# # ggsave("./figures/peak_cases_perc_comparison.png", perc_Peak_cases_plot, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Peak timing
+# Peak_time_plot <- compare_heat_function("peak_time", comp_stats_df, "abs_diff")
+# ggsave("./figures/peak_time_abs_comparison.png", Peak_time_plot, width = 6.5, height = 3.56525, units = "in")
+# # perc_Peak_time_plot <- compare_heat_function("peak_time", comp_stats_df, "perc_diff")
+# # ggsave("./figures/peak_time_perc_comparison.png", perc_Peak_time_plot, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Small outbreak
+# Small_outbreak_plot <- compare_heat_function("small_outbreak", comp_stats_df, "abs_diff")
+# ggsave("./figures/small_outbreak_prob_abs_comparison.png", Small_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
+# # perc_Small_outbreak_plot <- compare_heat_function("small_outbreak", comp_stats_df, "perc_diff")
+# # ggsave("./figures/small_outbreak_prob_perc_comparison.png", perc_Small_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Big outbreak
+# Big_outbreak_plot <- compare_heat_function("big_outbreak", comp_stats_df, "abs_diff")
+# ggsave("./figures/big_outbreak_prob_abs_comparison.png", Big_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
+# # perc_Big_outbreak_plot <- compare_heat_function("big_outbreak", comp_stats_df, "perc_diff")
+# # ggsave("./figures/big_outbreak_prob_perc_comparison.png", perc_Big_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Duration
+# Duration_plot <- compare_heat_function("duration", comp_stats_df, "abs_diff")
+# ggsave("./figures/duration_abs_comparison.png", Duration_plot, width = 6.5, height = 3.56525, units = "in")
+# # perc_Duration_plot <- compare_heat_function("duration", comp_stats_df, "perc_diff")
+# # ggsave("./figures/duration_perc_comparison.png", perc_Duration_plot, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Duration dieout
+# Duration_dieout_plot <- compare_heat_function("duration_dieout", comp_stats_df, "abs_diff")
+# ggsave("./figures/duration_dieout_abs_comparison.png", Duration_dieout_plot, width = 6.5, height = 3.56525, units = "in")
+# # perc_Duration_dieout_plot <- compare_heat_function("duration_dieout", comp_stats_df, "perc_diff")
+# # ggsave("./figures/duration_dieout_perc_comparison.png", perc_Duration_dieout_plot, width = 6.5, height = 3.56525, units = "in")
 
 
 # All simulations by R0 and sigma
@@ -613,7 +752,7 @@ peak_point_plot
 ggsave("./figures/peak_cases_comparison.png", peak_point_plot, width = 6.5, height = 4.5, units = "in")
 
 # Peak histogram plot ----
-library(ggh4x)
+
 peak_histogram_plot_no_condition <- comparison_trajectories %>% 
   filter(type != "Deterministic") %>% 
   dplyr::select(max_time, max_H, type, R0, sigma) %>% 
@@ -902,7 +1041,7 @@ outbreak_duration_df = bind_rows(
 )
 
 # Scatterplot of dieout duration vs. peak case count
-library(ggpointdensity)
+
 duration_peak_scatter_all <- outbreak_duration_df %>% 
   filter(type == "All noise") %>% 
   ggplot(aes(x = duration, y = max_cases)) +
