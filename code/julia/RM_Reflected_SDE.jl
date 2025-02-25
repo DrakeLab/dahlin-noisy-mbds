@@ -42,7 +42,7 @@ const V0 = 10f0 # initial infected mosquitoes
 const u0 = [H0, V0]
 
 # const R0s = [6, 5, 4, 3, 2, 1.25, 1.2, 1.15, 1.1, 1.05, 1, 0.95, 0.75, 0.5, 0] # values of R0 to consider
-const R0s = 0f0:0.125f0:5f0
+const R0s = 0f0:0.05f0:5f0
 
 # Calculate Thv values from fixed R0 values
 function Thv_from_R0(q, R0) 

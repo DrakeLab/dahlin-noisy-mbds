@@ -10,7 +10,7 @@ example_Thvs = Thv_from_R0(q, example_R0s)
 example_values = [(Thv, sigma) for Thv in example_Thvs, sigma in example_sigmas]
 
 # Get solution trajectories representative of each set of values
-num_sims = 1000::Int
+num_sims = 10000::Int
 
 trajectories_all_noise = run_sims(dF_det!, dF_stoch!, num_sims, example_values)
 trajectories_all_noise[!,:type] = fill("All_noise", size(trajectories_all_noise)[1])
@@ -50,4 +50,12 @@ trajectories_deterministic = results
 trajectories_deterministic[!,:type] = fill("Deterministic", size(trajectories_deterministic)[1])
 
 all_trajectories = append!(trajectories_deterministic, trajectories_all_noise, trajectories_no_demo)
-CSV.write(joinpath(pwd(), "data", "comparison_trajectories.csv"), all_trajectories)
+
+
+open(joinpath(dirname(dirname(pwd())), "data", "comparison_trajectories.csv.gz"), "w") do io
+	gzip_io = GzipCompressorStream(io)
+	CSV.write(gzip_io, all_trajectories)
+	close(gzip_io)
+end
+
+# CSV.write(joinpath(pwd(), "data", "comparison_trajectories.csv"), all_trajectories)
