@@ -42,7 +42,7 @@ const V0 = 10f0 # initial infected mosquitoes
 const u0 = [H0, V0]
 
 # const R0s = [6, 5, 4, 3, 2, 1.25, 1.2, 1.15, 1.1, 1.05, 1, 0.95, 0.75, 0.5, 0] # values of R0 to consider
-const R0s = 0f0:0.05f0:5f0
+const R0s = 0f0:0.025f0:5f0
 
 # Calculate Thv values from fixed R0 values
 function Thv_from_R0(q, R0) 
@@ -75,7 +75,7 @@ function end_eqs(q, R0)
     return(end_vec)
 end
 
-const sigmas = 0f0:0.05f0:2f0 # levels of environmental noise
+const sigmas = 0f0:0.025f0:2f0 # levels of environmental noise
 
 # Initialize dataframes, if necessary
 
@@ -187,14 +187,13 @@ param_names = ["H", "V"]
 function run_sims(det_equations, stoch_equations, num_runs, parameter_values)
     results = DataFrame(time = Float64[], Thv = Float64[], sigma = Float64[], run = Int[], H = Float64[], V = Float64[])
 
-
     for i in ProgressBar(eachindex(parameter_values))
 
         ## Set up ensemble SDE problem
         prob = SDEProblem(det_equations, stoch_equations, u0, timespan, parameter_values[i], noise_rate_prototype = noise_rate_prototype, callback = cbs)
         ensembleprob = EnsembleProblem(prob)
         ## Run SDE solver
-        sol = solve(ensembleprob, EM(), dt = 0.01f0, EnsembleThreads(); trajectories = num_runs, saveat = 30f0)
+        sol = solve(ensembleprob, EM(), dt = 0.1f0, EnsembleThreads(); trajectories = num_runs, saveat = 30f0)
 
         # Collect results into a tidy DataFrame
         for run_id in 1:num_runs
@@ -253,7 +252,7 @@ function collect_outputs(det_equations, stoch_equations, num_runs, parameter_val
             max_time = ifelse(max_value < 1.0f0, 0.0f0, trajectory.t[argmax(trajectory[2, :])])
             exceeded_10 = any(v > 10.0f0 for v in H_values)
             exceeded_100 = any(v > 100.0f0 for v in H_values)
-            positive_at_final = H_values[end] > 1.0f0
+            positive_at_final = maximum(times) == maxtime .& H_values[end] > 1.0f0
             positive_duration = sum((H_values .> 1.0f0) .& (V_values .> 1.0f0)) # sum((t2 - t1) for (v1, v2, t1, t2) in zip(V_values[1:end-1], V_values[2:end], times[1:end-1], times[2:end]) if v1 > 1.0f0 || v2 > 1.0f0)
             Thv = parameter_values[i][1]
             sigma = parameter_values[i][2]

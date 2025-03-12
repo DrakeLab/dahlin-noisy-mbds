@@ -16,6 +16,11 @@ function save_gzip(data, filename)
     end
 end
 
+Thvs_for_trajectories = Thv_from_R0(q, [0.95, 1.05, 1.125, 1.25, 1.375, 2, 3, 4.625]) # used to vary R0
+sigmas_for_trajectories = [0.05, 0.1, 0.25, 0.4, 0.65, 1, 1.5, 1.65]
+parameter_values_for_trajectories = [(Thv, sigma) for Thv in Thvs_for_trajectories, sigma in sigmas_for_trajectories]
+
+
 ## Simulations without any noise ##
 print("Simulations with no noise at all")
 collect_all_det = collect_outputs_det(dF_det!, R0s)
@@ -25,13 +30,13 @@ collect_all_det = nothing
 GC.gc()
 # CSV.write(joinpath(dirname(dirname(pwd())), "data", "collect_all_outputs_det.csv"), collect_all_det)
 
-parameter_values_det = [(Thv, 0) for Thv in Thvs]
+parameter_values_det = [(Thv, 0) for Thv in Thvs_for_trajectories]
 trajectories_for_grid_plot_det = run_sims(dF_det_no_demo!, dF_stoch_no_demo!, 1::Int, parameter_values_det)
 save_gzip(trajectories_for_grid_plot_det, "trajectories_for_grid_plot_det.csv.gz")
 finalize(trajectories_for_grid_plot_det)
+CSV.write(joinpath(dirname(dirname(pwd())), "data", "trajectories_for_grid_plot_det.csv"), trajectories_for_grid_plot_det)
 trajectories_for_grid_plot_det = nothing
 GC.gc()
-# CSV.write(joinpath(dirname(dirname(pwd())), "data", "trajectories_for_grid_plot_det.csv"), trajectories_for_grid_plot_det)
 
 
 ## Simulations without demographic noise ##
@@ -43,12 +48,12 @@ collect_all_no_demo = nothing
 GC.gc()
 # CSV.write(joinpath(dirname(dirname(pwd())), "data", "collect_all_outputs_no_demo.csv"), collect_all_no_demo)
 
-trajectories_for_grid_plot_no_demo = run_sims(dF_det_no_demo!, dF_stoch_no_demo!, 50::Int, parameter_values)
+trajectories_for_grid_plot_no_demo = run_sims(dF_det_no_demo!, dF_stoch_no_demo!, 50::Int, parameter_values_for_trajectories)
 save_gzip(trajectories_for_grid_plot_no_demo, "trajectories_for_grid_plot_no_demo.csv.gz")
 finalize(trajectories_for_grid_plot_no_demo)
+CSV.write(joinpath(dirname(dirname(pwd())), "data", "trajectories_for_grid_plot_no_demo.csv"), trajectories_for_grid_plot_no_demo)
 trajectories_for_grid_plot_no_demo = nothing
 GC.gc()
-# CSV.write(joinpath(dirname(dirname(pwd())), "data", "trajectories_for_grid_plot_no_demo.csv"), trajectories_for_grid_plot_no_demo)
 
 
 ## Simulations with all types of noise ##
@@ -60,7 +65,8 @@ collect_all = nothing
 GC.gc()
 # CSV.write(joinpath(dirname(dirname(pwd())), "data", "collect_all_outputs.csv"), collect_all)
 
-trajectories_for_grid_plot = run_sims(dF_det!, dF_stoch!, 50::Int, parameter_values)
+
+trajectories_for_grid_plot = run_sims(dF_det!, dF_stoch!, 100::Int, parameter_values_for_trajectories)
 save_gzip(trajectories_for_grid_plot, "trajectories_for_grid_plot.csv.gz")
 finalize(trajectories_for_grid_plot)
 trajectories_for_grid_plot = nothing

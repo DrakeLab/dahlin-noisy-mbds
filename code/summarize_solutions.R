@@ -81,13 +81,19 @@ write_rds(all_df_modified, "./data/all_modified.rds")
 
 # start_time <- Sys.time()
 all_summary_df = all_df_modified %>%
+  group_by(R0, sigma, name) %>% 
+  filter(!is.na(value)) %>% 
+  ungroup() %>% 
   # partition(cluster) %>% 
   mutate(
     .by = c(R0, sigma, name),
     mean = mean(value, na.rm = TRUE),
+    median = median(value, na.rm = TRUE),
     variance = var(value, na.rm = TRUE),
-    sum_value = as.integer(sum(value, na.rm = TRUE)) # needed for Clopper-Pearon confidence intervals
-  ) %>%
+    sum_value = as.integer(sum(value, na.rm = TRUE)), # needed for Clopper-Pearon confidence intervals
+    quant_25 = quantile(value, 0.25),
+    quant_75 = quantile(value, 0.75)
+  ) %>%comp_stats_df 
   # collect() %>% 
   dplyr::select(-c(run, value)) %>% distinct()
 # end_time <- Sys.time()
@@ -119,11 +125,17 @@ rm(enviro_df); gc()
 write_rds(enviro_df_modified, "./data/enviro_modified.rds")
 
 enviro_summary_df = enviro_df_modified %>%
+  group_by(R0, sigma, name) %>% 
+  filter(!is.na(value)) %>% 
+  ungroup() %>% 
   mutate(
     .by = c(R0, sigma, name),
     mean = mean(value, na.rm = TRUE),
+    median = median(value, na.rm = TRUE),
     variance = var(value, na.rm = TRUE),
-    sum_value = as.integer(sum(value, na.rm = TRUE)) # needed for Clopper-Pearon confidence intervals
+    sum_value = as.integer(sum(value, na.rm = TRUE)), # needed for Clopper-Pearon confidence intervals
+    quant_25 = quantile(value, 0.25, na.rm = TRUE),
+    quant_75 = quantile(value, 0.75, na.rm = TRUE)
   ) %>%
   dplyr::select(-c(run, value)) %>% distinct()
 
@@ -146,14 +158,14 @@ all_stats_df_conts <- all_summary_df %>%
   rowwise() %>%
   mutate(
     max_val = if_else(name == "max_cases", Nh, max_time / 365),
-    lower_ci = max(0, mean - 1.96 * sqrt(variance)),
-    upper_ci = min(max_val, mean + 1.96 * sqrt(variance))
+    lower_ci = max(0, mean - 0.674 * sqrt(variance)),
+    upper_ci = min(max_val, mean + 0.674 * sqrt(variance))
   ) %>%
   dplyr::select(-max_val) %>%
   ungroup()
 
 all_stats_df <- rbind(all_stats_df_binoms, all_stats_df_conts)
-all_stats_df$R0_factor = factor(round(all_stats_df$R0,2), levels = rev(unique(round(all_stats_df$R0,2))))
+all_stats_df$R0_factor = factor(round(all_stats_df$R0,3), levels = rev(unique(round(all_stats_df$R0,3))))
 write_rds(all_stats_df, "./data/all_stats.rds")
 
 # For environmental noise only
@@ -193,17 +205,22 @@ comp_stats_df <- rbind(
   mutate(all_stats_df, type = "all"),
   mutate(enviro_stats_df, type = "enviro")
 ) %>% 
+  ungroup() %>% 
   mutate(
     .by = c(R0, sigma, name),
-    abs_diff = mean[type == "all"] - mean[type == "enviro"],
-    perc_diff = if_else(
+    abs_diff = ifelse((is.na(mean[type == "all"]) || is.na(mean[type == "enviro"])),
+                      NA,
+                      mean[type == "all"] - mean[type == "enviro"]),
+    perc_diff = ifelse((is.na(mean[type == "all"]) || is.na(mean[type == "enviro"])),
+                        NA,
+                        if_else(
       mean[type == "enviro"] > 10 * eps, 
       (mean[type == "all"] - mean[type == "enviro"]) / mean[type == "enviro"], # mean_enviro > 0
       if_else(mean[type == "all"] > 10 * eps,  # mean_enviro = 0
               Inf,  # mean_all > 0
               0)    # mean_all < 0
       # (mean[type == "all"] - mean[type == "enviro"]) / mean(mean[type == "enviro"], mean[type == "all"])
-    )
+    ))
   ) %>% 
   mutate(perc_diff = if_else(
     is.infinite(perc_diff), Inf,
@@ -241,12 +258,25 @@ comparison_trajectories$type = factor(
 write_rds(comparison_trajectories, "./data/comp_trajectories.rds")
 
 # All simulations ----
-sims_out = read_csv("./data/trajectories_for_grid_plot_no_demo.csv.gz")
+sims_out = read_csv("./data/trajectories_for_grid_plot.csv.gz")
 
-All_sims_plot_df <- sims_out %>% # Just use the first 20 simulations
+All_sims_plot_df <- sims_out %>% 
   mutate(R0 = R0_from_Thv_function(Thv)) %>% 
-  dplyr::select(-V)
+  dplyr::select(-V) %>% 
+  group_by(run, R0, sigma) %>% 
+  mutate(endemic = (max(time) == max_time && H[time == max_time] > 1)) %>% 
+  ungroup()
 
-All_sims_plot_df$R0_factor = factor(round(All_sims_plot_df$R0,2), levels = rev((unique(round(All_sims_plot_df$R0,2)))))
+
+# endemic_df = All_sims_plot_df %>%   
+#   group_by(run, R0, sigma) %>% 
+#   summarise(endemic = max(time) == max_time,
+#             .groups = "keep")
+# 
+# # Add in whether disease persisted, for coloring
+# All_sims_plot_df = left_join(All_sims_plot_df, endemic_df)
+
+All_sims_plot_df$R0_factor = factor(round(All_sims_plot_df$R0,3), levels = rev((unique(round(All_sims_plot_df$R0,3)))))
+All_sims_plot_df$sigma_factor = factor(round(All_sims_plot_df$sigma,3), levels = unique(round(All_sims_plot_df$sigma,3)))
 
 write_rds(All_sims_plot_df, "./data/all_sims.rds")
