@@ -252,7 +252,7 @@ function collect_outputs(det_equations, stoch_equations, num_runs, parameter_val
             max_time = ifelse(max_value < 1.0f0, 0.0f0, trajectory.t[argmax(trajectory[2, :])])
             exceeded_10 = any(v > 10.0f0 for v in H_values)
             exceeded_100 = any(v > 100.0f0 for v in H_values)
-            positive_at_final = maximum(times) == maxtime .& H_values[end] > 1.0f0
+            positive_at_final = ((max_time = maxtime) .& (H_values[end] > 1.0f0))
             positive_duration = sum((H_values .> 1.0f0) .& (V_values .> 1.0f0)) # sum((t2 - t1) for (v1, v2, t1, t2) in zip(V_values[1:end-1], V_values[2:end], times[1:end-1], times[2:end]) if v1 > 1.0f0 || v2 > 1.0f0)
             Thv = parameter_values[i][1]
             sigma = parameter_values[i][2]

@@ -759,7 +759,7 @@ Figure6 = egg::ggarrange(Big_outbreak_plot, Peak_cases_plot, Duration_plot, ncol
 ggsave("./figures/Figure6.png", Figure6, width = 6.5, height = 7, units = "in")
 
 
-# Peak case count explanatory plot ----
+# Supp Fig 1: Peak case count explanatory plot ----
 
 # Plot trying to explain difference in peak cases between all noise and no demographic noise
 # Find coordinates of the "cool spot" in the peak cases plots
@@ -812,7 +812,7 @@ peak_point_plot <- comparison_trajectories %>%
 peak_point_plot
 ggsave("./figures/peak_cases_comparison.png", peak_point_plot, width = 6.5, height = 4.5, units = "in")
 
-# Peak histogram plot ----
+# Supp Fig 2: Peak histogram plot ----
 
 peak_histogram_plot_no_condition <- comparison_trajectories %>% 
   filter(type != "Deterministic") %>% 
@@ -1078,30 +1078,39 @@ test_vals = rbind(
 
 all_outbreak_duration_df = all_df_modified %>% 
   filter(
-    sigma %in% test_vals$sigma, 
-    R0 %in% test_vals$R0
+    round(sigma, 3) %in% c(0.25, 0.65, 1, 1.5), #test_vals$sigma, 
+    round(R0, 3) %in% c(0.95, 1.15, 2, 4.6)#test_vals$R0
   ) %>% 
   pivot_wider() %>% 
   dplyr::select(sigma, R0, max_cases, duration, duration_dieout) %>% 
   mutate(type = "All noise")
-all_outbreak_duration_df$R0_factor = factor(round(all_outbreak_duration_df$R0,2), levels = rev(unique(round(all_outbreak_duration_df$R0,2))))
+all_outbreak_duration_df$R0_factor = factor(
+  round(all_outbreak_duration_df$R0, 3), 
+  levels = rev(unique(round(all_outbreak_duration_df$R0, 3))))
 
 enviro_outbreak_duration_df = enviro_df_modified %>% 
   filter(
-    sigma %in% test_vals$sigma, 
-    R0 %in% test_vals$R0,
+    round(sigma, 3) %in% c(0.25, 0.65, 1, 1.5), #test_vals$sigma, 
+    round(R0, 3) %in% c(0.95, 1.15, 2, 4.6)#test_vals$R0
   ) %>% 
   pivot_wider() %>% 
   dplyr::select(sigma, R0, max_cases, duration, duration_dieout) %>% 
   mutate(type = "Environmental noise only")
-enviro_outbreak_duration_df$R0_factor = factor(round(enviro_outbreak_duration_df$R0,2), levels = rev(unique(round(enviro_outbreak_duration_df$R0,2))))
+enviro_outbreak_duration_df$R0_factor = factor(
+  round(enviro_outbreak_duration_df$R0, 3), 
+  levels = rev(unique(round(enviro_outbreak_duration_df$R0, 3))))
 
 outbreak_duration_df = bind_rows(
   all_outbreak_duration_df,
   enviro_outbreak_duration_df
 )
 
+write_rds(outbreak_duration_df, "./data/peak_v_duration_sims.rds")
+
 # Scatterplot of dieout duration vs. peak case count
+
+# R0 vals = 0.95, 1.125, 2, 4.625
+# sigma vals = 0.25, 0.65, 1, 1.5
 
 duration_peak_scatter_all <- outbreak_duration_df %>% 
   filter(type == "All noise") %>% 
@@ -1121,6 +1130,7 @@ duration_peak_scatter_all <- outbreak_duration_df %>%
     expand = c(0,0),
   ) +
   scale_y_continuous(
+    lims = c(0,10000)
   ) +
   # legend:
   theme_half_open(11) +
@@ -1161,7 +1171,7 @@ ggsave("./figures/duration_peak_scatter_enviro.png", duration_peak_scatter_envir
 
 # For each of these points, plot distributions of outputs, see how well a Gamma distribution fits.
 
-# Duration of dieouts Histogram ----
+# Supp Fig 3: Duration of dieouts Histogram ----
 duration_dieout_histograms <- enviro_outbreak_duration_df %>% 
   # filter(!is.na(duration_dieout)) %>% 
   ggplot(aes(x = duration_dieout, group = interaction(R0_factor, sigma))) +
