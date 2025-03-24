@@ -339,6 +339,10 @@ smooth_zero_contour <- function(in_df, output_name) {
 
 # Figure 2: Example trajectories ----
 
+# [] Filter this out more. Either:
+# [] 1. choose fewer trajectories
+# [] 2. plot rolling averages
+
 # x-axis: Time [years]
 # y-axis: Number of hosts infected
 # Rows = R0 values
@@ -1048,38 +1052,40 @@ peak_histogram_plot_comparison
 ggsave("./figures/peak_histogram_plot_comparison.png", peak_histogram_plot_comparison, width = 6.5, height = 4.5, units = "in")
 
 
+# Supp Fig 3: Scatterplot of dieout duration vs. peak case count ----
+
 # Explaining "arc" in outbreak duration in the die out cases
 #    - Find R0 at max(outbreak_dieout), then the same R0 value with sigma = 1 and 1.5
 #    - Find sigma at max(outbreak_dieout), then the same sigma value with R0 = 1.125 and 3
-duration_dieout_vals = full_stats_df %>% 
-  # ungroup() %>% 
-  filter(name == "duration_dieout",
-         type == "enviro") %>% 
-  pivot_wider(values_from = c(mean)) %>% 
-  filter(
-    !is.na(duration_dieout),
-    duration_dieout > 0
-  )
-
-duration_die_out_sigmas = duration_dieout_vals %>% 
-  filter(sigma %in% c(1,1.5)) %>% 
-  group_by(sigma) %>% 
-  filter(duration_dieout == max(duration_dieout, na.rm = T))
-
-duration_die_out_R0s = duration_dieout_vals %>% 
-  filter(R0_factor %in% c(1.12,3)) %>% 
-  group_by(R0) %>% 
-  filter(duration_dieout == max(duration_dieout, na.rm = T))
-
-test_vals = rbind(
-  unique(dplyr::select(duration_die_out_sigmas, sigma,R0)),
-  unique(dplyr::select(duration_die_out_R0s, sigma, R0))
-)
+# duration_dieout_vals = full_stats_df %>% 
+#   # ungroup() %>% 
+#   filter(name == "duration_dieout",
+#          type == "enviro") %>% 
+#   pivot_wider(values_from = c(mean)) %>% 
+#   filter(
+#     !is.na(duration_dieout),
+#     duration_dieout > 0
+#   )
+# 
+# duration_die_out_sigmas = duration_dieout_vals %>% 
+#   filter(sigma %in% c(1,1.5)) %>% 
+#   group_by(sigma) %>% 
+#   filter(duration_dieout == max(duration_dieout, na.rm = T))
+# 
+# duration_die_out_R0s = duration_dieout_vals %>% 
+#   filter(R0_factor %in% c(1.12,3)) %>% 
+#   group_by(R0) %>% 
+#   filter(duration_dieout == max(duration_dieout, na.rm = T))
+# 
+# test_vals = rbind(
+#   unique(dplyr::select(duration_die_out_sigmas, sigma,R0)),
+#   unique(dplyr::select(duration_die_out_R0s, sigma, R0))
+# )
 
 all_outbreak_duration_df = all_df_modified %>% 
   filter(
-    round(sigma, 3) %in% c(0.25, 0.65, 1, 1.5), #test_vals$sigma, 
-    round(R0, 3) %in% c(0.95, 1.15, 2, 4.6)#test_vals$R0
+    # round(sigma, 3) %in% c(0.25, 0.65, 1, 1.5), #test_vals$sigma,
+    # round(R0, 3) %in% c(0.95, 1.15, 2, 4.6)#test_vals$R0
   ) %>% 
   pivot_wider() %>% 
   dplyr::select(sigma, R0, max_cases, duration, duration_dieout) %>% 
@@ -1090,8 +1096,8 @@ all_outbreak_duration_df$R0_factor = factor(
 
 enviro_outbreak_duration_df = enviro_df_modified %>% 
   filter(
-    round(sigma, 3) %in% c(0.25, 0.65, 1, 1.5), #test_vals$sigma, 
-    round(R0, 3) %in% c(0.95, 1.15, 2, 4.6)#test_vals$R0
+    # round(sigma, 3) %in% c(0.25, 0.65, 1, 1.5), #test_vals$sigma,
+    # round(R0, 3) %in% c(0.95, 1.15, 2, 4.6)#test_vals$R0
   ) %>% 
   pivot_wider() %>% 
   dplyr::select(sigma, R0, max_cases, duration, duration_dieout) %>% 
@@ -1107,10 +1113,36 @@ outbreak_duration_df = bind_rows(
 
 write_rds(outbreak_duration_df, "./data/peak_v_duration_sims.rds")
 
-# Scatterplot of dieout duration vs. peak case count
-
 # R0 vals = 0.95, 1.125, 2, 4.625
 # sigma vals = 0.25, 0.65, 1, 1.5
+
+
+# "Bifurcation" diagram of peak cases
+bif_plot <- outbreak_duration_df %>% 
+  filter(
+    type == "All noise",
+    round(sigma, 3) %in% c(0.2, 0.6, 1, 1.5),
+    ) %>% 
+  arrange(sigma) %>% 
+  group_by(R0_factor, sigma) %>% 
+  mutate(
+    mean_max_cases = mean(max_cases),
+    # dens = approxfun(density(max_cases, kernel = "cosine"))(max_cases)
+    ) %>% 
+  ungroup() %>% 
+  ggplot(aes(x = R0, group = as.factor(sigma))) +
+  geom_pointdensity(aes(y = max_cases)) +
+  geom_path(aes(y = mean_max_cases), color = "red", alpha = 0.25) +
+  facet_wrap( ~ as.factor(sigma), ncol = 1, scales = "free") +
+  scale_color_viridis_c() +
+  scale_x_continuous(
+    expand = c(0,0.05)
+  ) +
+  scale_y_continuous(
+    expand = c(0,10)
+  )
+ggsave("./figures/peak_cases_density_bifurcation_plot_switch.png", bif_plot,
+       width = 13.5, height = 7.5, units = "in")
 
 duration_peak_scatter_all <- outbreak_duration_df %>% 
   filter(type == "All noise") %>% 
@@ -1130,7 +1162,7 @@ duration_peak_scatter_all <- outbreak_duration_df %>%
     expand = c(0,0),
   ) +
   scale_y_continuous(
-    lims = c(0,10000)
+    limits = c(0,10000)
   ) +
   # legend:
   theme_half_open(11) +

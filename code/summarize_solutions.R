@@ -93,7 +93,7 @@ all_summary_df = all_df_modified %>%
     sum_value = as.integer(sum(value, na.rm = TRUE)), # needed for Clopper-Pearon confidence intervals
     quant_25 = quantile(value, 0.25),
     quant_75 = quantile(value, 0.75)
-  ) %>%comp_stats_df 
+  ) %>% 
   # collect() %>% 
   dplyr::select(-c(run, value)) %>% distinct()
 # end_time <- Sys.time()
@@ -262,8 +262,13 @@ sims_out = read_csv("./data/trajectories_for_grid_plot.csv.gz")
 
 All_sims_plot_df <- sims_out %>% 
   mutate(R0 = R0_from_Thv_function(Thv)) %>% 
-  dplyr::select(-V) %>% 
+  filter(
+    H>=0, V>=0,
+    H<=Nh, V<=Nv
+  ) %>%
+  # dplyr::select(-V) %>% 
   group_by(run, R0, sigma) %>% 
+  distinct() %>% 
   mutate(endemic = (max(time) == max_time && H[time == max_time] > 1)) %>% 
   ungroup()
 

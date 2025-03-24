@@ -10,6 +10,7 @@ using DataFrames
 using Main.Threads
 using CSV
 using ProgressBars
+using Statistics
 
 # using DiffEqMonteCarlo
 
@@ -41,9 +42,6 @@ const H0 = 0f0 # initial infected humans
 const V0 = 10f0 # initial infected mosquitoes
 const u0 = [H0, V0]
 
-# const R0s = [6, 5, 4, 3, 2, 1.25, 1.2, 1.15, 1.1, 1.05, 1, 0.95, 0.75, 0.5, 0] # values of R0 to consider
-const R0s = 0f0:0.025f0:5f0
-
 # Calculate Thv values from fixed R0 values
 function Thv_from_R0(q, R0) 
     (b, Tvh, Nh, Nv, muv, gammah) = q
@@ -51,7 +49,11 @@ function Thv_from_R0(q, R0)
     return(Thv)
 end
 
+# const R0s = [6, 5, 4, 3, 2, 1.25, 1.2, 1.15, 1.1, 1.05, 1, 0.95, 0.75, 0.5, 0] # values of R0 to consider
+const R0s = 0f0:0.025f0:5f0 #0f0:0.025f0:5f0
 Thvs = Thv_from_R0(q, R0s) # used to vary R0
+const sigmas = 0f0:0.025f0:2f0 # levels of environmental noise
+
 
 # Calculate endemic equilibrium values for deterministic case
 function end_eqs(q, R0)
@@ -74,8 +76,6 @@ function end_eqs(q, R0)
     end_vec = [H_end, V_end]
     return(end_vec)
 end
-
-const sigmas = 0f0:0.025f0:2f0 # levels of environmental noise
 
 # Initialize dataframes, if necessary
 
@@ -111,10 +111,10 @@ function dF_stoch!(du,u,p,t)
     (H,V) = u
     (Thv, sigma) = p #, b, Tvh, Nh, Nv, muv, gammah, alphab, alphat, alpham) = p
     # Demographic stochasticity
-    du[1,1] = @views sqrt((b * Thv * (Nh - H) / Nh) * V + gammah * H)
+    du[1,1] = @views sqrt(max(0.0f0, (b * Thv * (Nh - H) / Nh) * V + gammah * H))
     du[2,1] = 0
     du[1,2] = 0
-    du[2,2] = @views sqrt(b * (Tvh / Nh) * H * (Nv - V) + muv * V)
+    du[2,2] = @views sqrt(max(0.0f0, b * (Tvh / Nh) * H * (Nv - V) + muv * V))
     # Environmental stochasticity
     du[1,3] = @views sigma * b * (Thv / Nh) * V * (Nh - H)
     du[2,3] = @views sigma * b * (Tvh / Nh) * H * (Nv - V) + sigma * b  * (Tvh / Nh) * H * (Nv - V) + sigma * muv *V
@@ -137,8 +137,6 @@ function dF_stoch_no_demo!(du,u,p,t)
     return(du)
 end
 
-
-
 ## Reflections
 # --- In Julia these are done via callbacks
 condition_H(u,t,integrator) = true
@@ -151,7 +149,7 @@ function affect_H!(integrator)
         integrator.u[1] = Nh
     end
 end
-cb_H = DiscreteCallback(condition_H, affect_H!; save_positions = (false, false))
+cb_H = DiscreteCallback(condition_H, affect_H!; save_positions = (true, true))
 
 condition_V(u,t,integrator) = true
 function affect_V!(integrator)
@@ -163,14 +161,14 @@ function affect_V!(integrator)
         integrator.u[2] = Nv
     end
 end
-cb_V = DiscreteCallback(condition_V, affect_V!; save_positions = (false, false))
+cb_V = DiscreteCallback(condition_V, affect_V!; save_positions = (true, true))
 
 ### Stop simulations if case counts are low enough
 function condition_terminate(u, t, integrator)
     u[2] < 1.0f0 && u[1] < 1.0f0
 end
 affect_terminate!(integrator) = terminate!(integrator)
-cb_terminate = ContinuousCallback(condition_terminate, affect_terminate!)
+cb_terminate = DiscreteCallback(condition_terminate, affect_terminate!)
 
 ## Collect callbacks
 # cbs = CallbackSet(cb_H0, cb_HNh, cb_V0, cb_VNv, cb_terminate)
@@ -198,14 +196,20 @@ function run_sims(det_equations, stoch_equations, num_runs, parameter_values)
         # Collect results into a tidy DataFrame
         for run_id in 1:num_runs
             trajectory = sol[run_id]  # Get the individual trajectory solution
-            
+            # Because the callbacks save at each time step before reflection, we have to remove the points 
+            # that are biologically unreasonable first
+            trajectory = unique([(trajectory.t[i], trajectory.u[i][1], trajectory.u[i][2]) 
+                    for i in eachindex(trajectory.t) 
+                    if 0 ≤ trajectory.u[i][1] ≤ Nh && 0 ≤ trajectory.u[i][2] ≤ Nv])
+            times = first.(trajectory)
+
             results_append = DataFrame(
-                time = trajectory.t,
-                Thv = fill(parameter_values[i][1], length(trajectory.t)),
-                sigma = fill(parameter_values[i][2], length(trajectory.t)),
-                run = fill(run_id, length(trajectory.t)),
-                H = [u[1] for u in trajectory.u],
-                V = [u[2] for u in trajectory.u]
+                time = first.(trajectory),
+                Thv = fill(parameter_values[i][1], length(times)),
+                sigma = fill(parameter_values[i][2], length(times)),
+                run = fill(run_id, length(times)),
+                H = getindex.(trajectory,2),
+                V = last.(trajectory)
             )
             
             # Append to the main results DataFrame
@@ -225,44 +229,78 @@ sol = solve(ensembleprob, EM(), dt = 0.1f0, EnsembleThreads(); trajectories = 10
 
 # Collect outputs from SDE simulations
 function collect_outputs(det_equations, stoch_equations, num_runs, parameter_values)
-
-    # Initialize a DataFrame to store results for each trajectory and parameter combination
-    results = DataFrame(Thv = Float32[], sigma = Float32[], run = Int[], max_value = Float32[], max_time = Float32[], exceeded_10 = Bool[],
-    exceeded_100 = Bool[], positive_at_final = Bool[], positive_duration = Float32[])
+    # Preallocate a DataFrame to store results for each trajectory and parameter combination
+    results_init = DataFrame(
+        Thv = Float32[], sigma = Float32[], name = String[], statistic = String[], value = Float32[])
+    results = results_init
 
     for i in ProgressBar(eachindex(parameter_values))
-
         # Get trajectories
         prob = SDEProblem(det_equations, stoch_equations, u0, timespan, parameter_values[i], noise_rate_prototype = noise_rate_prototype, callback = cbs)
         ensembleprob = EnsembleProblem(prob)
         ## Run SDE solver
-        sol = solve(ensembleprob, EM(), dt = 0.1f0, EnsembleThreads(); trajectories = num_runs, saveat = 1.0f0)
+        sol = solve(ensembleprob, EM(), dt = 0.1f0, EnsembleSplitThreads(); trajectories = num_runs, saveat = 1.0f0)
+        
+        # Thread-local storage for results
+        thread_results = Vector{NamedTuple{(:Thv, :sigma, :run, :max_value, :max_time,:exceeded_10, :exceeded_100, :positive_at_final, :positive_duration, :zero_cases,:duration_dieout),Tuple{Float32, Float32, Int, Float32, Float32, Bool, Bool, Bool, Float32, Bool, Float32}}}(undef, num_runs)
 
+        Thv = parameter_values[i][1]
+        sigma = parameter_values[i][2]
         # Analyze each trajectory
-        for run_id in 1:num_runs
+        @threads for run_id in 1:num_runs
             trajectory = sol[run_id]  # Get the individual trajectory solution
 
-            # Extract the values and times for the second state variable (u[2])
-            H_values = [u[1] for u in trajectory.u]
-            V_values = [u[2] for u in trajectory.u]
-            times = trajectory.t
+            # Because the callbacks save at each time step before reflection, we have to remove the points 
+            # that are biologically unreasonable first
+            filtered_trajectory = unique([(t, u1, u2) for (t, (u1, u2)) in zip(trajectory.t, trajectory.u) if 0 <= u1 <= Nh && 0 <= u2 <= Nv])
             
+            # Extract the values and times for the state variables
+            H_values = getindex.(filtered_trajectory, 2)
+
             # Calculate the required statistics
+            # Maximum case count
             max_value = maximum(H_values)
-            max_time = ifelse(max_value < 1.0f0, 0.0f0, trajectory.t[argmax(trajectory[2, :])])
+            # Get times where there is at least one infection in each population
+            valid_times = (trajectory.t[i] for i in eachindex(trajectory.t) if trajectory.u[i][1] > 1.0f0 && trajectory.u[i][2] > 1.0f0)
+            # Calculate the latest date where there are cases in both hosts and vectors
+            max_time = isempty(valid_times) ? 0.0f0 : maximum(valid_times)/365.0f0
+            # Check if host case counts ever exceeded 10 or 100
             exceeded_10 = any(v > 10.0f0 for v in H_values)
             exceeded_100 = any(v > 100.0f0 for v in H_values)
-            positive_at_final = ((max_time = maxtime) .& (H_values[end] > 1.0f0))
-            positive_duration = sum((H_values .> 1.0f0) .& (V_values .> 1.0f0)) # sum((t2 - t1) for (v1, v2, t1, t2) in zip(V_values[1:end-1], V_values[2:end], times[1:end-1], times[2:end]) if v1 > 1.0f0 || v2 > 1.0f0)
-            Thv = parameter_values[i][1]
-            sigma = parameter_values[i][2]
+            # Check whether infections lasted all ten years
+            positive_at_final = max_time == maximum(trajectory.t) && H_values[end] > 1.0f0
+            # Calculate positive_duration (outbreak length)
+            valid_pairs = [(t1, u1, t2, u1_next) for ((t1, u1, _), (t2, u1_next, _)) in zip(filtered_trajectory[1:end-1], filtered_trajectory[2:end]) if u1 > 1.0f0 && u1_next > 1.0f0]
+            positive_duration = isempty(valid_pairs) ? 0.0f0 : sum(t2 - t1 for (t1, u1, t2, u1_next) in valid_pairs)/365.0f0
+            # See if cases ever dropped to zero in hosts (besides at the initial time point)
+            zero_cases = any(H_values[2:end] .< 1.0f0)
+            duration_dieout = positive_at_final == true ? NaN : max_time
+            # [] add dieout duration
 
+            # Store results in thread-local array
+            thread_results[run_id] = (Thv, sigma, run_id, max_value, max_time, exceeded_10, exceeded_100, positive_at_final, positive_duration, zero_cases, duration_dieout)
             # Append results for this trajectory to the DataFrame
-            push!(results, (Thv, sigma, run_id, max_value, max_time, exceeded_10, exceeded_100, positive_at_final, positive_duration))
+            # push!(results, (Thv, sigma, run_id, max_value, max_time, exceeded_10, exceeded_100, positive_at_final, positive_duration))
         end
+        thread_results = DataFrame(thread_results)
+    
+        # Thread-local storage (prevents concurrent modification)
+        temp_results = DataFrame(
+            Thv = Float32[], sigma = Float32[], name = String[], mean = Float32[], median = Float32[], variance = Float32[], q_25 = Float32[], q_75 = Float32[])
+        # temp_results = Tuple{Float64, Float64, String, Float64, Float64, Float64, Float64, Float64}[]
+    
+        for col in [:max_value, :max_time, :exceeded_10, :exceeded_100, :positive_at_final, :positive_duration, :zero_cases, :duration_dieout]
+            values = thread_results[!, col]  # Extract column values
+            push!(temp_results, (Thv, sigma, string(col), mean(values), median(values), var(values), quantile(values, 0.25), quantile(values, 0.75)))
+        end
+        temp_results_long = stack(temp_results, [:mean, :median, :variance, :q_25, :q_75], variable_name=:statistic, value_name=:value)
+
+        # Append results safely after threading
+        append!(results, temp_results_long)
     end
-    return(results)
+    return results
 end
+
 
 # Collect outputs from ODE simulations
 function collect_outputs_det(det_equations, parameter_values)
@@ -281,28 +319,38 @@ function collect_outputs_det(det_equations, parameter_values)
         sol = solve(prob; saveat = 1.0f0)
 
         # Analyze each trajectory
-        trajectory = sol  # Get the individual trajectory solution
-
-        # Extract the values and times for the second state variable (u[2])
-        H_values = [u[1] for u in trajectory.u]
-        V_values = [u[2] for u in trajectory.u]
-        times = trajectory.t
-        
-        # Calculate the required statistics
-        max_value = maximum(H_values)
-        max_time = ifelse(max_value < 1.0f0, 0.0f0, trajectory.t[argmax(trajectory[2, :])])
-        exceeded_10 = any(v > 10.0f0 for v in H_values)
-        exceeded_100 = any(v > 100.0f0 for v in H_values)
-        positive_at_final = H_values[end] > 1.0f0
-
         H_end_exact, V_end_exact = end_eqs(q, R0)
 
+        trajectory = sol  # Get the individual trajectory solution
+
+        # Because the callbacks save at each time step before reflection, we have to remove the points 
+        # that are biologically unreasonable first
+        filtered_trajectory = unique([(t, u1, u2) for (t, (u1, u2)) in zip(trajectory.t, trajectory.u) if 0 <= u1 <= Nh && 0 <= u2 <= Nv])
+        
+        # Extract the values and times for the state variables
+        H_values = getindex.(filtered_trajectory, 2)
+        V_values = getindex.(filtered_trajectory, 3)
         H_end_num = H_values[end]
         V_end_num = V_values[end]
 
-        positive_duration = sum((H_values .> 1.0f0) .& (V_values .> 1.0f0))
-        Thv = parameter_values[i]
-        # sigma = parameter_values[i][2]
+        # Calculate the required statistics
+        # Maximum case count
+        max_value = maximum(H_values)
+        # Get times where there is at least one infection in each population
+        valid_times = (trajectory.t[i] for i in eachindex(trajectory.t) if trajectory.u[i][1] > 1.0f0 && trajectory.u[i][2] > 1.0f0)
+        # Calculate the latest date where there are cases in both hosts and vectors
+        max_time = isempty(valid_times) ? 0.0f0 : maximum(valid_times)
+        # Check if host case counts ever exceeded 10 or 100
+        exceeded_10 = any(v > 10.0f0 for v in H_values)
+        exceeded_100 = any(v > 100.0f0 for v in H_values)
+        # Check whether infections lasted all ten years
+        positive_at_final = max_time == maximum(trajectory.t) && H_values[end] > 1.0f0
+        # Calculate positive_duration (outbreak length)
+        valid_pairs = [(t1, u1, t2, u1_next) for ((t1, u1, _), (t2, u1_next, _)) in zip(filtered_trajectory[1:end-1], filtered_trajectory[2:end]) if u1 > 1.0f0 && u1_next > 1.0f0]
+        positive_duration = isempty(valid_pairs) ? 0.0f0 : sum(t2 - t1 for (t1, u1, t2, u1_next) in valid_pairs)
+        
+        Thv = parameter_values[1]
+        
 
         # Append results for this trajectory to the DataFrame
         push!(results, (Thv, parameter_values[i], max_value, max_time, exceeded_10, exceeded_100, positive_at_final, positive_duration, H_end_exact, H_end_num, V_end_exact, V_end_num))
