@@ -2,13 +2,21 @@
 include("RM_Reflected_SDE.jl")
 using CodecZlib
 
+# Define parameter values to iterate over
+R0s = 0.05f0:0.05f0:5f0 #0f0:0.025f0:5f0
+Thvs = Thv_from_R0(q, R0s) # used to vary R0
+sigmas = 0f0:0.05f0:2f0 # levels of environmental noise
+parameter_values = [(Thv, sigma) for Thv in Thvs, sigma in sigmas]
+
+
 test = collect_outputs(dF_det!, dF_stoch!, 10, parameter_values[1:2])
+test2 = raw_outputs(dF_det!, dF_stoch!, 10, parameter_values[1:2])
 # using Profile # ProfileView
 # @profile collect_all_no_demo = collect_outputs(dF_det_no_demo!, dF_stoch_no_demo!, 20, parameter_values)
 # test_no_demo = collect_outputs(dF_det_no_demo!, dF_stoch_no_demo!, 1, parameter_values[1:2])
 test_det = collect_outputs_det(dF_det!, Thvs[1])
 
-num_sims = 1_000::Int #10_000::Int# number of simulations to Run
+num_sims = 10_000::Int #10_000::Int# number of simulations to Run
 
 function save_gzip(data, filename)
     open(joinpath(dirname(dirname(pwd())), "data", filename), "w") do io
@@ -30,7 +38,6 @@ save_gzip(collect_all_det, "collect_all_outputs_det.csv.gz")
 finalize(collect_all_det)
 collect_all_det = nothing
 GC.gc()
-# CSV.write(joinpath(dirname(dirname(pwd())), "data", "collect_all_outputs_det.csv"), collect_all_det)
 
 parameter_values_det = [(Thv, 0) for Thv in Thvs_for_trajectories]
 trajectories_for_grid_plot_det = run_sims(dF_det_no_demo!, dF_stoch_no_demo!, 1::Int, parameter_values_det)
@@ -46,11 +53,19 @@ save_gzip(collect_all_no_demo, "collect_all_outputs_no_demo.csv.gz")
 finalize(collect_all_no_demo)
 collect_all_no_demo = nothing
 GC.gc()
-# CSV.write(joinpath(dirname(dirname(pwd())), "data", "collect_all_outputs_no_demo.csv"), collect_all_no_demo)
 
 trajectories_for_grid_plot_no_demo = run_sims(dF_det_no_demo!, dF_stoch_no_demo!, 20::Int, parameter_values_for_trajectories)
 save_gzip(trajectories_for_grid_plot_no_demo, "trajectories_for_grid_plot_no_demo.csv.gz")
 finalize(trajectories_for_grid_plot_no_demo)
+GC.gc()
+
+# Get data for duration vs intensity scatter plots
+Thvs_dur_peak = Thv_from_R0(q, 0.125f0:0.125f0:5f0) # used to vary R0
+sigmas_dur_peak = 0.25f0:0.25f0:1.5f0
+dur_peak_par_vals = [(Thv, sigma) for Thv in Thvs_dur_peak, sigma in sigmas_dur_peak]
+duration_v_peak = raw_outputs(dF_det_no_demo!, dF_stoch_no_demo!, 1_000, dur_peak_par_vals)
+save_gzip(duration_v_peak, "dur_peak_no_demo.csv.gz")
+collect_all = duration_v_peak
 GC.gc()
 
 
@@ -70,3 +85,9 @@ finalize(trajectories_for_grid_plot)
 trajectories_for_grid_plot = nothing
 GC.gc()
 # CSV.write(joinpath(dirname(dirname(pwd())), "data", "trajectories_for_grid_plot.csv"), trajectories_for_grid_plot)
+
+# Get data for duration vs intensity scatter plots
+duration_v_peak = raw_outputs(dF_det!, dF_stoch!, 10_000, dur_peak_par_vals)
+save_gzip(duration_v_peak, "dur_peak.csv.gz")
+trajectories_for_grid_plot = duration_v_peak
+GC.gc()

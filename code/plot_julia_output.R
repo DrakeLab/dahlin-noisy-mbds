@@ -65,7 +65,7 @@ comparison_trajectories = read_rds("./data/comp_trajectories.rds")
 
 # Plots ----
 
-R0s = unique(round(all_stats_df$R0,2))
+R0s = c(0.95, 1.125, 2, 4.625)
 
 R0_colors = c(
   # Hotter colors for R0 > 1
@@ -85,7 +85,7 @@ nice_output_labeller = function(output_name) {
     output_name == "endemic" ~ "Pr(Transmission lasts 10 years)",
     output_name == "max_cases" ~ "Intensity",
     output_name == "duration" ~ "Outbreak duration",
-    output_name == "peak_time" ~ "Peak timing",
+    output_name == "max_time" ~ "Peak timing",
     output_name == "duration_dieout" ~ "Outbreak duration (non-endemic case)"
   )
   
@@ -99,6 +99,7 @@ generic_plot_function <- function(output_name, in_df) {
   in_df %>% 
     ungroup() %>% 
     filter(name == output_name) %>% 
+    filter(R0_factor %in% c(0.95, 1.125, 2, 4.625)) %>% 
     ggplot(aes(x = sigma, y = mean, group = R0_factor)) +
     # Mean
     geom_line(aes(color = R0_factor), lwd = 1) +
@@ -119,33 +120,33 @@ generic_plot_function <- function(output_name, in_df) {
     theme_half_open()
 }
 
-# Pr(endemic)
-Pr_end_plot <- generic_plot_function("endemic", enviro_stats_df)
-ggsave("./figures/no_demo/endemic_prob.png", Pr_end_plot, width = 6.5, height = 3.56525, units = "in")
-
-# Peak cases
-Peak_cases_plot <- generic_plot_function("max_cases", enviro_stats_df)
-ggsave("./figures/no_demo/peak_cases.png", Peak_cases_plot, width = 6.5, height = 3.56525, units = "in")
-
-# Peak timing
-Peak_time_plot <- generic_plot_function("peak_time", enviro_stats_df)
-ggsave("./figures/no_demo/peak_time.png", Peak_time_plot, width = 6.5, height = 3.56525, units = "in")
-
-# Small outbreak
-Small_outbreak_plot <- generic_plot_function("small_outbreak", enviro_stats_df)
-ggsave("./figures/no_demo/small_outbreak_prob.png", Small_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
-
-# Big outbreak
-Big_outbreak_plot <- generic_plot_function("big_outbreak", enviro_stats_df)
-ggsave("./figures/no_demo/big_outbreak_prob.png", Big_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
-
-# Duration
-Duration_plot <- generic_plot_function("duration", enviro_stats_df)
-ggsave("./figures/no_demo/duration.png", Duration_plot, width = 6.5, height = 3.56525, units = "in")
-
-# Duration
-Duration_dieout_plot <- generic_plot_function("duration_dieout", enviro_stats_df)
-ggsave("./figures/duration_dieout.png", Duration_dieout_plot, width = 6.5, height = 3.56525, units = "in")
+# # Pr(endemic)
+# Pr_end_plot <- generic_plot_function("endemic", enviro_stats_df)
+# ggsave("./figures/no_demo/endemic_prob.png", Pr_end_plot, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Peak cases
+# Peak_cases_plot <- generic_plot_function("max_cases", enviro_stats_df)
+# ggsave("./figures/no_demo/peak_cases.png", Peak_cases_plot, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Peak timing
+# Peak_time_plot <- generic_plot_function("max_time", enviro_stats_df)
+# ggsave("./figures/no_demo/peak_time.png", Peak_time_plot, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Small outbreak
+# Small_outbreak_plot <- generic_plot_function("small_outbreak", enviro_stats_df)
+# ggsave("./figures/no_demo/small_outbreak_prob.png", Small_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Big outbreak
+# Big_outbreak_plot <- generic_plot_function("big_outbreak", enviro_stats_df)
+# ggsave("./figures/no_demo/big_outbreak_prob.png", Big_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Duration
+# Duration_plot <- generic_plot_function("duration", enviro_stats_df)
+# ggsave("./figures/no_demo/duration.png", Duration_plot, width = 6.5, height = 3.56525, units = "in")
+# 
+# # Duration
+# Duration_dieout_plot <- generic_plot_function("duration_dieout", enviro_stats_df)
+# ggsave("./figures/duration_dieout.png", Duration_dieout_plot, width = 6.5, height = 3.56525, units = "in")
 
 
 
@@ -241,6 +242,18 @@ generic_heat_function <- function(output_name, type_name) {
       width = sigma_width,
       height = R0_height
     )) +
+    geom_tile(data = full_stats_df %>% 
+                ungroup() %>% 
+                # Stretch out sigma = 0
+                stretch_sigma(., include_det) %>% 
+                filter(name == output_name, type == type_name) %>% 
+                filter(mean < 0.05),
+              aes(
+                x = sigma + sigma_width/2,
+                width = sigma_width,
+                height = R0_height
+              ),
+              fill = "white")+
     geom_hline(yintercept = 1, color = "red", lwd = 1) +
     geom_vline(xintercept = 0, color = "grey", lwd = 1) +
     # Annotate x-axis for demographic noise
@@ -253,6 +266,17 @@ generic_heat_function <- function(output_name, type_name) {
     ) +
     scale_y_continuous(
       TeX("             Basic reproduction number  [$R_0$]"),
+      breaks = sort(unique(c(1:5, 0.95, 1.125, 2, 4.625))),
+      labels = c(
+        expression(~underline("0.95")),
+        1,
+        expression(~underline("1.125")),
+        expression(~underline("2")),
+        3,
+        4,
+        expression(~underline("4.625")),
+        5
+        ),
       # limits = c(0, NA),
       expand = c(0,0)
     ) +    
@@ -272,9 +296,11 @@ generic_heat_function <- function(output_name, type_name) {
     guides(
       fill = guide_colourbar(
         title = leg_label,
+        position = "top",
+        direction = "horizontal",
         title.position = "top",
         title.hjust = 0,
-        barheight = 9,
+        barwidth = 9,
         show.limits = TRUE,
         draw.ulim = TRUE,
         draw.llim = TRUE,
@@ -284,8 +310,8 @@ generic_heat_function <- function(output_name, type_name) {
     theme_half_open(10) +
     theme(
       legend.position = "right",
-      legend.justification = "bottom",
-      legend.box.just = "left"
+      legend.justification = "right",
+      legend.box.just = "right"
     )
   
   if (type_name == "all") {
@@ -303,7 +329,7 @@ smooth_zero_contour <- function(in_df, output_name) {
   
   # Use nearest neighbor averaging to replace values of the differences
   library(FNN)
-  smooth_level = 50
+  smooth_level = 250
   nn_df = get.knnx(data = cbind(fixed_df$sigma, fixed_df$R0),
                    query = cbind(fixed_df$sigma, fixed_df$R0),
                    k = smooth_level)
@@ -428,10 +454,10 @@ ggsave("./figures/Figure2.png", quadrant_plot, width = 6.5, height = 5, units = 
 # Color = R0 value
 
 plot_df <- all_stats_df %>% 
-  mutate(round_sigma = round(sigma, 2)) %>%
+  mutate(round_sigma = round(sigma, 3)) %>%
   filter(
     name %in% c("big_outbreak", "max_cases", "duration"),
-    R0_factor %in% c(seq(0.25, 1.5, by = 0.25), 2.0, 3.0, 4.0, 5.0),
+    R0_factor %in% c(0.95, 1.125, 2, 4.625),#c(seq(0.25, 1.5, by = 0.25), 2.0, 3.0, 4.0, 5.0),
     round_sigma %in% round(seq(0.0, 2.0, by = 0.05), 3)
   ) %>% 
   mutate(label = case_when(name == "big_outbreak" ~ "A. Probability",
@@ -443,7 +469,13 @@ R0_colors = c(
   rev(c4a("kovesi.bu_bk_rd", 10)[5:10]),
   "black",
   rev(c4a("kovesi.bu_bk_rd", 10)[1:3])
-)
+)[c(1:3,5)]
+
+R0_colors = c(
+  rev(c4a("kovesi.bu_bk_rd", 10)[5:10]),
+  "black",
+  rev(c4a("kovesi.bu_bk_rd", 10)[1:3])
+)[c(1:3,5)]
 
 
 Big_outbreak_mean <- plot_df %>% 
@@ -482,7 +514,6 @@ Peak_cases_mean <- plot_df %>%
   # geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci, fill = R0_factor), alpha = 0.1) +
   scale_color_manual(values = R0_colors) + #, breaks = R0_vals) +
   scale_fill_manual(values = R0_colors)  +#, breaks = R0_vals) +
-  # facet_wrap(~ label, ncol = 1, scales = "free", strip.position = "top") +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ggtitle("B. Intensity") +
@@ -492,7 +523,9 @@ Peak_cases_mean <- plot_df %>%
   ) +
   scale_y_continuous(
     "Number of cases",
-    expand = c(0,0)
+    breaks = c(2500, 5000, 7500, 10000),
+    labels = c(2500, 5000, 7500, 10000),
+    expand = c(0,400)
   ) +
   theme(strip.text.x = element_text(hjust = 0),
         strip.background = element_blank()) +
@@ -515,7 +548,8 @@ Duration_mean <- plot_df %>%
   ) +
   scale_y_continuous(
     "Time [years]",
-    expand = c(0,0)
+    breaks = c(2.5, 5.0, 7.5, 10.0),
+    expand = c(0,0.25)
   ) +
   theme(strip.text.x = element_text(hjust = 0),
         strip.background = element_blank()) +
@@ -531,6 +565,7 @@ ggsave("./figures/Figure3.png", Figure3, width = 6.5, height = 7, units = "in", 
 # Figure 4: Stacked heatmaps with all noise ----
 # Pr(> 100 hosts), peak # of cases, Duration
 
+
 Big_outbreak_heat <- generic_heat_function("big_outbreak", "all") +
   labs(
     title = "A. Probability of an outbreak of over 100 cases"
@@ -541,7 +576,9 @@ Big_outbreak_heat <- generic_heat_function("big_outbreak", "all") +
     axis.ticks.x = element_blank(),
     axis.line.x = element_blank(),  # Remove x-axis line
     axis.title.y = element_blank()
-  )
+  ) +
+  theme(legend.margin=margin(t=-0.75,l=0.0,b=-0.25,r=0.25, unit='cm'))
+
 
 Peak_cases_heat <- generic_heat_function("max_cases", "all") +
   labs(
@@ -553,14 +590,17 @@ Peak_cases_heat <- generic_heat_function("max_cases", "all") +
     axis.ticks.x = element_blank(),
     axis.line.x = element_blank(),  # Remove x-axis line
     axis.title.y = element_text(hjust = 0.9)
-  )
+  ) +
+  theme(legend.margin=margin(t=-0.75,l=0.0,b=-0.25,r=0.25, unit='cm'))
+
 Duration_heat <- generic_heat_function("duration", "all") +
   labs(
     title = "C. Duration"
   ) +
   theme(
     axis.title.y = element_blank()
-  )
+  ) +
+  theme(legend.margin=margin(t=-0.75,l=0.0,b=-0.25,r=0.25, unit='cm'))
 
 Figure4 = egg::ggarrange(Big_outbreak_heat, Peak_cases_heat, Duration_heat, ncol = 1)
 ggsave("./figures/Figure4.png", Figure4, width = 6.5, height = 7, units = "in")
@@ -578,7 +618,8 @@ Big_outbreak_heat <- generic_heat_function("big_outbreak", "enviro") +
     axis.ticks.x = element_blank(),
     axis.line.x = element_blank(),  # Remove x-axis line
     axis.title.y = element_blank()
-  )
+  ) +
+  theme(legend.margin=margin(t=-0.75,l=0.0,b=-0.25,r=0.25, unit='cm'))
 
 Peak_cases_heat <- generic_heat_function("max_cases", "enviro") +
   labs(
@@ -590,14 +631,17 @@ Peak_cases_heat <- generic_heat_function("max_cases", "enviro") +
     axis.ticks.x = element_blank(),
     axis.line.x = element_blank(),  # Remove x-axis line
     axis.title.y = element_text(hjust = 0.9)
-  )
+  ) +
+  theme(legend.margin=margin(t=-0.75,l=0.0,b=-0.25,r=0.25, unit='cm'))
+
 Duration_heat <- generic_heat_function("duration", "enviro") +
   labs(
     title = "C. Duration"
   ) +
   theme(
     axis.title.y = element_blank()
-  )
+  ) +
+  theme(legend.margin=margin(t=-0.75,l=0.0,b=-0.25,r=0.25, unit='cm'))
 
 Figure5 = egg::ggarrange(Big_outbreak_heat, Peak_cases_heat, Duration_heat, ncol = 1)
 ggsave("./figures/Figure5.png", Figure5, width = 6.5, height = 7, units = "in")
@@ -673,7 +717,7 @@ compare_heat_function <- function(output_name, in_df, type) {
       x = sigma - sigma_width/2,
       y = R0 - R0_height/2,
       fill = !!sym(type)
-      )) +
+    )) +
     # Add smoothed contour for abs_diff = 0
     geom_path(data = contour_df,
               aes(
@@ -1052,103 +1096,27 @@ peak_histogram_plot_comparison
 ggsave("./figures/peak_histogram_plot_comparison.png", peak_histogram_plot_comparison, width = 6.5, height = 4.5, units = "in")
 
 
-# Supp Fig 3: Scatterplot of dieout duration vs. peak case count ----
+# Figure S3: Scatterplot of dieout duration vs. peak case count ----
 
-# Explaining "arc" in outbreak duration in the die out cases
-#    - Find R0 at max(outbreak_dieout), then the same R0 value with sigma = 1 and 1.5
-#    - Find sigma at max(outbreak_dieout), then the same sigma value with R0 = 1.125 and 3
-# duration_dieout_vals = full_stats_df %>% 
-#   # ungroup() %>% 
-#   filter(name == "duration_dieout",
-#          type == "enviro") %>% 
-#   pivot_wider(values_from = c(mean)) %>% 
-#   filter(
-#     !is.na(duration_dieout),
-#     duration_dieout > 0
-#   )
-# 
-# duration_die_out_sigmas = duration_dieout_vals %>% 
-#   filter(sigma %in% c(1,1.5)) %>% 
-#   group_by(sigma) %>% 
-#   filter(duration_dieout == max(duration_dieout, na.rm = T))
-# 
-# duration_die_out_R0s = duration_dieout_vals %>% 
-#   filter(R0_factor %in% c(1.12,3)) %>% 
-#   group_by(R0) %>% 
-#   filter(duration_dieout == max(duration_dieout, na.rm = T))
-# 
-# test_vals = rbind(
-#   unique(dplyr::select(duration_die_out_sigmas, sigma,R0)),
-#   unique(dplyr::select(duration_die_out_R0s, sigma, R0))
-# )
 
-all_outbreak_duration_df = all_df_modified %>% 
-  filter(
-    # round(sigma, 3) %in% c(0.25, 0.65, 1, 1.5), #test_vals$sigma,
-    # round(R0, 3) %in% c(0.95, 1.15, 2, 4.6)#test_vals$R0
-  ) %>% 
-  pivot_wider() %>% 
-  dplyr::select(sigma, R0, max_cases, duration, duration_dieout) %>% 
-  mutate(type = "All noise")
-all_outbreak_duration_df$R0_factor = factor(
-  round(all_outbreak_duration_df$R0, 3), 
-  levels = rev(unique(round(all_outbreak_duration_df$R0, 3))))
-
-enviro_outbreak_duration_df = enviro_df_modified %>% 
-  filter(
-    # round(sigma, 3) %in% c(0.25, 0.65, 1, 1.5), #test_vals$sigma,
-    # round(R0, 3) %in% c(0.95, 1.15, 2, 4.6)#test_vals$R0
-  ) %>% 
-  pivot_wider() %>% 
-  dplyr::select(sigma, R0, max_cases, duration, duration_dieout) %>% 
-  mutate(type = "Environmental noise only")
-enviro_outbreak_duration_df$R0_factor = factor(
-  round(enviro_outbreak_duration_df$R0, 3), 
-  levels = rev(unique(round(enviro_outbreak_duration_df$R0, 3))))
-
-outbreak_duration_df = bind_rows(
-  all_outbreak_duration_df,
-  enviro_outbreak_duration_df
-)
-
-write_rds(outbreak_duration_df, "./data/peak_v_duration_sims.rds")
+outbreak_duration_df <- read_rds("./data/peak_v_duration_sims.rds")
 
 # R0 vals = 0.95, 1.125, 2, 4.625
 # sigma vals = 0.25, 0.65, 1, 1.5
 
-
-# "Bifurcation" diagram of peak cases
-bif_plot <- outbreak_duration_df %>% 
-  filter(
-    type == "All noise",
-    round(sigma, 3) %in% c(0.2, 0.6, 1, 1.5),
-    ) %>% 
-  arrange(sigma) %>% 
-  group_by(R0_factor, sigma) %>% 
-  mutate(
-    mean_max_cases = mean(max_cases),
-    # dens = approxfun(density(max_cases, kernel = "cosine"))(max_cases)
-    ) %>% 
-  ungroup() %>% 
-  ggplot(aes(x = R0, group = as.factor(sigma))) +
-  geom_pointdensity(aes(y = max_cases)) +
-  geom_path(aes(y = mean_max_cases), color = "red", alpha = 0.25) +
-  facet_wrap( ~ as.factor(sigma), ncol = 1, scales = "free") +
-  scale_color_viridis_c() +
-  scale_x_continuous(
-    expand = c(0,0.05)
-  ) +
-  scale_y_continuous(
-    expand = c(0,10)
-  )
-ggsave("./figures/peak_cases_density_bifurcation_plot_switch.png", bif_plot,
-       width = 13.5, height = 7.5, units = "in")
-
 duration_peak_scatter_all <- outbreak_duration_df %>% 
   filter(type == "All noise") %>% 
-  ggplot(aes(x = duration, y = max_cases)) +
+  ggplot(aes(x = max_time, y = max_value)) +
   # geom_hex() +
   geom_pointdensity() +
+  geom_point(
+    data = outbreak_duration_df %>% group_by(R0_factor, sigma) %>% mutate(mean_max_time = mean(max_time), mean_max_value = mean(max_value)),
+    aes(x = mean_max_time, y = mean_max_value),
+    color = "red",
+    fill = "red",
+    shape = 23,
+    size = 2
+    ) +
   # Subplots for each combination of environmental noise strength and R0
   ggh4x::facet_grid2(
     R0_factor ~ sigma,
@@ -1159,13 +1127,15 @@ duration_peak_scatter_all <- outbreak_duration_df %>%
     name = "Number of\n neighbors"
   ) +
   scale_x_continuous(
-    expand = c(0,0),
+    "Duration [years]",
+    expand = c(0,0.25),
   ) +
   scale_y_continuous(
+    "Intensity [cases]",
     limits = c(0,10000)
   ) +
   # legend:
-  theme_half_open(11) +
+  theme_minimal(11) +
   theme(
     strip.background = element_rect(color = "white", fill = "white")
   )
@@ -1175,7 +1145,7 @@ ggsave("./figures/duration_peak_scatter_all.png", duration_peak_scatter_all, wid
 
 duration_peak_scatter_enviro <- outbreak_duration_df %>% 
   filter(type == "Environmental noise only") %>% 
-  ggplot(aes(x = duration, y = max_cases)) +
+  ggplot(aes(x = max_time, y = max_value)) +
   # geom_hex() +
   geom_pointdensity() +
   # Subplots for each combination of environmental noise strength and R0
@@ -1188,9 +1158,12 @@ duration_peak_scatter_enviro <- outbreak_duration_df %>%
     name = "Number of\n neighbors"
   ) +
   scale_x_continuous(
-    expand = c(0,0),
+    "Duration [years]",
+    expand = c(0,0.25),
   ) +
   scale_y_continuous(
+    "Intensity [cases]",
+    limits = c(0,10000)
   ) +
   # legend:
   theme_half_open(11) +
@@ -1201,9 +1174,50 @@ duration_peak_scatter_enviro <- outbreak_duration_df %>%
 duration_peak_scatter_enviro
 ggsave("./figures/duration_peak_scatter_enviro.png", duration_peak_scatter_enviro, width = 6.5, height = 4.5, units = "in")
 
+
+# Figure SXXX: "Bifurcation" diagram of R0 vs. peak cases
+
+# "Bifurcation" diagram of peak cases
+bif_plot <- outbreak_duration_df %>% 
+  filter(
+    type == "Environmental noise only",
+    round(sigma, 3) %in% c(0.25, 0.75, 1.25, 1.75),
+  ) %>% 
+  arrange(sigma) %>% 
+  group_by(R0, sigma) %>% 
+  mutate(
+    mean_max_cases = mean(max_value),
+    # dens = approxfun(density(max_cases, kernel = "cosine"))(max_cases)
+  ) %>% 
+  ungroup() %>% 
+  ggplot(aes(x = R0, group = as.factor(sigma))) +
+  geom_pointdensity(aes(y = max_value)) +
+  geom_path(aes(y = mean_max_cases), color = "red", lwd = 1) +
+  facet_wrap( ~ as.factor(sigma),
+              labeller = as_labeller(appender_sigma, default = label_parsed),
+              ncol = 1, scales = "free") +
+  scale_color_viridis_c(
+    "Number of\nneighboring\npoints"
+  ) +
+  scale_x_continuous(
+    "Basic reproduction number [R0]",
+  ) +
+  scale_y_continuous(
+    "Intensity [cases]",
+    expand = c(0,250)
+  ) +
+  theme_minimal(11) +
+  theme(
+    strip.background = element_rect(color = "white", fill = "white")
+  )
+
+ggsave("./figures/peak_cases_density_bifurcation_plot_switch.png", bif_plot,
+       width = 13.5, height = 7.5, units = "in")
+
+
 # For each of these points, plot distributions of outputs, see how well a Gamma distribution fits.
 
-# Supp Fig 3: Duration of dieouts Histogram ----
+# Supp Fig XXX: Duration of dieouts Histogram ----
 duration_dieout_histograms <- enviro_outbreak_duration_df %>% 
   # filter(!is.na(duration_dieout)) %>% 
   ggplot(aes(x = duration_dieout, group = interaction(R0_factor, sigma))) +
