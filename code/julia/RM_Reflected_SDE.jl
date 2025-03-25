@@ -28,8 +28,8 @@ const noise_rate_prototype = [0.0f0 0.0f0 0.0f0; 0.0f0 0.0f0 0.0f0] # prototype 
 # Define the parameters
 const b = 0.3f0 # biting rate
 const Tvh = 0.5f0 # to vector transmission probability
-const Nh = 10000f0 # total number of humans
-const Nv = 100000f0 # total number of vectors
+const Nh = 10_000f0 # total number of humans
+const Nv = 100_000f0 # total number of vectors
 const muv = 0.1f0 # vector mortality rate
 const gammah = 0.1f0 # human recovery rate
 const alphab = 1 # toggle: environmental stochasticity in b
@@ -48,12 +48,6 @@ function Thv_from_R0(q, R0)
     Thv = (R0.^2) / ((b.^2 * Tvh * Nv) / (Nh * gammah * muv))
     return(Thv)
 end
-
-# const R0s = [6, 5, 4, 3, 2, 1.25, 1.2, 1.15, 1.1, 1.05, 1, 0.95, 0.75, 0.5, 0] # values of R0 to consider
-const R0s = 0f0:0.025f0:5f0 #0f0:0.025f0:5f0
-Thvs = Thv_from_R0(q, R0s) # used to vary R0
-const sigmas = 0f0:0.025f0:2f0 # levels of environmental noise
-
 
 # Calculate endemic equilibrium values for deterministic case
 function end_eqs(q, R0)
@@ -149,7 +143,7 @@ function affect_H!(integrator)
         integrator.u[1] = Nh
     end
 end
-cb_H = DiscreteCallback(condition_H, affect_H!; save_positions = (true, true))
+cb_H = DiscreteCallback(condition_H, affect_H!; save_positions = (false, false))
 
 condition_V(u,t,integrator) = true
 function affect_V!(integrator)
@@ -161,20 +155,24 @@ function affect_V!(integrator)
         integrator.u[2] = Nv
     end
 end
-cb_V = DiscreteCallback(condition_V, affect_V!; save_positions = (true, true))
+cb_V = DiscreteCallback(condition_V, affect_V!; save_positions = (false, false))
 
 ### Stop simulations if case counts are low enough
 function condition_terminate(u, t, integrator)
     u[2] < 1.0f0 && u[1] < 1.0f0
 end
 affect_terminate!(integrator) = terminate!(integrator)
-cb_terminate = DiscreteCallback(condition_terminate, affect_terminate!)
+cb_terminate = DiscreteCallback(condition_terminate, affect_terminate!; save_positions = (false, false))
 
 ## Collect callbacks
 # cbs = CallbackSet(cb_H0, cb_HNh, cb_V0, cb_VNv, cb_terminate)
 cbs = CallbackSet(cb_H, cb_V, cb_terminate)
 
 # Define parameter values to iterate over
+const R0s = 0f0:0.025f0:5f0 #0f0:0.025f0:5f0
+Thvs = Thv_from_R0(q, R0s) # used to vary R0
+const sigmas = 0f0:0.025f0:2f0 # levels of environmental noise
+
 parameter_values = [(Thv, sigma) for Thv in Thvs, sigma in sigmas]
 
 
@@ -239,8 +237,7 @@ function collect_outputs(det_equations, stoch_equations, num_runs, parameter_val
         prob = SDEProblem(det_equations, stoch_equations, u0, timespan, parameter_values[i], noise_rate_prototype = noise_rate_prototype, callback = cbs)
         ensembleprob = EnsembleProblem(prob)
         ## Run SDE solver
-        sol = solve(ensembleprob, EM(), dt = 0.1f0, EnsembleSplitThreads(); trajectories = num_runs, saveat = 1.0f0)
-        
+        sol = solve(ensembleprob, EM(), dt = 0.1f0, EnsembleSplitThreads(); trajectories = num_runs, saveat = 1.0f0, save_everystep = false)
         # Thread-local storage for results
         thread_results = Vector{NamedTuple{(:Thv, :sigma, :run, :max_value, :max_time,:exceeded_10, :exceeded_100, :positive_at_final, :positive_duration, :zero_cases,:duration_dieout),Tuple{Float32, Float32, Int, Float32, Float32, Bool, Bool, Bool, Float32, Bool, Float32}}}(undef, num_runs)
 
@@ -259,7 +256,7 @@ function collect_outputs(det_equations, stoch_equations, num_runs, parameter_val
 
             # Calculate the required statistics
             # Maximum case count
-            max_value = maximum(H_values)
+            max_value = maximum(H_values) # only needs largest H value
             # Get times where there is at least one infection in each population
             valid_times = (trajectory.t[i] for i in eachindex(trajectory.t) if trajectory.u[i][1] > 1.0f0 && trajectory.u[i][2] > 1.0f0)
             # Calculate the latest date where there are cases in both hosts and vectors
