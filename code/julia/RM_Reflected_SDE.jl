@@ -169,9 +169,9 @@ cb_terminate = DiscreteCallback(condition_terminate, affect_terminate!; save_pos
 cbs = CallbackSet(cb_H, cb_V, cb_terminate)
 
 # Define parameter values to iterate over
-const R0s = 0f0:0.025f0:5f0 #0f0:0.025f0:5f0
+const R0s = 0f0:0.05f0:5f0 #0f0:0.025f0:5f0
 Thvs = Thv_from_R0(q, R0s) # used to vary R0
-const sigmas = 0f0:0.025f0:2f0 # levels of environmental noise
+const sigmas = 0f0:0.05f0:2f0 # levels of environmental noise
 
 parameter_values = [(Thv, sigma) for Thv in Thvs, sigma in sigmas]
 
@@ -189,7 +189,7 @@ function run_sims(det_equations, stoch_equations, num_runs, parameter_values)
         prob = SDEProblem(det_equations, stoch_equations, u0, timespan, parameter_values[i], noise_rate_prototype = noise_rate_prototype, callback = cbs)
         ensembleprob = EnsembleProblem(prob)
         ## Run SDE solver
-        sol = solve(ensembleprob, EM(), dt = 0.1f0, EnsembleThreads(); trajectories = num_runs, saveat = 30f0)
+        sol = solve(ensembleprob, EM(), dt = 0.1f0, EnsembleThreads(); trajectories = num_runs, saveat = 1.0f0)
 
         # Collect results into a tidy DataFrame
         for run_id in 1:num_runs

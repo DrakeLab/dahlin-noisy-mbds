@@ -2,13 +2,6 @@
 include("RM_Reflected_SDE.jl")
 using CodecZlib
 
-# Define parameter values to iterate over
-R0s = 0.05f0:0.05f0:5f0 #0f0:0.025f0:5f0
-Thvs = Thv_from_R0(q, R0s) # used to vary R0
-sigmas = 0f0:0.05f0:2f0 # levels of environmental noise
-parameter_values = [(Thv, sigma) for Thv in Thvs, sigma in sigmas]
-
-
 test = collect_outputs(dF_det!, dF_stoch!, 10, parameter_values[1:2])
 test2 = raw_outputs(dF_det!, dF_stoch!, 10, parameter_values[1:2])
 # using Profile # ProfileView
@@ -26,8 +19,8 @@ function save_gzip(data, filename)
     end
 end
 
-Thvs_for_trajectories = Thv_from_R0(q, [0.95, 1.05, 1.125, 1.25, 1.375, 2, 3, 4.625]) # used to vary R0
-sigmas_for_trajectories = [0.05, 0.1, 0.25, 0.4, 0.65, 1, 1.5, 1.65]
+Thvs_for_trajectories = Thv_from_R0(q, [0.95, 1.05, 1.25, 1.375, 2, 3, 4, 4.625]) # used to vary R0
+sigmas_for_trajectories = [0, 0.1, 0.25, 0.5, 1, 1.5]
 parameter_values_for_trajectories = [(Thv, sigma) for Thv in Thvs_for_trajectories, sigma in sigmas_for_trajectories]
 
 
@@ -54,7 +47,7 @@ finalize(collect_all_no_demo)
 collect_all_no_demo = nothing
 GC.gc()
 
-trajectories_for_grid_plot_no_demo = run_sims(dF_det_no_demo!, dF_stoch_no_demo!, 20::Int, parameter_values_for_trajectories)
+trajectories_for_grid_plot_no_demo = run_sims(dF_det_no_demo!, dF_stoch_no_demo!, 100::Int, parameter_values_for_trajectories)
 save_gzip(trajectories_for_grid_plot_no_demo, "trajectories_for_grid_plot_no_demo.csv.gz")
 finalize(trajectories_for_grid_plot_no_demo)
 GC.gc()
@@ -79,7 +72,7 @@ GC.gc()
 # CSV.write(joinpath(dirname(dirname(pwd())), "data", "collect_all_outputs.csv"), collect_all)
 
 
-trajectories_for_grid_plot = run_sims(dF_det!, dF_stoch!, 20::Int, parameter_values_for_trajectories)
+trajectories_for_grid_plot = run_sims(dF_det!, dF_stoch!, 1_000::Int, parameter_values_for_trajectories)
 save_gzip(trajectories_for_grid_plot, "trajectories_for_grid_plot.csv.gz")
 finalize(trajectories_for_grid_plot)
 trajectories_for_grid_plot = nothing

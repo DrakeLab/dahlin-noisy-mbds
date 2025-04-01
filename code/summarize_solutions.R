@@ -48,7 +48,7 @@ all_summary_df <- all_df %>%
   # rename quantities to match plots
   mutate(name = case_when(
     name == "max_value" ~ "max_cases",
-    name == "positive_duration" ~ "duration",
+    # name == "positive_duration" ~ "duration",
     name == "exceeded_10" ~ "small_outbreak",
     name == "exceeded_100" ~ "big_outbreak",
     name == "positive_at_final" ~ "endemic",
@@ -62,7 +62,7 @@ enviro_summary_df <- enviro_df %>%
   # rename quantities to match plots
   mutate(name = case_when(
     name == "max_value" ~ "max_cases",
-    name == "positive_duration" ~ "duration",
+    # name == "positive_duration" ~ "duration",
     name == "exceeded_10" ~ "small_outbreak",
     name == "exceeded_100" ~ "big_outbreak",
     name == "positive_at_final" ~ "endemic",
