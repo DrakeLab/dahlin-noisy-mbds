@@ -337,11 +337,7 @@ generic_heat_function <- function(output_name, type_name) {
     ) +
     scale_y_continuous(
       name = TeX("             Basic reproduction number  [$R_0$]"),
-      sec.axis = sec_axis(~ . + 0,
-                          name = "",
-                          breaks = c(0.95, 1.05, 2, 4),
-                          labels = c("0.95", "1.05", "2", "4")),
-      # limits = c(0, NA),
+      limits = c(0, 5),
       expand = c(0,0)
     ) +
     # color:
@@ -382,8 +378,7 @@ generic_heat_function <- function(output_name, type_name) {
     theme(
       legend.position = "right",
       legend.justification = "right",
-      legend.box.just = "right",
-      axis.text.y.right = element_text(size = 8)
+      legend.box.just = "right"
     )
   
   if (type_name == "all") {
@@ -624,7 +619,7 @@ Big_outbreak_heat <- generic_heat_function("big_outbreak", "all") +
     axis.line.x = element_blank(),  # Remove x-axis line
     axis.title.y = element_blank()
   ) +
-  theme(legend.margin=margin(t=-0.5,l=0.0,b=-0.275,r=0, unit='cm'))
+  theme(legend.margin=margin(t=-0.5,l=0.0,b=-0.275,r=0.25, unit='cm'))
 
 
 Peak_cases_heat <- generic_heat_function("max_cases", "all") +
@@ -638,7 +633,7 @@ Peak_cases_heat <- generic_heat_function("max_cases", "all") +
     axis.line.x = element_blank(),  # Remove x-axis line
     axis.title.y = element_text(hjust = 0.9)
   ) +
-  theme(legend.margin=margin(t=-0.75,l=0.0,b=-0.275,r=0, unit='cm'))
+  theme(legend.margin=margin(t=-0.75,l=0.0,b=-0.275,r=0.25, unit='cm'))
 
 Duration_heat <- generic_heat_function("duration", "all") +
   labs(
@@ -647,7 +642,7 @@ Duration_heat <- generic_heat_function("duration", "all") +
   theme(
     axis.title.y = element_blank()
   ) +
-  theme(legend.margin=margin(t=-0.75,l=0.0,b=-0.275,r=0, unit='cm'))
+  theme(legend.margin=margin(t=-0.75,l=0.0,b=-0.275,r=0.25, unit='cm'))
 
 Figure4 = egg::ggarrange(Big_outbreak_heat, Peak_cases_heat, Duration_heat, ncol = 1)
 ggsave("./figures/Figure4.png", Figure4, width = 6.5, height = 4, units = "in", dpi = 1200)
@@ -694,7 +689,6 @@ ggsave("./figures/Figure4_alt.png", Figure4_alt, width = 16, height = 8, units =
 
 # Figure 5: Stacked heatmaps with no demographic noise ----
 # Pr(> 100 hosts), peak # of cases, Duration
-
 Big_outbreak_heat <- generic_heat_function("big_outbreak", "enviro") +
   labs(
     title = "A."
@@ -706,7 +700,7 @@ Big_outbreak_heat <- generic_heat_function("big_outbreak", "enviro") +
     axis.line.x = element_blank(),  # Remove x-axis line
     axis.title.y = element_blank()
   ) +
-  theme(legend.margin=margin(t=-0.5,l=0.0,b=-0.35,r=0, unit='cm'))
+  theme(legend.margin=margin(t=-0.5,l=0.0,b=-0.275,r=0.25, unit='cm'))
 
 
 Peak_cases_heat <- generic_heat_function("max_cases", "enviro") +
@@ -720,7 +714,7 @@ Peak_cases_heat <- generic_heat_function("max_cases", "enviro") +
     axis.line.x = element_blank(),  # Remove x-axis line
     axis.title.y = element_text(hjust = 0.9)
   ) +
-  theme(legend.margin=margin(t=-0.85,l=0.0,b=-0.35,r=0, unit='cm'))
+  theme(legend.margin=margin(t=-0.75,l=0.0,b=-0.275,r=0.25, unit='cm'))
 
 Duration_heat <- generic_heat_function("duration", "enviro") +
   labs(
@@ -729,10 +723,10 @@ Duration_heat <- generic_heat_function("duration", "enviro") +
   theme(
     axis.title.y = element_blank()
   ) +
-  theme(legend.margin=margin(t=-0.85,l=0.0,b=-0.35,r=0, unit='cm'))
+  theme(legend.margin=margin(t=-0.75,l=0.0,b=-0.275,r=0.25, unit='cm'))
 
 Figure5 = egg::ggarrange(Big_outbreak_heat, Peak_cases_heat, Duration_heat, ncol = 1)
-ggsave("./figures/Figure5.png", Figure5, width = 6.5, height = 7, units = "in", dpi = 1200)
+ggsave("./figures/Figure5.png", Figure5, width = 6.5, height = 4, units = "in", dpi = 1200)
 
 # Comparison plots ----
 
@@ -805,6 +799,10 @@ compare_heat_function <- function(output_name, in_df, type) {
       y = R0 - R0_height/2,
       fill = !!sym(type)
     )) +
+    # Add a red line for R0 = 1
+    geom_hline(yintercept = 1, color = "grey", lwd = 1) +
+    # Add a black line for "no environmental noise"
+    geom_vline(xintercept = 0, color = "grey", lwd = 1) +
     # Add smoothed contour for abs_diff = 0
     geom_path(data = contour_df,
               aes(
@@ -812,10 +810,6 @@ compare_heat_function <- function(output_name, in_df, type) {
                 y = R0 + R0_height,
                 group = group),
               color = "black", lwd = 0.5, alpha = 0.75) +
-    # Add a red line for R0 = 1
-    geom_hline(yintercept = 1, color = "red", lwd = 1) +
-    # Add a black line for "no environmental noise"
-    geom_vline(xintercept = 0, color = "grey", lwd = 1) +
     # Annotate x-axis for demographic noise
     scale_x_continuous(TeX("Environmental noise strength [$\\sigma$]"),
                        limits = c(-0.5, 2),
