@@ -76,8 +76,6 @@ R0_colors = c(
   c4a("scico.oslo", sum(R0s < 1))
 )
 
-# [] !!! set up nice plotting to match previous figures
-
 nice_output_labeller = function(output_name) {
   output_label = case_when(
     output_name == "small_outbreak" ~ "Pr(Outbreak > 10 cases)",
@@ -119,35 +117,6 @@ generic_plot_function <- function(output_name, in_df) {
                        expand = c(0,0)) +
     theme_half_open()
 }
-
-# # Pr(endemic)
-# Pr_end_plot <- generic_plot_function("endemic", enviro_stats_df)
-# ggsave("./figures/no_demo/endemic_prob.png", Pr_end_plot, width = 6.5, height = 3.56525, units = "in")
-# 
-# # Peak cases
-# Peak_cases_plot <- generic_plot_function("max_cases", enviro_stats_df)
-# ggsave("./figures/no_demo/peak_cases.png", Peak_cases_plot, width = 6.5, height = 3.56525, units = "in")
-# 
-# # Peak timing
-# Peak_time_plot <- generic_plot_function("max_time", enviro_stats_df)
-# ggsave("./figures/no_demo/peak_time.png", Peak_time_plot, width = 6.5, height = 3.56525, units = "in")
-# 
-# # Small outbreak
-# Small_outbreak_plot <- generic_plot_function("small_outbreak", enviro_stats_df)
-# ggsave("./figures/no_demo/small_outbreak_prob.png", Small_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
-# 
-# # Big outbreak
-# Big_outbreak_plot <- generic_plot_function("big_outbreak", enviro_stats_df)
-# ggsave("./figures/no_demo/big_outbreak_prob.png", Big_outbreak_plot, width = 6.5, height = 3.56525, units = "in")
-# 
-# # Duration
-# Duration_plot <- generic_plot_function("duration", enviro_stats_df)
-# ggsave("./figures/no_demo/duration.png", Duration_plot, width = 6.5, height = 3.56525, units = "in")
-# 
-# # Duration
-# Duration_dieout_plot <- generic_plot_function("duration_dieout", enviro_stats_df)
-# ggsave("./figures/duration_dieout.png", Duration_dieout_plot, width = 6.5, height = 3.56525, units = "in")
-
 
 
 # Create a "stretched" region at sigma = 0 to show what occurs with no environmental noise
@@ -894,6 +863,16 @@ Duration_plot <- compare_heat_function("duration", comp_stats_df, "abs_diff") +
 
 Figure6 = egg::ggarrange(Big_outbreak_plot, Peak_cases_plot, Duration_plot, ncol = 1)
 ggsave("./figures/Figure6.png", Figure6, width = 6.5, height = 4, units = "in", dpi = 1200)
+
+# New Fig 3: Outbreak probability plots ----
+
+# [] Combine line plot and heatmaps (complete model and environmental noise submodel)
+# [] Stack heatmaps on right. Put line plot on left matching the height of heatmaps
+# [] Use a single color bar for the heatmaps and position it appropriately
+# [] Label the subplots A. B., and C. with identifying subtitles
+# [] Remove "Deterministic submodel" parts from the heatmaps
+
+
 
 
 # Supp Fig 1: Peak case count explanatory plot ----
