@@ -146,15 +146,15 @@ comp_stats_df <- rbind(
 write_rds(comp_stats_df, "./data/comp_stats.rds")
 
 # Trajectories comparisons ----
-comparison_trajectories = read_csv("./data/comparison_trajectories.csv") %>% 
+comparison_trajectories = read_csv("./data/comparison_trajectories.csv") %>%
   mutate(R0 = R0_from_Thv_function(Thv),
-         time = time / 365) %>% 
-  group_by(type, R0, sigma, run) %>% 
+         time = time / 365) %>%
+  group_by(type, R0, sigma, run) %>%
   mutate(max_H = max(H, na.rm = T),
          max_time = min(time[H == max(H)], na.rm = T)
-  ) %>% 
-  group_by(type, time, R0, sigma) %>% 
-  mutate(mean_H = mean(H, na.rm = T)) %>% 
+  ) %>%
+  group_by(type, time, R0, sigma) %>%
+  mutate(mean_H = mean(H, na.rm = T)) %>%
   ungroup()
 
 comparison_trajectories$R0 = factor(

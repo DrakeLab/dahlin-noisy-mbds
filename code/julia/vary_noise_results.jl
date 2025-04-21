@@ -9,7 +9,7 @@ test2 = raw_outputs(dF_det!, dF_stoch!, 10, parameter_values[1:2])
 # test_no_demo = collect_outputs(dF_det_no_demo!, dF_stoch_no_demo!, 1, parameter_values[1:2])
 test_det = collect_outputs_det(dF_det!, Thvs[1])
 
-num_sims = 10_000::Int #10_000::Int# number of simulations to Run
+num_sims = 100_000::Int #10_000::Int# number of simulations to Run
 
 function save_gzip(data, filename)
     open(joinpath(dirname(dirname(pwd())), "data", filename), "w") do io
