@@ -13,7 +13,7 @@ generic_heat_function <- function(output_name, type_name) {
   # Label legend appropriately
   leg_label = case_when(
     output_name %in% c("small_outbreak", "big_outbreak", "endemic") ~ "Probability",
-    output_name %in% c("duration", "peak_time", "duration_dieout", "duration_10", "duration_100") ~ "Time [years]",
+    output_name %in% c("duration", "peak_time", "duration_dieout", "duration_10", "duration_100") ~ "Time\n[years]",
     output_name %in% c("max_cases") ~ "Number\nof cases",
   )
   
@@ -174,7 +174,7 @@ Big_outbreak_mean <- line_plots_df %>%
     legend.direction = "horizontal",  
     legend.spacing.y = unit(0, "pt"),
     legend.key.width = unit(14, "pt"),
-    legend.key.height = unit(0, "pt"),
+    legend.key.height = unit(1, "pt"),
     plot.title.position = "panel",
     legend.margin = margin(t = -17, b = -5)
   )
@@ -280,7 +280,7 @@ Peak_cases_mean <- line_plots_df %>%
     legend.direction = "horizontal",  
     legend.spacing.y = unit(0, "pt"),
     legend.key.width = unit(14, "pt"),
-    legend.key.height = unit(0, "pt"),
+    legend.key.height = unit(1, "pt"),
     plot.title.position = "panel",
     legend.margin = margin(t = -17, b = -5)
   )
@@ -362,7 +362,7 @@ Duration_mean <- line_plots_df %>%
   scale_y_continuous(
     "Time [years]",
     breaks = c(2.5, 5.0, 7.5, 10.0),
-    expand = c(0,0.25)
+    expand = expansion(add = c(0,0.25))
   ) +
   theme_minimal_grid(10) +
   guides(
@@ -385,7 +385,7 @@ Duration_mean <- line_plots_df %>%
     legend.direction = "horizontal",  
     legend.spacing.y = unit(0, "pt"),
     legend.key.width = unit(14, "pt"),
-    legend.key.height = unit(0, "pt"),
+    legend.key.height = unit(1, "pt"),
     plot.title.position = "panel",
     legend.margin = margin(t = -17, b = -5)
   )
@@ -394,11 +394,11 @@ Duration_mean <- line_plots_df %>%
 #  = half-size, on top-right
 #  * label clearly with subtitle
 #  * center colorbar with below figure
-Peak_cases_heat_temp <- generic_heat_function("max_cases", "all")
+Duration_heat_temp <- generic_heat_function("duration", "all")
 
-legend_temp = get_legend(Peak_cases_heat_temp)
+legend_temp = get_legend(Duration_heat_temp)
 
-Peak_cases_heat = Peak_cases_heat_temp +
+Duration_heat = Duration_heat_temp +
   labs(
     title = "B. Full model"
   ) +
@@ -416,7 +416,7 @@ Peak_cases_heat = Peak_cases_heat_temp +
 ## Subplot C) Heatmap for environmental noise sub-model
 #  = half-size, on bottom-right
 #  * label clearly with subtitle
-Peak_cases_heat_enviro <- generic_heat_function("max_cases", "enviro") +
+Duration_heat_enviro <- generic_heat_function("duration", "enviro") +
   labs(
     title = "C. Environmental noise submodel"
   ) +
@@ -431,10 +431,10 @@ Peak_cases_heat_enviro <- generic_heat_function("max_cases", "enviro") +
   guides(fill = "none") #+
 # theme(legend.margin=margin(t=-0.5,l=0.0,b=-0.275,r=0.25, unit='cm'))
 
-Figure4 = ggpubr::ggarrange(Peak_cases_mean,
+Figure5 = ggpubr::ggarrange(Duration_mean,
                             egg::ggarrange(
-                              Peak_cases_heat, 
-                              Peak_cases_heat_enviro, 
+                              Duration_heat, 
+                              Duration_heat_enviro, 
                               ncol = 1,
                               heights = c(0.475,0.525)
                             ),
@@ -443,7 +443,7 @@ Figure4 = ggpubr::ggarrange(Peak_cases_mean,
                             widths = c(0.4, 0.525, 0.075)
 )
 
-ggsave("./figures/New_Figure4.png", Figure4, width = 9, height = 4, units = "in", dpi = 1200)
+ggsave("./figures/New_Figure5.png", Figure5, width = 9, height = 4, units = "in", dpi = 1200)
 
 
 
