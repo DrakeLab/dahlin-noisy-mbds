@@ -50,8 +50,8 @@ sigmas <- seq(0, 1, by = 0.05)
 max_time = 3650
 
 # Load data ----
-all_df_modified = read_rds("./data/all_modified.rds")
-enviro_df_modified = read_rds("./data/enviro_modified.rds")
+# all_df_modified = read_rds("./data/all_modified.rds")
+# enviro_df_modified = read_rds("./data/enviro_modified.rds")
 
 all_stats_df = read_rds("./data/all_stats.rds")
 enviro_stats_df = read_rds("./data/enviro_stats.rds")
@@ -94,10 +94,13 @@ nice_output_labeller = function(output_name) {
 
 # Generic plot function
 generic_plot_function <- function(output_name, in_df) {
+  
+  R0_colors = rev(c4a("kovesi.bu_bk_rd", length(unique(in_df$R0_factor))))
+  
   in_df %>% 
     ungroup() %>% 
     filter(name == output_name) %>% 
-    filter(R0_factor %in% c(0.95, 1.125, 2, 4.625)) %>% 
+    # filter(R0_factor %in% c(0.95, 1.125, 2, 4.625)) %>% 
     ggplot(aes(x = sigma, y = mean, group = R0_factor)) +
     # Mean
     geom_line(aes(color = R0_factor), lwd = 1) +
@@ -189,35 +192,37 @@ smooth_zero_contour <- function(in_df, output_name, type_name, level_val) {
     data.frame(sigma = contours[[i]]$x, R0 = contours[[i]]$y, group = i)
   })) 
   
-  
-  if (type_name == "comp") {
-    temp_df <- contour_df %>% filter(sigma == 0) %>% stretch_sigma(., include_det = F)
-    temp_df <- rbind(temp_df, distinct(temp_df, R0, group) %>% mutate(sigma = -.5))
+  if (!is.null(contour_df)) {
+    
+    if (type_name == "comp") {
+      temp_df <- contour_df %>% filter(sigma == 0) %>% stretch_sigma(., include_det = F)
+      temp_df <- rbind(temp_df, distinct(temp_df, R0, group) %>% mutate(sigma = -.5))
+    }
+    
+    if (type_name == "all") {
+      temp_df <- contour_df %>% filter(sigma == 0) %>% stretch_sigma(., include_det = F)
+      temp_df <- rbind(temp_df, distinct(temp_df, R0, group) %>% mutate(sigma = -.5))
+      temp_df_det <- in_df  %>% 
+        filter(type == "enviro", sigma == 0, mean <= level_val)  %>% 
+        stretch_sigma(., T) %>% 
+        filter(sigma < -0.45, R0 == max(R0)) %>% 
+        dplyr::select(sigma, R0) %>% 
+        mutate(group = 1)
+      temp_df_det <- rbind(temp_df_det, distinct(temp_df_det, R0, group) %>% mutate(sigma = -1.05))
+      temp_df = rbind(temp_df_det, temp_df) %>% 
+        arrange(sigma) 
+    } 
+    if (type_name == "enviro") {
+      temp_df <- in_df  %>% 
+        filter(type == "enviro", sigma == 0, mean <= level_val)  %>% 
+        stretch_sigma(., T) %>% 
+        filter(sigma > -0.51, R0 == max(R0)) %>% 
+        dplyr::select(sigma, R0) %>% 
+        mutate(group = 1) %>% arrange(sigma)
+    }
+    
+    contour_df <- rbind(temp_df, contour_df)
   }
-  
-  if (type_name == "all") {
-    temp_df <- contour_df %>% filter(sigma == 0) %>% stretch_sigma(., include_det = F)
-    temp_df <- rbind(temp_df, distinct(temp_df, R0, group) %>% mutate(sigma = -.5))
-    temp_df_det <- in_df  %>% 
-      filter(type == "enviro", sigma == 0, mean <= level_val)  %>% 
-      stretch_sigma(., T) %>% 
-      filter(sigma < -0.45, R0 == max(R0)) %>% 
-      dplyr::select(sigma, R0) %>% 
-      mutate(group = 1)
-    temp_df_det <- rbind(temp_df_det, distinct(temp_df_det, R0, group) %>% mutate(sigma = -1.05))
-    temp_df = rbind(temp_df_det, temp_df) %>% 
-      arrange(sigma) 
-  } 
-  if (type_name == "enviro") {
-    temp_df <- in_df  %>% 
-      filter(type == "enviro", sigma == 0, mean <= level_val)  %>% 
-      stretch_sigma(., T) %>% 
-      filter(sigma > -0.51, R0 == max(R0)) %>% 
-      dplyr::select(sigma, R0) %>% 
-      mutate(group = 1) %>% arrange(sigma)
-  }
-  
-  contour_df <- rbind(temp_df, contour_df)
 }
 
 # Generic plot function
@@ -463,6 +468,8 @@ ggsave("./figures/Figure2.png", quadrant_plot, width = 6.5, height = 5, units = 
 
 
 # Figure 3: Mean prob/intensity/duration vs. sigma curves ----
+
+
 
 # x: sigma
 # y: value

@@ -83,7 +83,10 @@ all_stats_df <- all_summary_df %>%
   mutate(
     max_val = if_else(name == "max_cases", Nh, max_time / 365),
     lower_ci = max(0, mean - 0.674 * sqrt(variance)),
-    upper_ci = min(max_val, mean + 0.674 * sqrt(variance))
+    upper_ci = if_else(name %in% c("small_outbreak", "big_outbreak", "endemic", "zero_cases"), 
+                       min(1, mean + 0.674 * sqrt(variance)),
+                       min(max_val, mean + 0.674 * sqrt(variance))
+    )
   ) %>%
   dplyr::select(-max_val) %>%
   ungroup()

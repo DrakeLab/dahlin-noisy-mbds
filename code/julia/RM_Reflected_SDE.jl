@@ -352,8 +352,6 @@ function collect_outputs(det_equations, stoch_equations, num_runs, parameter_val
                 exp10         = false
                 exp100        = false
                 valid_time    = 0.0f0         # We will take maximum time where both populations > 1.
-                max_state2    = -typemax(Float32)
-                max_state2_i  = 1
                 pos_duration  = 0.0f0         # Sum of positive intervals (in same time units as traj.t)
                 zero_cases    = false
         
@@ -361,12 +359,13 @@ function collect_outputs(det_equations, stoch_equations, num_runs, parameter_val
                 for i in 1:nt
                     # Extract the host (H) count and second state from the state vector.
                     H_i    = traj.u[i][1]
-                    st2_i  = traj.u[i][2]
+                    V_i  = traj.u[i][2]
                     t_i    = traj.t[i]
                     
                     # Update max H.
                     if H_i > max_val
                         max_val = H_i
+                        max_H_i = i
                     end
         
                     # Check for exceeded thresholds.
@@ -377,21 +376,14 @@ function collect_outputs(det_equations, stoch_equations, num_runs, parameter_val
                         exp100 = true
                     end
         
-                    # Update valid_time if both H and st2 exceed 1.
+                    # Update valid_time if both H and V exceed 1.
                     if (traj.u[i][1] > 1.0f0) && (traj.u[i][2] > 1.0f0) && (t_i > valid_time)
                         valid_time = t_i
                     end
-        
-                    # Update peak time candidate based on the second state.
-                    if st2_i > max_state2
-                        max_state2 = st2_i
-                        max_state2_i = i
-                    end
-        
                     # Accumulate positive duration for intervals where H is > 1.
                     if i < nt
                         if traj.u[i][1] > 1.0f0 && traj.u[i+1][1] > 1.0f0
-                            pos_duration += traj.t[i+1] - t_i
+                            pos_duration += 1
                         end
                     end
         
@@ -403,7 +395,7 @@ function collect_outputs(det_equations, stoch_equations, num_runs, parameter_val
         
                 # Calculate duration, peak time, etc.
                 duration          = valid_time == 0.0f0 ? 0.0f0 : valid_time / 365.0f0
-                peak_time         = (max_val < 1.0f0) ? 0.0f0 : traj.t[max_state2_i]
+                peak_time         = (max_val < 1.0f0) ? 0.0f0 : traj.t[max_H_i]
                 positive_at_final = (duration > 9.999f0) && (traj.u[nt][1] > 1.0f0)
                 pos_duration      = pos_duration / 365.0f0
                 duration_dieout   = positive_at_final ? missing : duration
