@@ -1,5 +1,44 @@
 # Functions ----
 
+# Create a "stretched" region at sigma = 0 to show what occurs with no environmental noise
+stretch_sigma <- function(in_df, include_det = F) {
+  # Step size
+  sigma_step = (diff(unique(all_stats_df$sigma)))[1]
+  
+  # Filter values where sigma = 0
+  zero_sigma <- in_df %>% filter(sigma == 0)
+  
+  # New sigma values
+  negative_sigmas = -seq(0.0, 0.55, by = sigma_step)
+  negative_sigmas = negative_sigmas[-length(negative_sigmas)]
+  
+  # Repeat the zero_sigma rows for each negative sigma value
+  stretched <- zero_sigma[rep(1:nrow(zero_sigma), each = length(negative_sigmas)), ]
+  
+  # Assign the new sigma values
+  stretched$sigma <- rep(negative_sigmas, times = nrow(zero_sigma))
+  
+  # Combine original data with stretched region
+  out <- bind_rows(in_df, stretched)
+  
+  if (include_det) {
+    det_zeros = in_df %>% filter(sigma == 0, type == "enviro")
+    # New sigma values
+    det_sigmas = -seq(0.5, 1.0, by = sigma_step)
+    # det_sigmas = det_sigmas[-c(1:2)]
+    
+    # Repeat the zero_sigma rows for each negative sigma value
+    det_stretched <- det_zeros[rep(1:nrow(det_zeros), each = length(det_sigmas)), ]
+    
+    # Assign the new sigma values
+    det_stretched$sigma <- rep(det_sigmas, times = nrow(det_zeros))
+    det_stretched = mutate(det_stretched, type = "all")
+    
+    out <- bind_rows(out, det_stretched)
+  }
+  return(out)
+}
+
 # Generic plot function
 generic_heat_function <- function(output_name, type_name) {
   
@@ -24,7 +63,13 @@ generic_heat_function <- function(output_name, type_name) {
     output_name %in% c("max_cases") ~ 1,
   )
   
+  noise_labels = ifelse(
+    type_name == "all",
+    "Demo. noise\nsubmodel",
+    "Deterministic\nsubmodel"
+  )[[1]]
   
+  noise_breaks <- c(-0.25, seq(0, 2.0, by = 0.25))
   
   value_labels <- ifelse(
     leg_label == "Probability",
@@ -40,11 +85,13 @@ generic_heat_function <- function(output_name, type_name) {
     dplyr::select(sigma, R0, mean, type) %>% 
     filter(if_all(c(sigma, R0, mean), ~ is.finite(.x) & !is.na(.x)))
   
-  contour_df = smooth_zero_contour(fixed_df, output_name, type_name, zero_proxy)
+  contour_df = smooth_zero_contour(fixed_df, output_name, type_name, zero_proxy) %>% 
+    filter(sigma > -0.55)
   
   out = full_stats_df %>% 
     ungroup() %>% 
     filter(name == output_name, type == type_name) %>%
+    stretch_sigma() %>% 
     ggplot(aes(y = R0 - R0_height/2)) +
     # Plot values
     geom_tile(aes(
@@ -61,13 +108,21 @@ generic_heat_function <- function(output_name, type_name) {
                 y = R0,
                 group = group),
               color = "white", lwd = 0.5) +
+    # Line showing divide from submodel
+    geom_vline(
+      xintercept = 0,
+      color = "grey",
+      lwd = 0.5
+    ) +
     # Annotate x-axis for demographic noise
     scale_x_continuous(
       TeX("Environmental noise strength [$\\sigma$]"), 
-      limits = c(0, NA),
+      # limits = c(-0.45, NA),
       expand = c(0,0),
-      breaks = seq(0, 2.0, by = 0.25),
-      labels = seq(0, 2.0, by = 0.25)
+      breaks = noise_breaks,
+      labels = c(noise_labels, seq(0, 2.0, by = 0.25))
+      # breaks = seq(0, 2.0, by = 0.25),
+      # labels = seq(0, 2.0, by = 0.25)
     ) +
     scale_y_continuous(
       name = ifelse(type_name == "enviro",
@@ -91,7 +146,8 @@ generic_heat_function <- function(output_name, type_name) {
         output_name %in% c("max_cases") ~ c(0,5000, 10000)
       ),
       labels = value_labels
-    ) +
+    ) + 
+    coord_cartesian(xlim = c(-0.49, NA)) +
     # legend:
     guides(
       fill = guide_colourbar(
@@ -129,6 +185,9 @@ line_plots_df <- all_stats_df %>%
                            name == "max_cases" ~ "B. Intensity",
                            name == "duration" ~ "C. Duration"))
 
+# Other parameters ----
+R0_colors = rev(c4a("kovesi.bu_bk_rd", 7))
+
 # New Figure 3: Probability plots ----
 
 ## Subplot A) Line plot
@@ -136,11 +195,21 @@ line_plots_df <- all_stats_df %>%
 Big_outbreak_mean <- line_plots_df %>% 
   arrange(R0) %>% 
   filter(name == "big_outbreak") %>% 
+  mutate(sep_one = round(R0,2) == 1) %>% 
   ggplot(aes(x = sigma)) +
-  geom_line(aes(y = mean, color = R0_factor, group = R0_factor),
+  geom_line(aes(y = mean, color = R0_factor, group = R0_factor, linetype = factor(sep_one)),
             lwd = 1) +
-  scale_color_manual(values = R0_colors) +
-  scale_fill_manual(values = R0_colors)  +
+  scale_linetype_manual( 
+    values = c(1, 3)
+  ) +
+  scale_color_manual(
+    values = R0_colors,
+    breaks = rev(unique(line_plots_df$R0_factor))
+  ) +
+  scale_fill_manual(
+    values = R0_colors,
+    breaks = rev(unique(line_plots_df$R0_factor))
+  )  +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ggtitle("A.") +
@@ -161,22 +230,24 @@ Big_outbreak_mean <- line_plots_df %>%
       label.position = "bottom",
       reverse = TRUE,
       direction = "horizontal",
-      nrow = 1
-    )
+      nrow = 1,
+      override.aes = list(linewidth = 3)
+    ),
+    linetype = guide_none()
   ) +
   theme(
     plot.title = element_text(size = 10),
-    legend.text = element_text(size = 7),
+    legend.text = element_text(size = 7, margin = margin(t = -1)),
     legend.spacing = unit(0, "pt"),
-    legend.title = element_text(size = 8),
+    legend.title = element_text(size = 8, margin = margin(b = -2)),
     legend.position = "top",
     legend.justification = "right",
     legend.direction = "horizontal",  
     legend.spacing.y = unit(0, "pt"),
     legend.key.width = unit(14, "pt"),
-    legend.key.height = unit(1, "pt"),
+    # legend.key.height = unit(1, "pt"),
     plot.title.position = "panel",
-    legend.margin = margin(t = -17, b = -5)
+    legend.box.margin = margin(t = -18, b = -10)
   )
 
 ## Subplot B) Heatmap for full model
@@ -225,7 +296,7 @@ Figure3 = ggpubr::ggarrange(Big_outbreak_mean,
                               Big_outbreak_heat, 
                               Big_outbreak_heat_enviro, 
                               ncol = 1,
-                              heights = c(0.475,0.525)
+                              heights = c(0.5,0.5)
                             ),
                             legend_temp,
                             ncol = 3,
@@ -241,11 +312,21 @@ ggsave("./figures/New_Figure3.png", Figure3, width = 9, height = 4, units = "in"
 Peak_cases_mean <- line_plots_df %>% 
   arrange(R0) %>% 
   filter(name == "max_cases") %>% 
+  mutate(sep_one = round(R0,2) == 1) %>% 
   ggplot(aes(x = sigma)) +
-  geom_line(aes(y = mean, color = R0_factor, group = R0_factor),
+  geom_line(aes(y = mean, color = R0_factor, group = R0_factor, linetype = factor(sep_one)),
             lwd = 1) +
-  scale_color_manual(values = R0_colors) +
-  scale_fill_manual(values = R0_colors)  +
+  scale_color_manual(
+    values = R0_colors,
+    breaks = rev(unique(line_plots_df$R0_factor))
+  ) +
+  scale_fill_manual(
+    values = R0_colors,
+    breaks = rev(unique(line_plots_df$R0_factor))
+  )  +
+  scale_linetype_manual( 
+    values = c(1, 3)
+  ) +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ggtitle("A.") +
@@ -267,22 +348,24 @@ Peak_cases_mean <- line_plots_df %>%
       label.position = "bottom",
       reverse = TRUE,
       direction = "horizontal",
-      nrow = 1
-    )
+      nrow = 1,
+      override.aes = list(linewidth = 3)
+    ),
+    linetype = guide_none()
   ) +
   theme(
     plot.title = element_text(size = 10),
-    legend.text = element_text(size = 7),
+    legend.text = element_text(size = 7, margin = margin(t = -1)),
     legend.spacing = unit(0, "pt"),
-    legend.title = element_text(size = 8),
+    legend.title = element_text(size = 8, margin = margin(b = -2)),
     legend.position = "top",
     legend.justification = "right",
     legend.direction = "horizontal",  
     legend.spacing.y = unit(0, "pt"),
     legend.key.width = unit(14, "pt"),
-    legend.key.height = unit(1, "pt"),
+    # legend.key.height = unit(1, "pt"),
     plot.title.position = "panel",
-    legend.margin = margin(t = -17, b = -5)
+    legend.box.margin = margin(t = -18, b = -10)
   )
 
 ## Subplot B) Heatmap for full model
@@ -331,7 +414,7 @@ Figure4 = ggpubr::ggarrange(Peak_cases_mean,
                               Peak_cases_heat, 
                               Peak_cases_heat_enviro, 
                               ncol = 1,
-                              heights = c(0.475,0.525)
+                              heights = c(0.5,0.5)
                             ),
                             legend_temp,
                             ncol = 3,
@@ -340,18 +423,25 @@ Figure4 = ggpubr::ggarrange(Peak_cases_mean,
 
 ggsave("./figures/New_Figure4.png", Figure4, width = 9, height = 4, units = "in", dpi = 1200)
 
-# New Figure 5: Intensity plots ----
+# New Figure 5: Duration plots ----
 
 ## Subplot A) Line plot
 #  = full-size, on left
 Duration_mean <- line_plots_df %>% 
   arrange(R0) %>% 
   filter(name == "duration") %>% 
+  mutate(sep_one = round(R0,2) == 1) %>% 
   ggplot(aes(x = sigma)) +
-  geom_line(aes(y = mean, color = R0_factor, group = R0_factor),
+  geom_line(aes(y = mean, color = R0_factor, group = R0_factor, linetype = factor(sep_one)),
             lwd = 1) +
-  scale_color_manual(values = R0_colors) +
-  scale_fill_manual(values = R0_colors)  +
+  scale_color_manual(
+    values = R0_colors,
+    breaks = rev(unique(line_plots_df$R0_factor))
+    ) +
+  scale_fill_manual(
+    values = R0_colors,
+    breaks = rev(unique(line_plots_df$R0_factor))
+    )  +
   theme_cowplot() +
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ggtitle("A.") +
@@ -364,6 +454,9 @@ Duration_mean <- line_plots_df %>%
     breaks = c(2.5, 5.0, 7.5, 10.0),
     expand = expansion(add = c(0,0.25))
   ) +
+  scale_linetype_manual( 
+    values = c(1, 3)
+    ) +
   theme_minimal_grid(10) +
   guides(
     color = guide_legend(
@@ -372,22 +465,24 @@ Duration_mean <- line_plots_df %>%
       label.position = "bottom",
       reverse = TRUE,
       direction = "horizontal",
-      nrow = 1
-    )
+      nrow = 1,
+      override.aes = list(linewidth = 3)
+    ),
+    linetype = guide_none()
   ) +
   theme(
     plot.title = element_text(size = 10),
-    legend.text = element_text(size = 7),
+    legend.text = element_text(size = 7, margin = margin(t = -1)),
     legend.spacing = unit(0, "pt"),
-    legend.title = element_text(size = 8),
+    legend.title = element_text(size = 8, margin = margin(b = -2)),
     legend.position = "top",
     legend.justification = "right",
     legend.direction = "horizontal",  
     legend.spacing.y = unit(0, "pt"),
     legend.key.width = unit(14, "pt"),
-    legend.key.height = unit(1, "pt"),
+    # legend.key.height = unit(1, "pt"),
     plot.title.position = "panel",
-    legend.margin = margin(t = -17, b = -5)
+    legend.box.margin = margin(t = -18, b = -10)
   )
 
 ## Subplot B) Heatmap for full model
@@ -436,7 +531,7 @@ Figure5 = ggpubr::ggarrange(Duration_mean,
                               Duration_heat, 
                               Duration_heat_enviro, 
                               ncol = 1,
-                              heights = c(0.475,0.525)
+                              heights = c(0.5,0.5)
                             ),
                             legend_temp,
                             ncol = 3,

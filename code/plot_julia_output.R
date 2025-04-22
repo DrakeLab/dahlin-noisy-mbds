@@ -790,7 +790,7 @@ compare_heat_function <- function(output_name, in_df, type) {
     scale_x_continuous(TeX("Environmental noise strength [$\\sigma$]"),
                        limits = c(-0.5, 2),
                        breaks = c(-0.24, seq(0, 2.0, by = 0.25)),
-                       labels = c("Difference from\n deterministic", seq(0, 2.0, by = 0.25)),
+                       labels = c("Difference from\n deterministic submodel", seq(0, 2.0, by = 0.25)),
                        expand = c(0,0),
     ) +
     scale_y_continuous(TeX("Basic reproduction number  [$R_0$]"),

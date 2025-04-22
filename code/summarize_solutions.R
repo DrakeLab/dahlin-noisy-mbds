@@ -91,7 +91,7 @@ all_stats_df <- all_summary_df %>%
   dplyr::select(-max_val) %>%
   ungroup()
 
-all_stats_df$R0_factor = factor(round(all_stats_df$R0,3), levels = rev(unique(round(all_stats_df$R0,3))))
+all_stats_df$R0_factor = factor(round(all_stats_df$R0,3), levels = (unique(round(all_stats_df$R0,3))))
 write_rds(all_stats_df, "./data/all_stats.rds")
 
 # For environmental noise only
@@ -101,12 +101,15 @@ enviro_stats_df <- enviro_summary_df %>%
   mutate(
     max_val = if_else(name == "max_cases", Nh, max_time / 365),
     lower_ci = max(0, mean - 0.674 * sqrt(variance)),
-    upper_ci = min(max_val, mean + 0.674 * sqrt(variance))
+    upper_ci = if_else(name %in% c("small_outbreak", "big_outbreak", "endemic", "zero_cases"), 
+                       min(1, mean + 0.674 * sqrt(variance)),
+                       min(max_val, mean + 0.674 * sqrt(variance))
+    )
   ) %>%
   dplyr::select(-max_val) %>%
   ungroup()
 
-enviro_stats_df$R0_factor = factor(round(enviro_stats_df$R0,3), levels = rev(unique(round(enviro_stats_df$R0,3))))
+enviro_stats_df$R0_factor = factor(round(enviro_stats_df$R0,3), levels = (unique(round(enviro_stats_df$R0,3))))
 
 write_rds(enviro_stats_df, "./data/enviro_stats.rds")
 
@@ -189,7 +192,7 @@ All_sims_plot_df <- sims_out %>%
 
 
 
-All_sims_plot_df$R0_factor = factor(round(All_sims_plot_df$R0,3), levels = rev((unique(round(All_sims_plot_df$R0,3)))))
+All_sims_plot_df$R0_factor = factor(round(All_sims_plot_df$R0,3), levels = ((unique(round(All_sims_plot_df$R0,3)))))
 All_sims_plot_df$sigma_factor = factor(round(All_sims_plot_df$sigma,3), levels = unique(round(All_sims_plot_df$sigma,3)))
 
 write_rds(All_sims_plot_df, "./data/all_sims.rds")
@@ -205,7 +208,7 @@ enviro_outbreak_duration_df = read_csv("./data/dur_peak_no_demo.csv.gz")  %>%
   mutate(type = "Environmental noise only")
 enviro_outbreak_duration_df$R0_factor = factor(
   round(enviro_outbreak_duration_df$R0, 3), 
-  levels = rev(unique(round(enviro_outbreak_duration_df$R0, 3))))
+  levels = (unique(round(enviro_outbreak_duration_df$R0, 3))))
 
 all_outbreak_duration_df = read_csv("./data/dur_peak.csv.gz")  %>% 
   mutate(R0 = R0_from_Thv_function(Thv)) %>%
@@ -217,7 +220,7 @@ all_outbreak_duration_df = read_csv("./data/dur_peak.csv.gz")  %>%
   mutate(type = "All noise")
 all_outbreak_duration_df$R0_factor = factor(
   round(all_outbreak_duration_df$R0, 3), 
-  levels = rev(unique(round(all_outbreak_duration_df$R0, 3))))
+  levels = (unique(round(all_outbreak_duration_df$R0, 3))))
 
 outbreak_duration_df = bind_rows(
   all_outbreak_duration_df,
