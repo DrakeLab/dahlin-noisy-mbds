@@ -349,6 +349,7 @@ function collect_outputs(det_equations, stoch_equations, num_runs, parameter_val
             @inbounds begin
                 # Initialize local accumulators; use Float32 for consistency.
                 max_val       = -typemax(Float32)
+                max_H_i       = -typemax(Float32)
                 exp10         = false
                 exp100        = false
                 valid_time    = 0.0f0         # We will take maximum time where both populations > 1.

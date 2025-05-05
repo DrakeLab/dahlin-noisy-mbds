@@ -182,7 +182,7 @@ smooth_zero_contour <- function(in_df, output_name, type_name, level_val) {
   
   sigma_vals = sort(unique(out_df$sigma))
   R0_vals = sort(unique(out_df$R0))
-  var_mat = matrix(out_df$var_smooth, nrow = length(sigma_vals), byrow = TRUE)
+  var_mat = matrix(out_df$var_smooth, ncol = length(sigma_vals), byrow = TRUE)
   
   # Find contour for 0 from the averaged values
   contours <- contourLines(sigma_vals, R0_vals, var_mat, levels = level_val)
@@ -294,12 +294,12 @@ generic_heat_function <- function(output_name, type_name) {
     )) +
     # Add smoothed contour for zero proxy values
     geom_hline(yintercept = 1, color = "red", lwd = 1) +
-    geom_path(data = contour_df,
-              aes(
-                x = sigma,
-                y = R0,
-                group = group),
-              color = "white", lwd = 0.5, alpha = 0.75) +
+    # geom_path(data = contour_df,
+    #           aes(
+    #             x = sigma,
+    #             y = R0,
+    #             group = group),
+    #           color = "white", lwd = 0.5, alpha = 0.75) +
     geom_vline(xintercept = 0, color = "grey", lwd = 1) +
     # Annotate x-axis for demographic noise
     scale_x_continuous(
@@ -757,8 +757,8 @@ compare_heat_function <- function(output_name, in_df, type) {
   # Approximate difference as a continuous function to get smooth contour lines
   fixed_df = in_df %>%
     filter(type == "all", name == output_name) %>% 
-    dplyr::select(sigma, R0, abs_diff) %>% 
-    filter(if_all(c(sigma, R0, abs_diff), ~ is.finite(.x) & !is.na(.x)))
+    dplyr::select(sigma, R0, abs_diff) #%>% 
+    # filter(if_all(c(sigma, R0, abs_diff), ~ is.finite(.x) & !is.na(.x)))
   
   sigma_width = unique(diff(fixed_df$sigma))[2]
   R0_height = unique(diff(fixed_df$R0))[2]
@@ -779,13 +779,13 @@ compare_heat_function <- function(output_name, in_df, type) {
     geom_hline(yintercept = 1, color = "grey", lwd = 1) +
     # Add a black line for "no environmental noise"
     geom_vline(xintercept = 0, color = "grey", lwd = 1) +
-    # Add smoothed contour for abs_diff = 0
-    geom_path(data = contour_df,
-              aes(
-                x = sigma - sigma_width,
-                y = R0 + R0_height,
-                group = group),
-              color = "black", lwd = 0.5, alpha = 0.75) +
+    # # Add smoothed contour for abs_diff = 0
+    # geom_path(data = contour_df,
+    #           aes(
+    #             x = sigma - sigma_width,
+    #             y = R0 + R0_height,
+    #             group = group),
+    #           color = "black", lwd = 0.5, alpha = 0.75) +
     # Annotate x-axis for demographic noise
     scale_x_continuous(TeX("Environmental noise strength [$\\sigma$]"),
                        limits = c(-0.5, 2),

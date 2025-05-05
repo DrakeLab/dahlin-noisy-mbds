@@ -14,10 +14,37 @@ num_sims = 100_000::Int #10_000::Int# number of simulations to Run
 function save_gzip(data, filename)
     open(joinpath(dirname(dirname(pwd())), "data", filename), "w") do io
         gzip_io = GzipCompressorStream(io)
+        CSV.write(gzip_io, data, append = true, writeheader = true)
+        close(gzip_io)
+    end
+end
+
+using CSV
+using CodecZlib
+using DataFrames
+
+function append_and_save_gzip(data::DataFrame, filename::String)
+    filepath = joinpath(dirname(dirname(pwd())), "data", filename)
+
+    # Load existing data if the file exists
+    if isfile(filepath)
+        open(filepath) do io
+            gzip_io = GzipDecompressorStream(io)
+            existing_data = CSV.read(gzip_io, DataFrame)
+            close(gzip_io)
+            data = vcat(existing_data, data)
+        end
+    end
+
+    # Save the combined data
+    open(filepath, "w") do io
+        gzip_io = GzipCompressorStream(io)
         CSV.write(gzip_io, data)
         close(gzip_io)
     end
 end
+
+
 
 Thvs_for_trajectories = Thv_from_R0(q, [0.95, 1.05, 1.25, 1.375, 2, 3, 4, 4.625]) # used to vary R0
 sigmas_for_trajectories = [0, 0.1, 0.25, 0.5, 1, 1.5]
@@ -63,12 +90,28 @@ GC.gc()
 
 
 ## Simulations with all types of noise ##
-print("Simulations with all noise")
-collect_all = collect_outputs(dF_det!, dF_stoch!, num_sims, parameter_values)
-save_gzip(collect_all, "collect_all_outputs.csv.gz")
-finalize(collect_all)
-collect_all = nothing
-GC.gc()
+println("Simulations with all noise")
+chunk_size = 41
+# Break up parameter values into smaller chunks
+for i in 1:chunk_size:length(parameter_values)
+
+    println("Simulating chunk ", i, " to ", i+chunk_size-1)
+
+    chunk = parameter_values[i:minimum([i+chunk_size-1, length(parameter_values)])]
+    # Get data for each set of parameter values
+    collect_all = collect_outputs(dF_det!, dF_stoch!, num_sims, chunk)
+    # Load previous file
+
+    # Add rows to previous file
+
+    # Save file
+    append_and_save_gzip(collect_all, "collect_all_outputs.csv.gz")
+    # save_gzip(collect_all, "collect_all_outputs.csv.gz")
+    finalize(collect_all)
+    collect_all = nothing
+    GC.gc()
+end
+
 # CSV.write(joinpath(dirname(dirname(pwd())), "data", "collect_all_outputs.csv"), collect_all)
 
 
