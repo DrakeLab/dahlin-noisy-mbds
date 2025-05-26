@@ -80,12 +80,12 @@ finalize(trajectories_for_grid_plot_no_demo)
 GC.gc()
 
 # Get data for duration vs intensity scatter plots
-Thvs_dur_peak = Thv_from_R0(q, 0.125f0:0.125f0:5f0) # used to vary R0
-sigmas_dur_peak = 0.25f0:0.25f0:1.5f0
+Thvs_dur_peak = Thv_from_R0(q, [1.375, 3]) # used to vary R0
+sigmas_dur_peak = [1, 1.5]
 dur_peak_par_vals = [(Thv, sigma) for Thv in Thvs_dur_peak, sigma in sigmas_dur_peak]
 duration_v_peak = raw_outputs(dF_det_no_demo!, dF_stoch_no_demo!, 1_000, dur_peak_par_vals)
 save_gzip(duration_v_peak, "dur_peak_no_demo.csv.gz")
-collect_all = duration_v_peak
+duration_v_peak = nothing
 GC.gc()
 
 
@@ -125,5 +125,5 @@ GC.gc()
 # Get data for duration vs intensity scatter plots
 duration_v_peak = raw_outputs(dF_det!, dF_stoch!, 10_000, dur_peak_par_vals)
 save_gzip(duration_v_peak, "dur_peak.csv.gz")
-trajectories_for_grid_plot = duration_v_peak
+duration_v_peak = nothing
 GC.gc()
