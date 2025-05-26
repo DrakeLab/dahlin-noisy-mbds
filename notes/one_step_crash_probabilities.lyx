@@ -1,0 +1,431 @@
+#LyX 2.4 created this file. For more info see https://www.lyx.org/
+\lyxformat 620
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children no
+\language american
+\language_package default
+\inputencoding utf8
+\fontencoding auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\float_placement class
+\float_alignment class
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_formatted_ref 0
+\use_minted 0
+\use_lineno 0
+\index Index
+\shortcut idx
+\color #008080
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tablestyle default
+\tracking_changes false
+\output_changes false
+\change_bars false
+\postpone_fragile_content true
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+dH & =\left(\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)-\gamma_{H}H\right)dt+\alpha\sqrt{\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)+\gamma_{H}H}dW_{1}+\sigma\left(\frac{b\tau_{HV}}{N_{H}}V\left(N_{H}-H\right)\right)dW_{3}+dL_{1}\\
+dV & =\left(\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)-\mu_{V}V\right)dt+\alpha\sqrt{\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)+\mu_{V}V}dW_{2}+\sigma\left(\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)+\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)+\mu_{V}V\right)dW_{3}+dL_{2}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Neglect demographic stochasticity for now (
+\begin_inset Formula $\alpha=0$
+\end_inset
+
+) and WLOG let 
+\begin_inset Formula $dt=1$
+\end_inset
+
+.
+ Then we obtain 
+\begin_inset Formula 
+\begin{align*}
+dH & =\left(\frac{b}{N_{H}}V\left(N_{H}-H\right)-\gamma_{H}H\right)dt+\sigma\left(\frac{b}{N_{H}}V\left(N_{H}-H\right)\right)dW_{3}+dL_{1}\\
+dV & =\left(\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)-\mu_{V}V\right)dt+\sigma\left(\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)+\frac{b\tau_{VH}}{N_{H}}H\left(N_{V}-V\right)+\mu_{V}V\right)dW_{3}+dL_{2}
+\end{align*}
+
+\end_inset
+
+We want to examine the probability that an infected population crashes to zero in a single time step.
+ For this to occur for the hosts,
+ we must have 
+\begin_inset Formula $H_{1}+dH_{1}<0$
+\end_inset
+
+.
+ Let 
+\begin_inset Formula $\gamma=dW_{3}\sim\mathcal{N}\left(0,dt=1\right)$
+\end_inset
+
+.
+ We will examine what values 
+\begin_inset Formula $\gamma$
+\end_inset
+
+ can take on so that 
+\begin_inset Formula $H_{1}+dH_{1}<0$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+H_{1}+dH_{1} & <0\\
+H_{1}+\left(b\tau_{HV}\frac{1}{N_{H}}V_{1}\left(N_{H}-H_{1}\right)-\gamma_{H}H_{1}\right)+\sigma\gamma\left(b\tau_{HV}\frac{1}{N_{H}}V_{1}\left(N_{H}-H_{1}\right)\right) & <0\\
+\left(1-\gamma_{H}\right)H_{1}+\left(1+\sigma\gamma\right)b\tau_{HV}\frac{1}{N_{H}}V_{1}\left(N_{H}-H_{1}\right) & <0\\
+\left(1+\sigma\gamma\right)b\tau_{HV}\frac{1}{N_{H}}V_{1}\left(N_{H}-H_{1}\right) & <-\left(1-\gamma_{H}\right)H_{1}\\
+1+\sigma\gamma & <-\frac{\left(1-\gamma_{H}\right)H_{1}}{b\tau_{HV}\frac{1}{N_{H}}V_{1}\left(N_{H}-H_{1}\right)}\\
+\gamma & <-\frac{1}{\sigma}\frac{\left(1-\gamma_{H}\right)}{b\tau_{HV}}\frac{N_{H}}{V_{1}}\left(\frac{H_{1}}{N_{H}-H_{1}}\right)-\frac{1}{\sigma}\\
+\gamma & <-\frac{1}{\sigma}\left[\frac{\left(1-\gamma_{H}\right)}{b\tau_{HV}}\frac{N_{H}}{V_{1}}\left(\frac{H_{1}}{N_{H}-H_{1}}\right)+1\right]
+\end{align*}
+
+\end_inset
+
+We are most interested in the threshold cases when either population is near their maximum or minimum.
+ 
+\begin_inset Formula 
+\begin{align*}
+\lim_{H_{1}\to N_{H}}\omega\left(H_{1},V_{1}\right) & =-\infty\\
+\lim_{H_{1}\to0}\omega\left(H_{1},V_{1}\right) & =-\frac{1}{\sigma}\\
+\lim_{V_{1}\to0}\omega\left(H_{1},V_{1}\right) & =-\infty\\
+\lim_{V_{1}\to N_{V}}\omega\left(H_{1},V_{1}\right) & =-\frac{1}{\sigma}\left[\frac{\left(1-\gamma_{H}\right)}{b\tau_{HV}}\frac{N_{H}}{N_{V}}\left(\frac{H_{1}}{1-\frac{H_{1}}{N_{H}}}\right)+1\right]
+\end{align*}
+
+\end_inset
+
+Hence the host infections can never crash to zero if 
+\begin_inset Formula $V_{1}\approx0$
+\end_inset
+
+ or 
+\begin_inset Formula $H_{1}\approx N_{H}$
+\end_inset
+
+ (note however that the limits are not continuous,
+ so the former doesn't hold if also 
+\begin_inset Formula $H_{1}\approx0$
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+The relevant inequalities are 
+\begin_inset Formula ${\displaystyle \gamma<\lim_{H_{1}\to0}\omega\left(H_{1},V_{1}\right)=-\frac{1}{\sigma}}$
+\end_inset
+
+ and 
+\begin_inset Formula ${\displaystyle \gamma<\lim_{V_{1}\to N_{V}}\omega\left(H_{1},V_{1}\right)=-\frac{1}{\sigma}\left[\frac{\left(1-\gamma_{H}\right)}{b\tau_{HV}}\frac{N_{H}}{N_{V}}\left(\frac{H_{1}}{1-\frac{H_{1}}{N_{H}}}\right)+1\right]}$
+\end_inset
+
+.
+ Define 
+\begin_inset Formula $f\left(\sigma\right)=P\left(\gamma<\lim_{H_{1}\to0}\omega\left(H_{1},V_{1}\right)\right)$
+\end_inset
+
+and 
+\begin_inset Formula $g\left(\sigma,\tau_{HV}\right)=P\left(\gamma<\lim_{V_{1}\to N_{V}}\omega\left(H_{1},V_{1}\right)\right)$
+\end_inset
+
+ where 
+\begin_inset Formula $\gamma\sim\mathcal{N}\left(0,1\right)$
+\end_inset
+
+.
+ Then notice that
+\begin_inset Formula 
+\begin{align*}
+f\left(\sigma\right) & =\frac{1}{\sqrt{2\pi}}\int_{-\infty}^{-1/\sigma}e^{-t^{2}/2}dt\\
+\frac{d}{d\sigma}f\left(\sigma\right) & =\frac{1}{\sigma^{2}}\frac{1}{\sqrt{2\pi}}e^{-1/2\sigma^{2}}>0
+\end{align*}
+
+\end_inset
+
+and
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+g\left(\sigma,\tau_{HV}\right) & =\frac{1}{\sqrt{2\pi}}\int_{-\infty}^{-\frac{1}{\sigma}\left[\frac{\left(1-\gamma_{H}\right)}{b\tau_{HV}}\frac{N_{H}}{N_{V}}\left(\frac{H_{1}}{1-\frac{H_{1}}{N_{H}}}\right)+1\right]}e^{-t^{2}/2}dt\\
+\frac{d}{d\sigma}g\left(\sigma,\tau_{HV}\right) & =\frac{1}{\sigma^{2}}\frac{1}{\sqrt{2\pi}}e^{-\left[\frac{\left(1-\gamma_{H}\right)}{b\tau_{HV}}\frac{N_{H}}{N_{V}}\left(\frac{H_{1}}{1-\frac{H_{1}}{N_{H}}}\right)+1\right]^{2}/2\sigma^{2}}\left[\frac{\left(1-\gamma_{H}\right)}{b\tau_{HV}}\frac{N_{H}}{N_{V}}\left(\frac{H_{1}}{1-\frac{H_{1}}{N_{H}}}\right)+1\right]>0\\
+\frac{d}{d\tau_{HV}}g\left(\sigma,\tau_{HV}\right) & =\frac{1}{\sigma\tau_{HV}}\frac{1}{\sqrt{2\pi}}e^{-\left[\frac{\left(1-\gamma_{H}\right)}{b\tau_{HV}}\frac{N_{H}}{N_{V}}\left(\frac{H_{1}}{1-\frac{H_{1}}{N_{H}}}\right)+1\right]^{2}/2\sigma^{2}}\left[\frac{\left(1-\gamma_{H}\right)}{b\tau_{HV}}\frac{N_{H}}{N_{V}}\left(\frac{H_{1}}{1-\frac{H_{1}}{N_{H}}}\right)+1\right]>0
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+So these probabilities are increasing in 
+\begin_inset Formula $\sigma$
+\end_inset
+
+ and 
+\begin_inset Formula $\tau_{HV}$
+\end_inset
+
+.
+ That is,
+ the probabilities that 
+\begin_inset Formula $H$
+\end_inset
+
+ crashes to zero if it is near zero or if 
+\begin_inset Formula $V$
+\end_inset
+
+ is near 
+\begin_inset Formula $N_{V}$
+\end_inset
+
+ both increase with respect to 
+\begin_inset Formula $\sigma$
+\end_inset
+
+.
+ The probability that 
+\begin_inset Formula $H$
+\end_inset
+
+ crashes to zero if 
+\begin_inset Formula $V$
+\end_inset
+
+ is near 
+\begin_inset Formula $N_{V}$
+\end_inset
+
+ also increases with respect to 
+\begin_inset Formula $\tau_{HV}$
+\end_inset
+
+.
+ In fact,
+ for any value of 
+\begin_inset Formula $V$
+\end_inset
+
+,
+ the probability that 
+\begin_inset Formula $H$
+\end_inset
+
+ crashes to zero increases with respect to 
+\begin_inset Formula $\sigma$
+\end_inset
+
+ and 
+\begin_inset Formula $\tau_{HV}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Notably,
+ if instead of 
+\begin_inset Formula $\mathcal{N}\left(0,dt\right)$
+\end_inset
+
+,
+ we take 
+\begin_inset Formula $\gamma$
+\end_inset
+
+ to have a normal distribution restricted to the half-interval 
+\begin_inset Formula $\left[-1,\infty\right)$
+\end_inset
+
+,
+ then these probabilities are only relevant if 
+\begin_inset Formula $\sigma>1$
+\end_inset
+
+.
+ That is,
+ 
+\begin_inset Formula $\sigma$
+\end_inset
+
+ has to be sufficiently large for the increase of 
+\begin_inset Formula $\tau_{HV}$
+\end_inset
+
+ to have an effect on the probability of a crash.
+\end_layout
+
+\begin_layout Standard
+We can conduct a similar analysis on the infected vector population.
+ We will determine for what values of 
+\begin_inset Formula $\gamma$
+\end_inset
+
+ we can have the population crash to zero in a single step.
+ 
+\begin_inset Formula 
+\begin{align*}
+V_{1}+dV_{1} & <0\\
+V_{1}+\left(\frac{b\tau_{VH}}{N_{H}}H_{1}\left(N_{V}-V_{1}\right)-\mu_{V}V_{1}\right)+\sigma\gamma\left(\frac{b\tau_{VH}}{N_{H}}H_{1}\left(N_{V}-V_{1}\right)+\frac{b\tau_{VH}}{N_{H}}H_{1}\left(N_{V}-V_{1}\right)+\mu_{V}V_{1}\right) & <0\\
+\left[1-\left(1-\sigma\gamma\right)\mu_{V}\right]V_{1}+\left(1+2\sigma\gamma\right)\frac{b\tau_{VH}}{N_{H}}H_{1}\left(N_{V}-V_{1}\right) & <0\\
+\sigma\gamma\left[\mu_{V}V_{1}+2\frac{b\tau_{VH}}{N_{H}}H_{1}\left(N_{V}-V_{1}\right)\right] & <-\left(1-\mu_{V}\right)V_{1}-\frac{b\tau_{VH}}{N_{H}}H_{1}\left(N_{V}-V_{1}\right)\\
+\sigma\gamma & <-\frac{\left(1-\mu_{V}\right)V_{1}+\frac{b\tau_{VH}}{N_{H}}H_{1}\left(N_{V}-V_{1}\right)}{\mu_{V}V_{1}+2\frac{b\tau_{VH}}{N_{H}}H_{1}\left(N_{V}-V_{1}\right)}\\
+\sigma\gamma & <-\frac{V_{1}-\mu_{V}V_{1}-2\frac{b\tau_{VH}}{N_{H}}H_{1}\left(N_{V}-V_{1}\right)+2\frac{b\tau_{VH}}{N_{H}}H_{1}\left(N_{V}-V_{1}\right)+\frac{b\tau_{VH}}{N_{H}}H_{1}\left(N_{V}-V_{1}\right)}{\mu_{V}V_{1}+2\frac{b\tau_{VH}}{N_{H}}H_{1}\left(N_{V}-V_{1}\right)}\\
+\gamma & <\frac{1}{\sigma}\left[1-\frac{V_{1}+3\frac{b\tau_{VH}}{N_{H}}H_{1}\left(N_{V}-V_{1}\right)}{\mu_{V}V_{1}+2\frac{b\tau_{VH}}{N_{H}}H_{1}\left(N_{V}-V_{1}\right)}\right]=\theta\left(H_{1},V_{1}\right)
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+\lim_{H_{1}\to N_{H}}\theta\left(H_{1},V_{1}\right) & =-\frac{1}{\sigma}\left[\frac{\left(1-\mu_{V}\right)V_{1}+b\tau_{VH}\left(N_{V}-V_{1}\right)}{\mu_{V}V_{1}+2b\tau_{VH}\left(N_{V}-V_{1}\right)}\right]\\
+\lim_{H_{1}\to0}\theta\left(H_{1},V_{1}\right) & =\frac{1}{\sigma}\left(1-\frac{1}{\mu_{V}}\right)<0\\
+\lim_{V_{1}\to0}\theta\left(H_{1},V_{1}\right) & =-\frac{1}{2\sigma}\\
+\lim_{V_{1}\to N_{V}}\theta\left(H_{1},V_{1}\right) & =\frac{1}{\sigma}\left(1-\frac{1}{\mu_{V}}\right)<0
+\end{align*}
+
+\end_inset
+
+Again,
+ in every case,
+ it can be shown that the probability that 
+\begin_inset Formula $\gamma$
+\end_inset
+
+ is less than any of these limits increases as 
+\begin_inset Formula $\sigma$
+\end_inset
+
+ increases.
+ For example,
+ 
+\begin_inset Formula 
+\begin{align*}
+f\left(\sigma\right) & =P\left(\gamma<-\frac{1}{\sigma}\right)=\frac{1}{\sqrt{2\pi}}\int_{-\infty}^{-1/\sigma}e^{-t^{2}/2}dt\\
+\frac{d}{d\sigma}f\left(\sigma\right) & =\frac{1}{\sigma^{2}}\frac{1}{\sqrt{2\pi}}e^{-1/2\sigma^{2}}>0
+\end{align*}
+
+\end_inset
+
+Note that the probability of a crash when 
+\begin_inset Formula $V_{1}$
+\end_inset
+
+ is near 
+\begin_inset Formula $N_{V}$
+\end_inset
+
+ or 
+\begin_inset Formula $H_{1}$
+\end_inset
+
+ is near 
+\begin_inset Formula $0$
+\end_inset
+
+ is lower than the probability of a crash when 
+\begin_inset Formula $V_{1}$
+\end_inset
+
+ is near 
+\begin_inset Formula $0$
+\end_inset
+
+.
+\begin_inset Formula 
+\begin{align*}
+-\frac{1}{2\sigma} & >\frac{1}{\sigma}\left(1-\frac{1}{\mu_{V}}\right)
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+-\frac{1}{\sigma}\left[\frac{\left(1-\mu_{V}\right)V_{1}+b\tau_{VH}\left(N_{V}-V_{1}\right)}{\mu_{V}V_{1}+2b\tau_{VH}\left(N_{V}-V_{1}\right)}\right] & <-\frac{1}{2\sigma}\\
+V_{1} & >\frac{b\tau_{VH}N_{V}}{2-3\mu_{V}+b\tau_{VH}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

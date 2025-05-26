@@ -85,29 +85,41 @@ generic_heat_function <- function(output_name, type_name) {
     dplyr::select(sigma, R0, mean, type) %>% 
     filter(if_all(c(sigma, R0, mean), ~ is.finite(.x) & !is.na(.x)))
   
-  contour_df = smooth_zero_contour(fixed_df, output_name, type_name, zero_proxy) %>% 
-    filter(sigma > -0.55)
+  # contour_df <- smooth_zero_contour(fixed_df, output_name, "comp", 0.01) # (in_df, output_name, type_name, level_val)
+  smooth_level = 10
+  contour_df = fixed_df %>% 
+    stretch_sigma()
+  
+  nn_df = get.knnx(data = cbind(contour_df$sigma, contour_df$R0),
+                   query = cbind(contour_df$sigma, contour_df$R0),
+                   k = smooth_level)
+  
+  contour_df$var_smooth <- rowMeans(matrix(contour_df[["mean"]][nn_df$nn.index], ncol = smooth_level))
   
   out = full_stats_df %>% 
     ungroup() %>% 
     filter(name == output_name, type == type_name) %>%
     stretch_sigma() %>% 
-    ggplot(aes(y = R0 - R0_height/2)) +
+    ggplot() +
     # Plot values
     geom_tile(aes(
       x = sigma - sigma_width/2,
+      y = R0 - R0_height/2,
       fill = mean,
       width = sigma_width,
       height = R0_height
     )) +
     # Add smoothed contour for zero proxy values
     geom_hline(yintercept = 1, color = "red", lwd = 0.5) +
-    geom_path(data = contour_df,
-              aes(
-                x = sigma,
-                y = R0,
-                group = group),
-              color = "white", lwd = 0.5) +
+    geom_contour(
+      # data = contour_df,
+      aes(
+        x = sigma,
+        y = R0,
+        z = mean),# var_smooth),
+      breaks = c(zero_proxy),
+      color = "grey100"
+    ) +
     # Line showing divide from submodel
     geom_vline(
       xintercept = 0,
@@ -540,19 +552,191 @@ Figure5 = ggpubr::ggarrange(Duration_mean,
 
 ggsave("./figures/New_Figure5.png", Figure5, width = 9, height = 4, units = "in", dpi = 1200)
 
+# New Figure 6: Comparison plots ------------------------------------------
 
+# Make absolute difference comparison heatmap
+compare_heat_function <- function(output_name, in_df, type) {
+  
+  if (type == "abs_diff") {
+    leg_label = paste0( "Difference in ", case_when(
+      output_name %in% c("small_outbreak", "big_outbreak", "endemic") ~ "probability",
+      output_name %in% c("duration", "peak_time", "duration_dieout") ~ "time [years]",
+      output_name %in% c("max_cases") ~ "number of cases",
+    )
+    )
+    
+    type_label = "absolute difference (w vs. w/o dem. noise)"
+    
+    # Get number of unique values to assign colors to
+    z_vals = in_df %>% 
+      ungroup() %>% 
+      filter(name == output_name) %>% 
+      dplyr::select(abs_diff) %>% unique() %>% 
+      pull()
+    num_cols = length(z_vals)
+    z_min = min(z_vals, na.rm = T)
+    z_max = max(z_vals, na.rm = T)
+    act_min = min(z_min, -z_max)
+    act_max = max(z_max, -z_min)
+    mid_val = 0
+    
+    # Set heatmap palette to match unit of output
+    palette = case_when(
+      output_name %in% c("small_outbreak", "big_outbreak", "endemic") ~ c4a("hcl.red_green", num_cols, type = "div"),
+      output_name %in% c("duration", "peak_time", "duration_dieout") ~ rev(c4a("matplotlib.seismic", num_cols, type = "div")),
+      output_name %in% c("max_cases") ~ c4a("cols4all.pu_gn_div", num_cols, type = "div")	
+    )
+    # palettes with zero = black
+    # kovesi.bu_bk_br
+    # scico.managua	
+    # scico.vanimo
+    
+    # palettes with zero = white
+    # hcl.red_green matplotlib.seismic cols4all.pu_gn_div
+    
+  } else {
+    leg_label = "% difference"
+    in_df <- mutate(in_df, perc_diff = 100 * perc_diff)
+    palette = "magma"
+    
+    type_label = "percent difference (w vs. w/o dem. noise)"
+  }
+  
+  # Approximate difference as a continuous function to get smooth contour lines
+  fixed_df = in_df %>%
+    filter(type == "all", name == output_name) %>% 
+    dplyr::select(sigma, R0, abs_diff) %>% 
+    filter(if_all(c(sigma, R0, abs_diff), ~ is.finite(.x) & !is.na(.x))) %>% 
+    arrange(sigma, R0)
+  
+  sigma_width = unique(diff(fixed_df$sigma))[2]
+  R0_height = unique(diff(fixed_df$R0))[2]
+  
+  # contour_df <- smooth_zero_contour(fixed_df, output_name, "comp", 0.01) # (in_df, output_name, type_name, level_val)
+  smooth_level = 100
+  contour_df = fixed_df %>% 
+    stretch_sigma()
+  
+  nn_df = get.knnx(data = cbind(contour_df$sigma, contour_df$R0),
+                   query = cbind(contour_df$sigma, contour_df$R0),
+                   k = smooth_level)
+  
+  contour_df$var_smooth <- rowMeans(matrix(contour_df[["abs_diff"]][nn_df$nn.index], ncol = smooth_level))
+  
+  
+  fixed_df %>% 
+    # Stretch out sigma = 0
+    stretch_sigma() %>%
+    ggplot() +
+    # Tile values across grid
+    geom_tile(aes(
+      x = sigma - sigma_width/2,
+      y = R0 - R0_height/2,
+      fill = !!sym(type)
+    )) +
+    # Add a red line for R0 = 1
+    geom_hline(yintercept = 1, color = "grey", lwd = 1) +
+    # Add a black line for "no environmental noise"
+    geom_vline(xintercept = 0, color = "grey", lwd = 1) +
+    # Add smoothed contour for abs_diff = 0
+    geom_contour(
+      data = contour_df,
+      aes(
+        x = sigma,
+        y = R0,
+        z = var_smooth),
+      breaks = c(1E-5),
+      color = "black"
+    ) +
+    # geom_path(data = contour_df,
+    #           aes(
+    #             x = sigma - sigma_width,
+    #             y = R0 + R0_height,
+    #             group = group),
+    #           color = "black", lwd = 0.5, alpha = 0.75) +
+    # Annotate x-axis for demographic noise
+    scale_x_continuous(TeX("Environmental noise strength [$\\sigma$]"),
+                       limits = c(-0.5, 2),
+                       breaks = c(-0.24, seq(0, 2.0, by = 0.25)),
+                       labels = c("Difference from\n deterministic submodel", seq(0, 2.0, by = 0.25)),
+                       expand = c(0,0),
+    ) +
+    scale_y_continuous(TeX("Basic reproduction number  [$R_0$]"),
+                       limits = c(0, 5),
+                       expand = c(0,0)) +    
+    # color:
+    scale_fill_gradientn(
+      colors = palette,
+      limits = c(z_min, z_max),
+      values = scales::rescale(c(z_min, mid_val, z_max)),
+      labels = ifelse(
+        output_name %in% c("small_outbreak", "big_outbreak", "endemic"),
+        function(x) paste0(100*x, "%"),
+        function(x) x)
+      # oob = scales::squish
+    ) +
+    # legend:
+    guides(
+      fill = guide_colourbar(
+        title = leg_label,
+        position = "top",
+        direction = "horizontal",
+        title.position = "left",
+        title.hjust = 0,
+        title.vjust = 0.9,
+        barwidth = 8,
+        show.limits = TRUE,
+        draw.ulim = TRUE,
+        draw.llim = TRUE,
+      )
+    ) +
+    # ggtitle(nice_output_labeller(output_name)) +
+    theme_half_open(8) +
+    theme(
+      legend.position = "right",
+      legend.justification = "right",
+      legend.box.just = "right",
+      axis.text.y.right = element_text(size = 8)
+    )
+}
 
+# Figure 6: stacked comparison heatmaps ----
+Big_outbreak_plot <- compare_heat_function("big_outbreak", comp_stats_df, "abs_diff") +
+  labs(
+    title = "A."
+  ) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.line.x = element_blank(),  # Remove x-axis line
+    axis.title.y = element_blank()
+  ) +
+  theme(legend.margin=margin(t=-0.5,l=0.0,b=-0.35,r=0, unit='cm'))
 
+Peak_cases_plot <- compare_heat_function("max_cases", comp_stats_df, "abs_diff") +
+  labs(
+    title = "B."
+  ) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.line.x = element_blank(),  # Remove x-axis line
+    axis.title.y = element_text(hjust = 0.9)
+  ) + 
+  theme(legend.margin=margin(t=-0.75,l=0.0,b=-0.275,r=0, unit='cm'))
 
+Duration_plot <- compare_heat_function("duration", comp_stats_df, "abs_diff") +
+  labs(
+    title = "C."
+  ) +
+  theme(
+    axis.title.y = element_blank()
+  ) +
+  theme(legend.margin=margin(t=-0.75,l=0.0,b=-0.275,r=0, unit='cm'))
 
-
-
-
-
-
-
-
-
-
+Figure6 = egg::ggarrange(Big_outbreak_plot, Peak_cases_plot, Duration_plot, ncol = 1)
+ggsave("./figures/Figure6.png", Figure6, width = 4.5, height = 3, units = "in", dpi = 1200)
 
 

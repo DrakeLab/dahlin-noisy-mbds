@@ -16,6 +16,7 @@ library(ggpubr)
 library(egg)
 library(ggh4x)
 library(ggpointdensity)
+library(FNN)
 
 # Labeling functions
 appender_R0 <- function(string) TeX(paste("$R_0 = $", string))
@@ -123,6 +124,7 @@ generic_plot_function <- function(output_name, in_df) {
 
 
 # Create a "stretched" region at sigma = 0 to show what occurs with no environmental noise
+# Create a "stretched" region at sigma = 0 to show what occurs with no environmental noise
 stretch_sigma <- function(in_df, include_det = F) {
   # Step size
   sigma_step = (diff(unique(all_stats_df$sigma)))[1]
@@ -131,7 +133,7 @@ stretch_sigma <- function(in_df, include_det = F) {
   zero_sigma <- in_df %>% filter(sigma == 0)
   
   # New sigma values
-  negative_sigmas = -seq(0.0, 0.5, by = sigma_step)
+  negative_sigmas = -seq(0.0, 0.55, by = sigma_step)
   negative_sigmas = negative_sigmas[-length(negative_sigmas)]
   
   # Repeat the zero_sigma rows for each negative sigma value
@@ -161,6 +163,7 @@ stretch_sigma <- function(in_df, include_det = F) {
   return(out)
 }
 
+
 # Find a smoothed version of the absolute difference = 0 contour
 smooth_zero_contour <- function(in_df, output_name, type_name, level_val) {
   
@@ -172,7 +175,7 @@ smooth_zero_contour <- function(in_df, output_name, type_name, level_val) {
   var_name = colnames(out_df)[colnames(out_df) %in% c("mean", "abs_diff")]
   
   # Use nearest neighbor averaging to replace values of the differences
-  library(FNN)
+  
   smooth_level = 100
   nn_df = get.knnx(data = cbind(out_df$sigma, out_df$R0),
                    query = cbind(out_df$sigma, out_df$R0),
@@ -244,7 +247,7 @@ generic_heat_function <- function(output_name, type_name) {
   
   # Define zero proxy values
   zero_proxy = case_when(
-    output_name %in% c("small_outbreak", "big_outbreak", "endemic") ~ 1E-4,
+    output_name %in% c("small_outbreak", "big_outbreak", "endemic") ~ 1E-5,
     output_name %in% c("duration", "peak_time", "duration_dieout", "duration_10", "duration_100") ~ 1,
     output_name %in% c("max_cases") ~ 1,
   )
@@ -277,7 +280,17 @@ generic_heat_function <- function(output_name, type_name) {
     dplyr::select(sigma, R0, mean, type) %>% 
     filter(if_all(c(sigma, R0, mean), ~ is.finite(.x) & !is.na(.x)))
   
-  contour_df = smooth_zero_contour(fixed_df, output_name, type_name, zero_proxy)
+  # contour_df = smooth_zero_contour(fixed_df, output_name, type_name, zero_proxy)
+  smooth_level = 1
+  contour_df = fixed_df %>% 
+    # Stretch out sigma = 0
+    stretch_sigma(., include_det) %>% 
+    filter(type == type_name) %>% dplyr::select(-type)
+  nn_df = get.knnx(data = cbind(contour_df$sigma, contour_df$R0),
+                   query = cbind(contour_df$sigma, contour_df$R0),
+                   k = smooth_level)
+  
+  contour_df$var_smooth <- rowMeans(matrix(contour_df[["mean"]][nn_df$nn.index], ncol = smooth_level))
   
   out = full_stats_df %>% 
     ungroup() %>% 
@@ -294,6 +307,14 @@ generic_heat_function <- function(output_name, type_name) {
     )) +
     # Add smoothed contour for zero proxy values
     geom_hline(yintercept = 1, color = "red", lwd = 1) +
+    geom_contour(
+      data = contour_df,
+      aes(x = sigma,
+          y = R0,
+          z = var_smooth),
+      breaks = c(zero_proxy),
+      color = "white"
+    ) +
     # geom_path(data = contour_df,
     #           aes(
     #             x = sigma,
@@ -757,17 +778,28 @@ compare_heat_function <- function(output_name, in_df, type) {
   # Approximate difference as a continuous function to get smooth contour lines
   fixed_df = in_df %>%
     filter(type == "all", name == output_name) %>% 
-    dplyr::select(sigma, R0, abs_diff) #%>% 
-    # filter(if_all(c(sigma, R0, abs_diff), ~ is.finite(.x) & !is.na(.x)))
+    dplyr::select(sigma, R0, abs_diff) %>% 
+    filter(if_all(c(sigma, R0, abs_diff), ~ is.finite(.x) & !is.na(.x))) %>% 
+    arrange(sigma, R0)
   
   sigma_width = unique(diff(fixed_df$sigma))[2]
   R0_height = unique(diff(fixed_df$R0))[2]
   
-  contour_df <- smooth_zero_contour(fixed_df, output_name, "comp", 0) # (in_df, output_name, type_name, level_val)
+  # contour_df <- smooth_zero_contour(fixed_df, output_name, "comp", 0.01) # (in_df, output_name, type_name, level_val)
+  smooth_level = 10
+  contour_df = fixed_df %>% 
+    stretch_sigma()
+  
+  nn_df = get.knnx(data = cbind(contour_df$sigma, contour_df$R0),
+                   query = cbind(contour_df$sigma, contour_df$R0),
+                   k = smooth_level)
+  
+  contour_df$var_smooth <- rowMeans(matrix(contour_df[["abs_diff"]][nn_df$nn.index], ncol = smooth_level))
+  
   
   fixed_df %>% 
     # Stretch out sigma = 0
-    stretch_sigma() %>% # !!! put deterministic stuff here
+    stretch_sigma() %>%
     ggplot() +
     # Tile values across grid
     geom_tile(aes(
@@ -779,7 +811,16 @@ compare_heat_function <- function(output_name, in_df, type) {
     geom_hline(yintercept = 1, color = "grey", lwd = 1) +
     # Add a black line for "no environmental noise"
     geom_vline(xintercept = 0, color = "grey", lwd = 1) +
-    # # Add smoothed contour for abs_diff = 0
+    # Add smoothed contour for abs_diff = 0
+    geom_contour(
+      data = contour_df,
+      aes(
+        x = sigma,
+        y = R0,
+        z = var_smooth),
+      breaks = c(0.01),
+      color = "orange"
+    ) +
     # geom_path(data = contour_df,
     #           aes(
     #             x = sigma - sigma_width,
