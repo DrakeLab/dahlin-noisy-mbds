@@ -186,7 +186,6 @@ All_sims_plot_df <- sims_out %>%
     H>=0, V>=0,
     H<=Nh, V<=Nv
   ) %>%
-  # dplyr::select(-V) %>% 
   group_by(run, R0, sigma) %>% 
   distinct() %>% 
   mutate(endemic = (max(time) == max_time && H[time == max_time] > 1)) %>% 
@@ -202,10 +201,6 @@ write_rds(All_sims_plot_df, "./data/all_sims.rds")
 # Duration vs. intensity direct comparisons ----
 enviro_outbreak_duration_df = read_csv("./data/dur_peak_no_demo.csv.gz")  %>% 
   mutate(R0 = R0_from_Thv_function(Thv)) %>% 
-  filter(
-    # round(sigma, 3) %in% c(1, 1.5), #test_vals$sigma,
-    # round(R0, 3) %in% c(1.375, 3)#test_vals$R0
-  ) %>% 
   dplyr::select(sigma, R0, max_value, max_time, duration_dieout) %>% 
   mutate(type = "Environmental noise only")
 enviro_outbreak_duration_df$R0_factor = factor(
@@ -214,10 +209,6 @@ enviro_outbreak_duration_df$R0_factor = factor(
 
 all_outbreak_duration_df = read_csv("./data/dur_peak.csv.gz")  %>% 
   mutate(R0 = R0_from_Thv_function(Thv)) %>%
-  filter(
-    # round(sigma, 3) %in% c(1, 1.5), #test_vals$sigma,
-    # round(R0, 3) %in% c(1.375, 3)#test_vals$R0
-  ) %>% 
   dplyr::select(sigma, R0, max_value, max_time, duration_dieout) %>% 
   mutate(type = "All noise")
 all_outbreak_duration_df$R0_factor = factor(

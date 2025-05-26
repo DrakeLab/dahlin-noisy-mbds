@@ -1,4 +1,38 @@
+# Load libraries
+library(tidyverse)
+library(GenBinomApps) # to get Clopper-Pearson confidence interval function
+library(cols4all)
+library(future)
+library(doFuture)
+library(foreach)
+library(progressr) # progress bars for long parallel computations
+library(cowplot)
+library(latex2exp)
+library(fitdistrplus)
+library(data.table)
+library(multidplyr)
+library(scales)
+library(ggpubr)
+library(egg)
+library(ggh4x)
+library(ggpointdensity)
+library(FNN)
+
 # Functions ----
+
+# Labeling functions
+appender_R0 <- function(string) TeX(paste("$R_0 = $", string))
+appender_sigma <- function(string) TeX(paste("$\\sigma = $", string))
+
+# Reduce resolution of a vector by sub-sampling to length new_length
+res_reduce <- function(df, new_length) {
+  old_length <- length(unique(df))
+  if (old_length < new_length) {
+    warning("new_length is larger than old length. Vector will be unchanged")
+    new_length <- old_length
+  }
+  ret <- unique(df)[seq(1, length(unique(df)), length.out = new_length)]
+}
 
 # Create a "stretched" region at sigma = 0 to show what occurs with no environmental noise
 stretch_sigma <- function(in_df, include_det = F) {
@@ -185,7 +219,40 @@ generic_heat_function <- function(output_name, type_name) {
   return(out)
 }
 
+# Parameters ---- 
+b <- 0.3 # biting rate
+Tvh <- 0.5 # vector transmission-probability susceptible vector being infected after contact with infectious host
+Nh <- 10000 # number of hosts in system
+Nv <- 100000 # number of vectors in system
+muv <- 0.1 # vector mortality rate
+gammah <- 0.1 # host recovery rate
 
+R0_from_Thv_function <- function(Thv) {
+  sqrt(Thv * b^2 * Tvh * Nv / (Nh * gammah * muv))
+}
+
+# Sigma values (environmental noise level in 0-0.3) to test
+sigmas <- seq(0, 1, by = 0.05)
+
+# Final time point
+max_time = 3650
+
+# Load data ----
+# all_df_modified = read_rds("./data/all_modified.rds")
+# enviro_df_modified = read_rds("./data/enviro_modified.rds")
+
+all_stats_df = read_rds("./data/all_stats.rds")
+enviro_stats_df = read_rds("./data/enviro_stats.rds")
+full_stats_df <- rbind(
+  mutate(all_stats_df, type = "all"),
+  mutate(enviro_stats_df, type = "enviro")
+)
+comp_stats_df = read_rds("./data/comp_stats.rds")
+All_sims_plot_df = read_rds("./data/all_sims.rds")
+comparison_trajectories = read_rds("./data/comp_trajectories.rds")
+
+
+R0_colors = rev(c4a("kovesi.bu_bk_rd", 7))
 line_plots_df <- all_stats_df %>% 
   mutate(round_sigma = round(sigma, 3)) %>%
   filter(
@@ -197,10 +264,97 @@ line_plots_df <- all_stats_df %>%
                            name == "max_cases" ~ "B. Intensity",
                            name == "duration" ~ "C. Duration"))
 
-# Other parameters ----
-R0_colors = rev(c4a("kovesi.bu_bk_rd", 7))
+# Figure 2: Example trajectories ----
 
-# New Figure 3: Probability plots ----
+# [] Filter this out more. Either:
+# [] 1. choose fewer trajectories
+# [] 2. plot rolling averages
+
+# x-axis: Time [years]
+# y-axis: Number of hosts infected
+# Rows = R0 values
+# Columns = sigma values
+
+R0s_to_plot = c(0.95, 1.05, 2, 4)  #c(1.125, 1.375, 3, 4.625) #c(0.95, 1.05, 1.25, 2)
+sigmas_to_plot = c(0, 0.5, 1, 1.5) #c(0.65, 1, 1.5, 1.65)#c(0.05, 0.1, 0.25, 0.4)
+
+quadrant_df <- All_sims_plot_df %>%
+  filter(R0_factor %in% R0s_to_plot,
+         sigma_factor %in% sigmas_to_plot)
+
+deterministic_df <- read_csv("./data/trajectories_for_grid_plot_det.csv.gz") %>% 
+  mutate(R0 = R0_from_Thv_function(Thv)) %>% 
+  dplyr::select(-V)
+deterministic_df$R0_factor = factor(round(deterministic_df$R0,3), levels = rev((unique(round(deterministic_df$R0,3)))))
+deterministic_df <- deterministic_df %>% 
+  filter(R0_factor %in% R0s_to_plot) %>%
+  dplyr::select(-sigma) %>% 
+  expand_grid(.,data.frame(sigma = sigmas_to_plot))
+deterministic_df$sigma_factor = factor(round(deterministic_df$sigma,3), levels = unique(round(deterministic_df$sigma,3)))
+
+summary_df <- quadrant_df  %>%
+  dplyr::select(sigma_factor, R0_factor, run, endemic) %>%
+  distinct() %>%
+  group_by(sigma_factor, R0_factor) %>%
+  summarize(prop_died = 100*(max(quadrant_df$run) - sum(endemic))/max(quadrant_df$run)) %>%
+  mutate(label = paste0("Proportion died out = ", prop_died, "%")) %>%
+  mutate(x = Inf, y = -Inf)
+
+
+library(slider)
+quadrant_plot <- quadrant_df %>%
+  filter(run < 21) %>%
+  # Plot 30-day moving averages
+  arrange(time) %>% 
+  group_by(run, Thv, sigma) %>% 
+  mutate(moving_avg = slide_dbl(H, mean, .before= 30, .complete = T)) %>% 
+  ggplot() +
+  # Plot stochastic trajectories
+  geom_line(aes(x = (time/365), y = H, color = endemic,
+                group = as.factor(run)),
+            alpha = 0.25) +
+  # Plot mean-field deterministic trajectories
+  geom_line(data = deterministic_df,
+            aes(x = time/365, y = H)) +
+  # Indicate number that died out
+  geom_label(data = summary_df, aes(x = x, y = y, label = label),
+             label.size = NA, size = 2, hjust = "inward", vjust = "inward") +
+  # Color trajectories according to whether they eventually go to zero (=="plum4")
+  scale_color_manual(
+    name = "Did the outbreak last 10 years?",
+    values = c4a("brewer.dark2", 2),
+    breaks = c("TRUE", "FALSE"),
+    labels = c("Yes", "No")
+  ) +
+  # Subplots for each combination of environmental noise strength and R0
+  facet_grid(R0_factor ~ sigma_factor,
+             labeller = labeller(.rows = as_labeller(appender_R0,
+                                                     default = label_parsed),
+                                 .cols = as_labeller(appender_sigma,
+                                                     default = label_parsed)),
+             scales = "free_y") +
+  scale_x_continuous("Time [years]",
+                     breaks = seq(0, 10),
+                     expand = c(0,0)) +
+  scale_y_continuous("Number of cases in hosts",
+                     expand = c(0,0)) +
+  theme_minimal_grid(10) +
+  theme(
+    legend.position = "bottom",
+    legend.direction = "horizontal",
+    panel.spacing = unit(1, "lines"),
+    strip.background = element_rect(fill=NA)
+  ) +
+  guides(
+    color = guide_legend(override.aes = list(lwd = 2, size = 2, alpha = 1))
+  )
+
+quadrant_plot
+
+ggsave("./figures/Figure2.png", quadrant_plot, width = 6.5, height = 5, units = "in", dpi = 1200)
+
+
+# Figure 3: Probability plots ----
 
 ## Subplot A) Line plot
 #  = full-size, on left
@@ -317,7 +471,7 @@ Figure3 = ggpubr::ggarrange(Big_outbreak_mean,
 
 ggsave("./figures/New_Figure3.png", Figure3, width = 9, height = 4, units = "in", dpi = 1200)
 
-# New Figure 4: Intensity plots ----
+# Figure 4: Intensity plots ----
 
 ## Subplot A) Line plot
 #  = full-size, on left
@@ -435,7 +589,7 @@ Figure4 = ggpubr::ggarrange(Peak_cases_mean,
 
 ggsave("./figures/New_Figure4.png", Figure4, width = 9, height = 4, units = "in", dpi = 1200)
 
-# New Figure 5: Duration plots ----
+# Figure 5: Duration plots ----
 
 ## Subplot A) Line plot
 #  = full-size, on left
@@ -552,7 +706,7 @@ Figure5 = ggpubr::ggarrange(Duration_mean,
 
 ggsave("./figures/New_Figure5.png", Figure5, width = 9, height = 4, units = "in", dpi = 1200)
 
-# New Figure 6: Comparison plots ------------------------------------------
+# Figure 6: Comparison plots ------------------------------------------
 
 # Make absolute difference comparison heatmap
 compare_heat_function <- function(output_name, in_df, type) {
@@ -586,13 +740,6 @@ compare_heat_function <- function(output_name, in_df, type) {
       output_name %in% c("duration", "peak_time", "duration_dieout") ~ rev(c4a("matplotlib.seismic", num_cols, type = "div")),
       output_name %in% c("max_cases") ~ c4a("cols4all.pu_gn_div", num_cols, type = "div")	
     )
-    # palettes with zero = black
-    # kovesi.bu_bk_br
-    # scico.managua	
-    # scico.vanimo
-    
-    # palettes with zero = white
-    # hcl.red_green matplotlib.seismic cols4all.pu_gn_div
     
   } else {
     leg_label = "% difference"
@@ -612,7 +759,6 @@ compare_heat_function <- function(output_name, in_df, type) {
   sigma_width = unique(diff(fixed_df$sigma))[2]
   R0_height = unique(diff(fixed_df$R0))[2]
   
-  # contour_df <- smooth_zero_contour(fixed_df, output_name, "comp", 0.01) # (in_df, output_name, type_name, level_val)
   smooth_level = 100
   contour_df = fixed_df %>% 
     stretch_sigma()
@@ -648,12 +794,6 @@ compare_heat_function <- function(output_name, in_df, type) {
       breaks = c(1E-5),
       color = "black"
     ) +
-    # geom_path(data = contour_df,
-    #           aes(
-    #             x = sigma - sigma_width,
-    #             y = R0 + R0_height,
-    #             group = group),
-    #           color = "black", lwd = 0.5, alpha = 0.75) +
     # Annotate x-axis for demographic noise
     scale_x_continuous(TeX("Environmental noise strength [$\\sigma$]"),
                        limits = c(-0.5, 2),
@@ -673,7 +813,6 @@ compare_heat_function <- function(output_name, in_df, type) {
         output_name %in% c("small_outbreak", "big_outbreak", "endemic"),
         function(x) paste0(100*x, "%"),
         function(x) x)
-      # oob = scales::squish
     ) +
     # legend:
     guides(
@@ -690,7 +829,6 @@ compare_heat_function <- function(output_name, in_df, type) {
         draw.llim = TRUE,
       )
     ) +
-    # ggtitle(nice_output_labeller(output_name)) +
     theme_half_open(8) +
     theme(
       legend.position = "right",
@@ -700,7 +838,6 @@ compare_heat_function <- function(output_name, in_df, type) {
     )
 }
 
-# Figure 6: stacked comparison heatmaps ----
 Big_outbreak_plot <- compare_heat_function("big_outbreak", comp_stats_df, "abs_diff") +
   labs(
     title = "A."
@@ -739,4 +876,124 @@ Duration_plot <- compare_heat_function("duration", comp_stats_df, "abs_diff") +
 Figure6 = egg::ggarrange(Big_outbreak_plot, Peak_cases_plot, Duration_plot, ncol = 1)
 ggsave("./figures/Figure6.png", Figure6, width = 4.5, height = 3, units = "in", dpi = 1200)
 
+
+# Figure S1: Duration - Intensity scatterplots ----------------------------
+
+outbreak_duration_df <- read_rds("./data/peak_v_duration_sims.rds")
+
+# R0 vals = 0.95, 1.125, 2, 4.625
+# sigma vals = 0.25, 0.65, 1, 1.5
+
+duration_peak_scatter_all <- outbreak_duration_df %>% 
+  filter(type == "All noise") %>% 
+  ggplot(aes(x = max_time, y = max_value)) +
+  # geom_hex() +
+  geom_pointdensity() +
+  geom_point(
+    data = outbreak_duration_df %>% group_by(R0_factor, sigma) %>% mutate(mean_max_time = mean(max_time), mean_max_value = mean(max_value)),
+    aes(x = mean_max_time, y = mean_max_value),
+    color = "red",
+    fill = "red",
+    shape = 23,
+    size = 2
+  ) +
+  # Subplots for each combination of environmental noise strength and R0
+  ggh4x::facet_grid2(
+    R0_factor ~ sigma,
+    labeller = labeller(.rows = as_labeller(appender_R0, default = label_parsed),
+                        .cols = as_labeller(appender_sigma, default = label_parsed))
+  ) +
+  scale_color_viridis_c(
+    name = "Number of\n neighbors"
+  ) +
+  scale_x_continuous(
+    "Duration [years]",
+    expand = c(0,0.25),
+  ) +
+  scale_y_continuous(
+    "Intensity [cases]",
+    limits = c(0,10000)
+  ) +
+  # legend:
+  theme_minimal(11) +
+  theme(
+    strip.background = element_rect(color = "white", fill = "white")
+  )
+
+duration_peak_scatter_all
+ggsave("./figures/duration_peak_scatter_all.png", duration_peak_scatter_all, width = 6.5, height = 4.5, units = "in")
+
+
+# Figure S2: Intensity histogram comparison -------------------------------
+
+# Compare how the distribution changes as we filter out smaller outbreaks
+peak_comparison_df <- comparison_trajectories %>% 
+  filter(type != "Deterministic") %>% 
+  filter(R0 == 1.375, sigma == 0.55) %>% 
+  mutate(
+    max_H_10 = if_else(max_H > 10, max_H, NA),
+    max_H_100 = if_else(max_H > 100, max_H, NA)
+  ) %>% 
+  pivot_longer(cols = c(max_H, max_H_10, max_H_100)) %>% 
+  dplyr::select(max_time, name, value, type, R0, sigma) %>% 
+  unique()
+
+peak_histogram_plot_comparison <- peak_comparison_df %>% 
+  ggplot(aes(x = value, color = type, fill = type)) +
+  # Peak points histogram
+  geom_histogram(
+    aes(y = after_stat(count)),  # Ensure y-axis represents counts per facet
+    position = "identity",
+    # position = 'dodge',  # Prevent stacking
+    alpha = 0.5,
+    # bins = 30  # Set fixed bin count (adjustable)
+  ) +
+  # Means of distributions
+  geom_vline(
+    data = peak_comparison_df %>% 
+      group_by(type, name) %>% 
+      summarise(mean_max_H = mean(value, na.rm = T)),
+    aes(xintercept = mean_max_H, color = type),
+    lwd = 1, lty = 2,
+    show.legend = F
+  ) +
+  # Subplots for each combination of environmental noise strength and R0
+  facet_wrap(
+    ~name,
+    ncol = 1,
+    # scales = "free",
+    # independent = "all",
+    labeller = labeller(name = c(
+      max_H = "All simulations",
+      max_H_10 = "Small outbreaks (>10)",
+      max_H_100 = "Large outbreaks (>100)"
+    ))
+  ) +
+  scale_x_continuous(
+    name = "Intensity [cases]",
+    expand = c(0,0)
+  ) +
+  scale_y_continuous(
+    "Count",
+    expand = c(0,0)
+  ) +
+  scale_color_manual(
+    name = "Noise type:",
+    values = c4a("met.lakota",3)[2:3]
+  ) + 
+  scale_fill_manual(
+    name = "Noise type:",
+    values = c4a("met.lakota",3)[2:3]
+  ) + 
+  guides(
+    alpha = "none"
+  ) +
+  theme_minimal(11) +
+  theme(
+    legend.position = "top",
+    legend.direction = "horizontal"    
+  )
+
+peak_histogram_plot_comparison
+ggsave("./figures/peak_histogram_plot_comparison.png", peak_histogram_plot_comparison, width = 6.5, height = 4.5, units = "in")
 
