@@ -48,7 +48,6 @@ all_summary_df <- all_df %>%
   # rename quantities to match plots
   mutate(name = case_when(
     name == "max_value" ~ "max_cases",
-    # name == "positive_duration" ~ "duration",
     name == "exceeded_10" ~ "small_outbreak",
     name == "exceeded_100" ~ "big_outbreak",
     name == "positive_at_final" ~ "endemic",
@@ -56,14 +55,12 @@ all_summary_df <- all_df %>%
   )) %>% 
   mutate(R0 = round(R0_from_Thv_function(Thv), 3)) %>% 
   mutate(sigma = round(sigma, 3)) %>% 
-  # collect() %>% 
   dplyr::select(-Thv)
 
 enviro_summary_df <- enviro_df %>%
   # rename quantities to match plots
   mutate(name = case_when(
     name == "max_value" ~ "max_cases",
-    # name == "positive_duration" ~ "duration",
     name == "exceeded_10" ~ "small_outbreak",
     name == "exceeded_100" ~ "big_outbreak",
     name == "positive_at_final" ~ "endemic",
@@ -71,7 +68,6 @@ enviro_summary_df <- enviro_df %>%
   )) %>% 
   mutate(R0 = round(R0_from_Thv_function(Thv), 3)) %>% 
   mutate(sigma = round(sigma, 3)) %>% 
-  # collect() %>% 
   dplyr::select(-Thv)
 
 
@@ -139,7 +135,6 @@ comp_stats_df <- rbind(
       if_else(mean[type == "all"] > 10 * eps,  # mean_enviro = 0
               Inf,  # mean_all > 0
               0)    # mean_all < 0
-      # (mean[type == "all"] - mean[type == "enviro"]) / mean(mean[type == "enviro"], mean[type == "all"])
     ))
   ) %>% 
   mutate(perc_diff = if_else(

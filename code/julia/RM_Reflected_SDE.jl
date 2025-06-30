@@ -4,17 +4,12 @@
 
 using OrdinaryDiffEq
 using StochasticDiffEq
-# using Plots
 using DataFrames
-# using DifferentialEquations.EnsembleAnalysis
 using Main.Threads
 using CSV
 using ProgressBars
 using Statistics
 
-# using DiffEqMonteCarlo
-
-# [] Later set this up as a function to parameters can be varied
 
 # Set simulation parameters 
 
@@ -64,8 +59,6 @@ function end_eqs(q, R0)
     H_end = Nh * (rh * rv - 1) / (rv + rh * rv)
     V_end = Nv * (rh * rv - 1) / (rh + rh * rv)
 
-    # V_end = Nv * (R0 - 1) / (rh + R0) #Nv * (rh / (1 + rh)) * (R0 - 1) / R0
-    # H_end = Nh * (rv / (1 + rv)) * (R0 - 1) / R0#Nh * (1 - (1 / (Nh^2 * rv))) / (1 + rh) 
     end
     end_vec = [H_end, V_end]
     return(end_vec)
@@ -165,7 +158,6 @@ affect_terminate!(integrator) = terminate!(integrator)
 cb_terminate = DiscreteCallback(condition_terminate, affect_terminate!; save_positions = (false, false))
 
 ## Collect callbacks
-# cbs = CallbackSet(cb_H0, cb_HNh, cb_V0, cb_VNv, cb_terminate)
 cbs = CallbackSet(cb_H, cb_V, cb_terminate)
 
 # Define parameter values to iterate over
@@ -243,105 +235,6 @@ function collect_outputs(det_equations, stoch_equations, num_runs, parameter_val
         thread_results = Vector{NamedTuple{(:Thv, :sigma, :run, :max_value, :duration,:peak_time, :exceeded_10, :exceeded_100, :positive_at_final, :positive_duration, :zero_cases,:duration_dieout),Tuple{Float32, Float32, Int, Float32, Float32, Float32, Bool, Bool, Bool, Float32, Bool, Union{Missing,Float32}}}}(undef, num_runs)
 
         Thv, sigma = parameter_values[i]
-        
-        
-
-        # @threads for run_id in ProgressBar(1:num_runs)
-        #     trajectory = sol[run_id]  # Get the individual trajectory solution
-        #     nt = length(trajectory.t)
-        
-        #     # Pre-allocate H_values
-        #     H_values = Vector{Float32}(undef, nt)
-        #     @inbounds for i in 1:nt
-        #         H_values[i] = trajectory.u[i][1]
-        #     end
-        
-        #     max_value = maximum(H_values)
-        
-        #     # Compute valid_times using an explicit loop (avoid generator overhead)
-        #     valid_times = Float32[]
-        #     for i in 1:nt
-        #         @inbounds begin
-        #             if trajectory.u[i][1] > 1.0f0 && trajectory.u[i][2] > 1.0f0
-        #                 push!(valid_times, trajectory.t[i])
-        #             end
-        #         end
-        #     end
-        #     duration = isempty(valid_times) ? 0.0f0 : maximum(valid_times)/365.0f0
-        
-        #     # peak_time is taken from trajectory.t at the index where the second state is maximum.
-        #     # (Adjust if you intended something else.)
-        #     idx = argmax(trajectory[2, :])  # Assumes trajectory[2, :] returns the second state variable over time.
-        #     peak_time = (max_value < 1.0f0) ? 0.0f0 : trajectory.t[idx]
-        
-        #     exceeded_10 = false
-        #     exceeded_100 = false
-        #     @inbounds for v in H_values
-        #         if v > 10.0f0
-        #             exceeded_10 = true
-        #         end
-        #         if v > 100.0f0
-        #             exceeded_100 = true
-        #         end
-        #     end
-        
-        #     positive_at_final = duration > 9.999f0 && H_values[end] > 1.0f0
-        
-        #     # Compute positive_duration as the total time duration where H > 1 in consecutive time intervals
-        #     positive_duration = 0.0f0
-        #     @inbounds for i in 1:nt-1
-        #         if trajectory.u[i][1] > 1.0f0 && trajectory.u[i+1][1] > 1.0f0
-        #             positive_duration += trajectory.t[i+1] - trajectory.t[i]
-        #         end
-        #     end
-        #     positive_duration /= 365.0f0
-        
-        #     zero_cases = false
-        #     @inbounds for i in 2:nt
-        #         if H_values[i] < 1.0f0
-        #             zero_cases = true
-        #             break
-        #         end
-        #     end
-        
-        #     duration_dieout = positive_at_final ? missing : duration
-        
-        #     # Store the results in the preallocated array.
-        #     thread_results[run_id] = (Thv, sigma, run_id, max_value, duration, peak_time, 
-        #                               exceeded_10, exceeded_100, positive_at_final, positive_duration,
-        #                               zero_cases, duration_dieout)
-        # end
-
-        # # Analyze each trajectory
-        # @threads for run_id in ProgressBar(1:num_runs)
-        #     trajectory = sol[run_id]  # Get the individual trajectory solution
-
-        #     # Extract the values and times for the state variables
-        #     H_values = [u[1] for u in @views trajectory.u]
-
-        #     # Calculate the required statistics
-        #     # Maximum case count
-        #     max_value = maximum(@views H_values)
-        #     # Get times where there is at least one infection in each population
-        #     valid_times = (trajectory.t[i] for i in eachindex(trajectory.t) if trajectory.u[i][1] > 1.0f0 && trajectory.u[i][2] > 1.0f0)
-        #     # Calculate the latest date where there are cases in both hosts and vectors
-        #     duration = isempty(valid_times) ? 0.0f0 : maximum(valid_times)/365.0f0
-        #     peak_time = ifelse(max_value < 1.0f0, 0.0f0, trajectory.t[argmax(trajectory[2, :])])
-        #     # Check if host case counts ever exceeded 10 or 100
-        #     exceeded_10 = any(v > 10.0f0 for v in H_values)
-        #     exceeded_100 = any(v > 100.0f0 for v in H_values)
-        #     # Check whether infections lasted all ten years
-        #     positive_at_final = duration > 9.999f0 && @views H_values[end] > 1.0f0
-        #     # Calculate positive_duration (outbreak length)
-        #     valid_pairs = [(trajectory.t[i], trajectory.u[i][1], trajectory.t[i+1], trajectory.u[i+1][1]) for i in 1:length(trajectory.t)-1 if trajectory.u[i][1] > 1.0f0 && trajectory.u[i+1][1] > 1.0f0]
-        #     positive_duration = isempty(valid_pairs) ? 0.0f0 : sum(t2 - t1 for (t1, u1, t2, u1_next) in valid_pairs)/365.0f0
-        #     # See if cases ever dropped to zero in hosts (besides at the initial time point)
-        #     zero_cases = any(@views H_values[2:end] .< 1.0f0)
-        #     duration_dieout = positive_at_final == true ? missing : duration
-
-        #     # Store results in thread-local array
-        #     thread_results[run_id] = (Thv, sigma, run_id, max_value, duration, peak_time, exceeded_10, exceeded_100, positive_at_final, positive_duration, zero_cases, duration_dieout)
-        # end
 
         @threads for run_id in 1:num_runs
             traj = sol[run_id]              # Get the trajectory (assumed independent per run)
@@ -434,8 +327,6 @@ end
 # Collect outputs from SDE simulations
 function raw_outputs(det_equations, stoch_equations, num_runs, parameter_values)
     # Preallocate a DataFrame to store results for each trajectory and parameter combination
-    # results_init = DataFrame(
-        # Thv = Float32[], sigma = Float32[], run = Float32[], statistic = String[], value = Float32[])
     results_init = Vector{NamedTuple{(:Thv, :sigma, :run, :max_value, :max_time,:exceeded_10, :exceeded_100, :positive_at_final, :positive_duration, :zero_cases,:duration_dieout),Tuple{Float32, Float32, Int, Float32, Float32, Bool, Bool, Bool, Float32, Bool, Float32}}}(undef, 0)
     results = DataFrame(results_init)
 
@@ -479,12 +370,9 @@ function raw_outputs(det_equations, stoch_equations, num_runs, parameter_values)
             # See if cases ever dropped to zero in hosts (besides at the initial time point)
             zero_cases = any(H_values[2:end] .< 1.0f0)
             duration_dieout = positive_at_final == true ? NaN : max_time
-            # [] add dieout duration
 
             # Store results in thread-local array
             thread_results[run_id] = (Thv, sigma, run_id, max_value, max_time, exceeded_10, exceeded_100, positive_at_final, positive_duration, zero_cases, duration_dieout)
-            # Append results for this trajectory to the DataFrame
-            # push!(results, (Thv, sigma, run_id, max_value, max_time, exceeded_10, exceeded_100, positive_at_final, positive_duration))
         end
         thread_results = DataFrame(thread_results)
 

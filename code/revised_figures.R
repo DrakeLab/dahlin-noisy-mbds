@@ -59,7 +59,6 @@ stretch_sigma <- function(in_df, include_det = F) {
     det_zeros = in_df %>% filter(sigma == 0, type == "enviro")
     # New sigma values
     det_sigmas = -seq(0.5, 1.0, by = sigma_step)
-    # det_sigmas = det_sigmas[-c(1:2)]
     
     # Repeat the zero_sigma rows for each negative sigma value
     det_stretched <- det_zeros[rep(1:nrow(det_zeros), each = length(det_sigmas)), ]
@@ -119,7 +118,6 @@ generic_heat_function <- function(output_name, type_name) {
     dplyr::select(sigma, R0, mean, type) %>% 
     filter(if_all(c(sigma, R0, mean), ~ is.finite(.x) & !is.na(.x)))
   
-  # contour_df <- smooth_zero_contour(fixed_df, output_name, "comp", 0.01) # (in_df, output_name, type_name, level_val)
   smooth_level = 10
   contour_df = fixed_df %>% 
     stretch_sigma()
@@ -146,11 +144,10 @@ generic_heat_function <- function(output_name, type_name) {
     # Add smoothed contour for zero proxy values
     geom_hline(yintercept = 1, color = "red", lwd = 0.5) +
     geom_contour(
-      # data = contour_df,
       aes(
         x = sigma,
         y = R0,
-        z = mean),# var_smooth),
+        z = mean),
       breaks = c(zero_proxy),
       color = "grey100"
     ) +
@@ -163,12 +160,9 @@ generic_heat_function <- function(output_name, type_name) {
     # Annotate x-axis for demographic noise
     scale_x_continuous(
       TeX("Environmental noise [$\\sigma$]"), 
-      # limits = c(-0.45, NA),
       expand = c(0,0),
       breaks = noise_breaks,
       labels = c(noise_labels, seq(0, 2.0, by = 0.25))
-      # breaks = seq(0, 2.0, by = 0.25),
-      # labels = seq(0, 2.0, by = 0.25)
     ) +
     scale_y_continuous(
       name = ifelse(type_name == "enviro",
@@ -237,9 +231,7 @@ sigmas <- seq(0, 1, by = 0.05)
 # Final time point
 max_time = 3650
 
-# Load data ----
-# all_df_modified = read_rds("./data/all_modified.rds")
-# enviro_df_modified = read_rds("./data/enviro_modified.rds")
+# Load data from summarize_solutions.R ----
 
 all_stats_df = read_rds("./data/all_stats.rds")
 enviro_stats_df = read_rds("./data/enviro_stats.rds")
@@ -265,10 +257,6 @@ line_plots_df <- all_stats_df %>%
                            name == "duration" ~ "C. Duration"))
 
 # Figure 2: Example trajectories ----
-
-# [] Filter this out more. Either:
-# [] 1. choose fewer trajectories
-# [] 2. plot rolling averages
 
 # x-axis: Time [years]
 # y-axis: Number of hosts infected
@@ -411,7 +399,6 @@ Big_outbreak_mean <- line_plots_df %>%
     legend.direction = "horizontal",  
     legend.spacing.y = unit(0, "pt"),
     legend.key.width = unit(14, "pt"),
-    # legend.key.height = unit(1, "pt"),
     plot.title.position = "panel",
     legend.box.margin = margin(t = -18, b = -10)
   )
@@ -431,13 +418,11 @@ Big_outbreak_heat = Big_outbreak_heat_temp +
   theme(
     plot.title = element_text(size = 10),
     axis.title.x = element_blank(),
-    # axis.text.x = element_blank(),
     axis.ticks.x = element_blank(),
     axis.line.x = element_blank(),  # Remove x-axis line
     axis.title.y = element_blank()
   ) +
-  guides(fill = "none") #+
-  # theme(legend.margin=margin(t=-0.5,l=0.0,b=-0.275,r=0.25, unit='cm'))
+  guides(fill = "none")
 
 ## Subplot C) Heatmap for environmental noise sub-model
 #  = half-size, on bottom-right
@@ -448,14 +433,10 @@ Big_outbreak_heat_enviro <- generic_heat_function("big_outbreak", "enviro") +
   ) +
   theme(
     plot.title = element_text(size = 10),
-    # axis.title.x = element_blank(),
-    # axis.text.x = element_blank(),
     axis.ticks.x = element_blank(),
-    axis.line.x = element_blank(),
-    # axis.title.y = element_blank()
+    axis.line.x = element_blank()
   ) +
-  guides(fill = "none") #+
-  # theme(legend.margin=margin(t=-0.5,l=0.0,b=-0.275,r=0.25, unit='cm'))
+  guides(fill = "none")
 
 Figure3 = ggpubr::ggarrange(Big_outbreak_mean,
                             egg::ggarrange(
@@ -469,7 +450,7 @@ Figure3 = ggpubr::ggarrange(Big_outbreak_mean,
                             widths = c(0.4, 0.525, 0.075)
 )
 
-ggsave("./figures/New_Figure3.png", Figure3, width = 9, height = 4, units = "in", dpi = 1200)
+ggsave("./figures/Figure3.png", Figure3, width = 9, height = 4, units = "in", dpi = 1200)
 
 # Figure 4: Intensity plots ----
 
@@ -529,7 +510,6 @@ Peak_cases_mean <- line_plots_df %>%
     legend.direction = "horizontal",  
     legend.spacing.y = unit(0, "pt"),
     legend.key.width = unit(14, "pt"),
-    # legend.key.height = unit(1, "pt"),
     plot.title.position = "panel",
     legend.box.margin = margin(t = -18, b = -10)
   )
@@ -549,13 +529,11 @@ Peak_cases_heat = Peak_cases_heat_temp +
   theme(
     plot.title = element_text(size = 10),
     axis.title.x = element_blank(),
-    # axis.text.x = element_blank(),
     axis.ticks.x = element_blank(),
     axis.line.x = element_blank(),  # Remove x-axis line
     axis.title.y = element_blank()
   ) +
-  guides(fill = "none") #+
-# theme(legend.margin=margin(t=-0.5,l=0.0,b=-0.275,r=0.25, unit='cm'))
+  guides(fill = "none")
 
 ## Subplot C) Heatmap for environmental noise sub-model
 #  = half-size, on bottom-right
@@ -566,14 +544,10 @@ Peak_cases_heat_enviro <- generic_heat_function("max_cases", "enviro") +
   ) +
   theme(
     plot.title = element_text(size = 10),
-    # axis.title.x = element_blank(),
-    # axis.text.x = element_blank(),
     axis.ticks.x = element_blank(),
-    axis.line.x = element_blank(),
-    # axis.title.y = element_blank()
+    axis.line.x = element_blank()
   ) +
-  guides(fill = "none") #+
-# theme(legend.margin=margin(t=-0.5,l=0.0,b=-0.275,r=0.25, unit='cm'))
+  guides(fill = "none")
 
 Figure4 = ggpubr::ggarrange(Peak_cases_mean,
                             egg::ggarrange(
@@ -587,7 +561,7 @@ Figure4 = ggpubr::ggarrange(Peak_cases_mean,
                             widths = c(0.4, 0.525, 0.075)
 )
 
-ggsave("./figures/New_Figure4.png", Figure4, width = 9, height = 4, units = "in", dpi = 1200)
+ggsave("./figures/Figure4.png", Figure4, width = 9, height = 4, units = "in", dpi = 1200)
 
 # Figure 5: Duration plots ----
 
@@ -646,7 +620,6 @@ Duration_mean <- line_plots_df %>%
     legend.direction = "horizontal",  
     legend.spacing.y = unit(0, "pt"),
     legend.key.width = unit(14, "pt"),
-    # legend.key.height = unit(1, "pt"),
     plot.title.position = "panel",
     legend.box.margin = margin(t = -18, b = -10)
   )
@@ -666,13 +639,11 @@ Duration_heat = Duration_heat_temp +
   theme(
     plot.title = element_text(size = 10),
     axis.title.x = element_blank(),
-    # axis.text.x = element_blank(),
     axis.ticks.x = element_blank(),
     axis.line.x = element_blank(),  # Remove x-axis line
     axis.title.y = element_blank()
   ) +
-  guides(fill = "none") #+
-# theme(legend.margin=margin(t=-0.5,l=0.0,b=-0.275,r=0.25, unit='cm'))
+  guides(fill = "none")
 
 ## Subplot C) Heatmap for environmental noise sub-model
 #  = half-size, on bottom-right
@@ -683,14 +654,10 @@ Duration_heat_enviro <- generic_heat_function("duration", "enviro") +
   ) +
   theme(
     plot.title = element_text(size = 10),
-    # axis.title.x = element_blank(),
-    # axis.text.x = element_blank(),
     axis.ticks.x = element_blank(),
-    axis.line.x = element_blank(),
-    # axis.title.y = element_blank()
+    axis.line.x = element_blank()
   ) +
-  guides(fill = "none") #+
-# theme(legend.margin=margin(t=-0.5,l=0.0,b=-0.275,r=0.25, unit='cm'))
+  guides(fill = "none")
 
 Figure5 = ggpubr::ggarrange(Duration_mean,
                             egg::ggarrange(
@@ -704,7 +671,7 @@ Figure5 = ggpubr::ggarrange(Duration_mean,
                             widths = c(0.4, 0.525, 0.075)
 )
 
-ggsave("./figures/New_Figure5.png", Figure5, width = 9, height = 4, units = "in", dpi = 1200)
+ggsave("./figures/Figure5.png", Figure5, width = 9, height = 4, units = "in", dpi = 1200)
 
 # Figure 6: Comparison plots ------------------------------------------
 
@@ -887,7 +854,6 @@ outbreak_duration_df <- read_rds("./data/peak_v_duration_sims.rds")
 duration_peak_scatter_all <- outbreak_duration_df %>% 
   filter(type == "Full model") %>% 
   ggplot(aes(x = max_time, y = max_value)) +
-  # geom_hex() +
   geom_pointdensity() +
   geom_point(
     data = outbreak_duration_df %>% group_by(R0_factor, sigma) %>% mutate(mean_max_time = mean(max_time), mean_max_value = mean(max_value)),
