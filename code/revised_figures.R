@@ -162,7 +162,7 @@ generic_heat_function <- function(output_name, type_name) {
     ) +
     # Annotate x-axis for demographic noise
     scale_x_continuous(
-      TeX("Environmental noise strength [$\\sigma$]"), 
+      TeX("Environmental noise [$\\sigma$]"), 
       # limits = c(-0.45, NA),
       expand = c(0,0),
       breaks = noise_breaks,
@@ -326,7 +326,7 @@ quadrant_plot <- quadrant_df %>%
     breaks = c("TRUE", "FALSE"),
     labels = c("Yes", "No")
   ) +
-  # Subplots for each combination of environmental noise strength and R0
+  # Subplots for each combination of environmental noise and R0
   facet_grid(R0_factor ~ sigma_factor,
              labeller = labeller(.rows = as_labeller(appender_R0,
                                                      default = label_parsed),
@@ -380,7 +380,7 @@ Big_outbreak_mean <- line_plots_df %>%
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ggtitle("A.") +
   scale_x_continuous(
-    unname(TeX("Environmental noise strength $[\\sigma]$")),
+    unname(TeX("Environmental noise $[\\sigma]$")),
     expand = c(0,0)
   ) +
   scale_y_continuous(
@@ -497,7 +497,7 @@ Peak_cases_mean <- line_plots_df %>%
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ggtitle("A.") +
   scale_x_continuous(
-    unname(TeX("Environmental noise strength $[\\sigma]$")),
+    unname(TeX("Environmental noise $[\\sigma]$")),
     expand = c(0,0)
   ) +
   scale_y_continuous(
@@ -612,7 +612,7 @@ Duration_mean <- line_plots_df %>%
   labs(color = unname(TeX("$R_0$")), fill = unname(TeX("$R_0$"))) +
   ggtitle("A.") +
   scale_x_continuous(
-    unname(TeX("Environmental noise strength $[\\sigma]$")),
+    unname(TeX("Environmental noise $[\\sigma]$")),
     expand = c(0,0)
   ) +
   scale_y_continuous(
@@ -795,7 +795,7 @@ compare_heat_function <- function(output_name, in_df, type) {
       color = "black"
     ) +
     # Annotate x-axis for demographic noise
-    scale_x_continuous(TeX("Environmental noise strength [$\\sigma$]"),
+    scale_x_continuous(TeX("Environmental noise [$\\sigma$]"),
                        limits = c(-0.5, 2),
                        breaks = c(-0.24, seq(0, 2.0, by = 0.25)),
                        labels = c("Difference from\n deterministic submodel", seq(0, 2.0, by = 0.25)),
@@ -885,7 +885,7 @@ outbreak_duration_df <- read_rds("./data/peak_v_duration_sims.rds")
 # sigma vals = 0.25, 0.65, 1, 1.5
 
 duration_peak_scatter_all <- outbreak_duration_df %>% 
-  filter(type == "All noise") %>% 
+  filter(type == "Full model") %>% 
   ggplot(aes(x = max_time, y = max_value)) +
   # geom_hex() +
   geom_pointdensity() +
@@ -897,7 +897,7 @@ duration_peak_scatter_all <- outbreak_duration_df %>%
     shape = 23,
     size = 2
   ) +
-  # Subplots for each combination of environmental noise strength and R0
+  # Subplots for each combination of environmental noise and R0
   ggh4x::facet_grid2(
     R0_factor ~ sigma,
     labeller = labeller(.rows = as_labeller(appender_R0, default = label_parsed),
@@ -918,82 +918,21 @@ duration_peak_scatter_all <- outbreak_duration_df %>%
   theme_minimal(11) +
   theme(
     strip.background = element_rect(color = "white", fill = "white")
+  ) +
+  # legend:
+  guides(
+    fill = guide_colourbar(
+      position = "right",
+      direction = "vertical",
+      title.position = "top",
+      title.hjust = 0,
+      title.vjust = 1,
+      barheight = 8,
+      show.limits = TRUE,
+      draw.ulim = TRUE,
+      draw.llim = TRUE,
+    )
   )
 
 duration_peak_scatter_all
-ggsave("./figures/duration_peak_scatter_all.png", duration_peak_scatter_all, width = 6.5, height = 4.5, units = "in")
-
-
-# Figure S2: Intensity histogram comparison -------------------------------
-
-# Compare how the distribution changes as we filter out smaller outbreaks
-peak_comparison_df <- comparison_trajectories %>% 
-  filter(type != "Deterministic") %>% 
-  filter(R0 == 1.375, sigma == 0.55) %>% 
-  mutate(
-    max_H_10 = if_else(max_H > 10, max_H, NA),
-    max_H_100 = if_else(max_H > 100, max_H, NA)
-  ) %>% 
-  pivot_longer(cols = c(max_H, max_H_10, max_H_100)) %>% 
-  dplyr::select(max_time, name, value, type, R0, sigma) %>% 
-  unique()
-
-peak_histogram_plot_comparison <- peak_comparison_df %>% 
-  ggplot(aes(x = value, color = type, fill = type)) +
-  # Peak points histogram
-  geom_histogram(
-    aes(y = after_stat(count)),  # Ensure y-axis represents counts per facet
-    position = "identity",
-    # position = 'dodge',  # Prevent stacking
-    alpha = 0.5,
-    # bins = 30  # Set fixed bin count (adjustable)
-  ) +
-  # Means of distributions
-  geom_vline(
-    data = peak_comparison_df %>% 
-      group_by(type, name) %>% 
-      summarise(mean_max_H = mean(value, na.rm = T)),
-    aes(xintercept = mean_max_H, color = type),
-    lwd = 1, lty = 2,
-    show.legend = F
-  ) +
-  # Subplots for each combination of environmental noise strength and R0
-  facet_wrap(
-    ~name,
-    ncol = 1,
-    # scales = "free",
-    # independent = "all",
-    labeller = labeller(name = c(
-      max_H = "All simulations",
-      max_H_10 = "Small outbreaks (>10)",
-      max_H_100 = "Large outbreaks (>100)"
-    ))
-  ) +
-  scale_x_continuous(
-    name = "Intensity [cases]",
-    expand = c(0,0)
-  ) +
-  scale_y_continuous(
-    "Count",
-    expand = c(0,0)
-  ) +
-  scale_color_manual(
-    name = "Noise type:",
-    values = c4a("met.lakota",3)[2:3]
-  ) + 
-  scale_fill_manual(
-    name = "Noise type:",
-    values = c4a("met.lakota",3)[2:3]
-  ) + 
-  guides(
-    alpha = "none"
-  ) +
-  theme_minimal(11) +
-  theme(
-    legend.position = "top",
-    legend.direction = "horizontal"    
-  )
-
-peak_histogram_plot_comparison
-ggsave("./figures/peak_histogram_plot_comparison.png", peak_histogram_plot_comparison, width = 6.5, height = 4.5, units = "in")
-
+ggsave("./figures/SuppFigure1.png", duration_peak_scatter_all, width = 9, height = 4, units = "in")

@@ -202,18 +202,18 @@ write_rds(All_sims_plot_df, "./data/all_sims.rds")
 enviro_outbreak_duration_df = read_csv("./data/dur_peak_no_demo.csv.gz")  %>% 
   mutate(R0 = R0_from_Thv_function(Thv)) %>% 
   dplyr::select(sigma, R0, max_value, max_time, duration_dieout) %>% 
-  mutate(type = "Environmental noise only")
+  mutate(type = "Environmental noise submodel")
 enviro_outbreak_duration_df$R0_factor = factor(
   round(enviro_outbreak_duration_df$R0, 3), 
-  levels = (unique(round(enviro_outbreak_duration_df$R0, 3))))
+  levels = rev(unique(round(enviro_outbreak_duration_df$R0, 3))))
 
 all_outbreak_duration_df = read_csv("./data/dur_peak.csv.gz")  %>% 
   mutate(R0 = R0_from_Thv_function(Thv)) %>%
   dplyr::select(sigma, R0, max_value, max_time, duration_dieout) %>% 
-  mutate(type = "All noise")
+  mutate(type = "Full model")
 all_outbreak_duration_df$R0_factor = factor(
   round(all_outbreak_duration_df$R0, 3), 
-  levels = (unique(round(all_outbreak_duration_df$R0, 3))))
+  levels = rev(unique(round(all_outbreak_duration_df$R0, 3))))
 
 outbreak_duration_df = bind_rows(
   all_outbreak_duration_df,
