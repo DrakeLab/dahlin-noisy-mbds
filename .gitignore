@@ -2,7 +2,8 @@
 .Rhistory
 .RData
 .Ruserdata
-code/julia/function lorenz\!(du, u, p, t).jl
-code/julia/+\# Noisy RM SDE solutions.jl
-code/julia/using DifferentialEquations.jl
-code/julia/x=10.jl
+*.rds
+*.csv
+*.gz
+code/julia/temp.jl
+code/julia/temp.jl
