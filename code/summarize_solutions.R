@@ -153,7 +153,7 @@ comp_stats_df <- rbind(
 
 write_rds(comp_stats_df, "./data/comp_stats.rds")
 
-# Trajectories comparisons ----
+# Trajectory comparisons (Supplementary) ----
 comparison_trajectories = read_csv("./data/comparison_trajectories.csv") %>%
   mutate(R0 = R0_from_Thv_function(Thv),
          time = time / 365) %>%
