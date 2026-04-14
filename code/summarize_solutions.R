@@ -186,8 +186,6 @@ All_sims_plot_df <- sims_out %>%
   mutate(endemic = (max(time) == max_time && H[time == max_time] > 1)) %>% 
   ungroup()
 
-
-
 All_sims_plot_df$R0_factor = factor(round(All_sims_plot_df$R0,3), levels = rev((unique(round(All_sims_plot_df$R0,3)))))
 All_sims_plot_df$sigma_factor = factor(round(All_sims_plot_df$sigma,3), levels = unique(round(All_sims_plot_df$sigma,3)))
 

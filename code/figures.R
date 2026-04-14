@@ -286,7 +286,7 @@ summary_df <- quadrant_df  %>%
   group_by(sigma_factor, R0_factor) %>%
   summarize(prop_died = 100*(max(quadrant_df$run) - sum(endemic))/max(quadrant_df$run)) %>%
   mutate(label = paste0("Proportion died out = ", prop_died, "%")) %>%
-  mutate(x = Inf, y = -Inf)
+  mutate(x = -Inf, y = Inf)
 
 
 library(slider)
@@ -340,6 +340,8 @@ quadrant_plot <- quadrant_df %>%
 quadrant_plot
 
 ggsave("./figures/Figure2.png", quadrant_plot, width = 6.5, height = 5, units = "in", dpi = 1200)
+ggsave("./figures/Figure2.eps", quadrant_plot, width = 6.5, height = 5, units = "in", dpi = 600)
+ggsave("./figures/Figure2.tif", quadrant_plot, width = 6.5, height = 5, units = "in", dpi = 600)
 
 
 # Figure 3: Probability plots ----
@@ -450,7 +452,8 @@ Figure3 = ggpubr::ggarrange(Big_outbreak_mean,
                             widths = c(0.4, 0.525, 0.075)
 )
 
-ggsave("./figures/Figure3.png", Figure3, width = 9, height = 4, units = "in", dpi = 1200)
+ggsave("./figures/Fig3.eps", Figure3, width = 9, height = 4, units = "in", dpi = 600)
+ggsave("./figures/Fig3.tif", Figure3, width = 9, height = 4, units = "in", dpi = 600)
 
 # Figure 4: Intensity plots ----
 
@@ -561,7 +564,8 @@ Figure4 = ggpubr::ggarrange(Peak_cases_mean,
                             widths = c(0.4, 0.525, 0.075)
 )
 
-ggsave("./figures/Figure4.png", Figure4, width = 9, height = 4, units = "in", dpi = 1200)
+ggsave("./figures/Fig4.eps", Figure4, width = 9, height = 4, units = "in", dpi = 600)
+ggsave("./figures/Fig4.tif", Figure4, width = 9, height = 4, units = "in", dpi = 600)
 
 # Figure 5: Duration plots ----
 
@@ -671,7 +675,8 @@ Figure5 = ggpubr::ggarrange(Duration_mean,
                             widths = c(0.4, 0.525, 0.075)
 )
 
-ggsave("./figures/Figure5.png", Figure5, width = 9, height = 4, units = "in", dpi = 1200)
+ggsave("./figures/Fig5.eps", Figure5, width = 9, height = 4, units = "in", dpi = 600)
+ggsave("./figures/Fig5.tif", Figure5, width = 9, height = 4, units = "in", dpi = 600)
 
 # Figure 6: Comparison plots ------------------------------------------
 
@@ -703,9 +708,9 @@ compare_heat_function <- function(output_name, in_df, type) {
     
     # Set heatmap palette to match unit of output
     palette = case_when(
-      output_name %in% c("small_outbreak", "big_outbreak", "endemic") ~ c4a("hcl.red_green", num_cols, type = "div"),
-      output_name %in% c("duration", "peak_time", "duration_dieout") ~ rev(c4a("matplotlib.seismic", num_cols, type = "div")),
-      output_name %in% c("max_cases") ~ c4a("cols4all.pu_gn_div", num_cols, type = "div")	
+      output_name %in% c("small_outbreak", "big_outbreak", "endemic") ~ c4a("meteo.hotcolr_19lev", num_cols, type = "div"),
+      output_name %in% c("duration", "peak_time", "duration_dieout") ~ (c4a("meteo.hotcolr_19lev", num_cols, type = "div")),
+      output_name %in% c("max_cases") ~ c4a("meteo.hotcolr_19lev", num_cols, type = "div")	
     )
     
   } else {
@@ -775,11 +780,19 @@ compare_heat_function <- function(output_name, in_df, type) {
     scale_fill_gradientn(
       colors = palette,
       limits = c(z_min, z_max),
+      breaks = function(x) {
+        b <- scales::extended_breaks()(x)
+        lims <- range(x, na.rm = TRUE)
+        sort(unique(c(b, lims)))
+      },
       values = scales::rescale(c(z_min, mid_val, z_max)),
-      labels = ifelse(
-        output_name %in% c("small_outbreak", "big_outbreak", "endemic"),
-        function(x) paste0(100*x, "%"),
-        function(x) x)
+      labels = function(x) {
+        if (output_name %in% c("small_outbreak", "big_outbreak", "endemic")) {
+          paste0(formatC(100 * x, format = "g", digits = 2), "%")
+        } else {
+          signif(x, 2)
+        }
+      }
     ) +
     # legend:
     guides(
@@ -788,10 +801,11 @@ compare_heat_function <- function(output_name, in_df, type) {
         position = "top",
         direction = "horizontal",
         title.position = "left",
-        title.hjust = 0,
+        title.hjust = 0.1,
         title.vjust = 0.9,
-        barwidth = 8,
-        show.limits = TRUE,
+        barwidth = 14.75,
+        barheight = 0.3,
+        # show.limits = TRUE,
         draw.ulim = TRUE,
         draw.llim = TRUE,
       )
@@ -801,7 +815,9 @@ compare_heat_function <- function(output_name, in_df, type) {
       legend.position = "right",
       legend.justification = "right",
       legend.box.just = "right",
-      axis.text.y.right = element_text(size = 8)
+      axis.text.y.right = element_text(size = 6),
+      legend.text = element_text(size = 5),
+      legend.title = element_text(size = 5)
     )
 }
 
@@ -816,7 +832,7 @@ Big_outbreak_plot <- compare_heat_function("big_outbreak", comp_stats_df, "abs_d
     axis.line.x = element_blank(),  # Remove x-axis line
     axis.title.y = element_blank()
   ) +
-  theme(legend.margin=margin(t=-0.5,l=0.0,b=-0.35,r=0, unit='cm'))
+  theme(legend.margin=margin(t=-0.5,l=0.0,b=-0.15,r=0, unit='cm'))
 
 Peak_cases_plot <- compare_heat_function("max_cases", comp_stats_df, "abs_diff") +
   labs(
@@ -827,7 +843,8 @@ Peak_cases_plot <- compare_heat_function("max_cases", comp_stats_df, "abs_diff")
     axis.text.x = element_blank(),
     axis.ticks.x = element_blank(),
     axis.line.x = element_blank(),  # Remove x-axis line
-    axis.title.y = element_text(hjust = 0.9)
+    axis.title.y = element_text(hjust = 0.9),
+    plot.title = element_text(margin = margin(b = 10))
   ) + 
   theme(legend.margin=margin(t=-0.75,l=0.0,b=-0.275,r=0, unit='cm'))
 
@@ -836,23 +853,31 @@ Duration_plot <- compare_heat_function("duration", comp_stats_df, "abs_diff") +
     title = "C."
   ) +
   theme(
-    axis.title.y = element_blank()
+    axis.title.y = element_blank(),
+    plot.title = element_text(margin = margin(b = 10))
   ) +
   theme(legend.margin=margin(t=-0.75,l=0.0,b=-0.275,r=0, unit='cm'))
 
 Figure6 = egg::ggarrange(Big_outbreak_plot, Peak_cases_plot, Duration_plot, ncol = 1)
+
 ggsave("./figures/Figure6.png", Figure6, width = 4.5, height = 3, units = "in", dpi = 1200)
+ggsave("./figures/Figure6.eps", Figure6, width = 4.5, height = 3, units = "in", dpi = 600)
+ggsave("./figures/Figure6.tif", Figure6, width = 4.5, height = 3, units = "in", dpi = 600)
 
 
 # Figure S1: Duration - Intensity scatterplots ----------------------------
 
-outbreak_duration_df <- read_rds("./data/peak_v_duration_sims.rds")
+outbreak_duration_df <- read_rds("./data/peak_v_duration_sims.rds") |> 
+  filter(type == "All noise") %>% 
+  mutate(R0 = round(R0,4)) |> 
+  mutate(sigma = round(sigma,4)) |> 
+  filter(R0 %in% c(1.500, 3.000)) |> 
+  filter(sigma %in% c(1, 1.5))
 
 # R0 vals = 0.95, 1.125, 2, 4.625
 # sigma vals = 0.25, 0.65, 1, 1.5
 
 duration_peak_scatter_all <- outbreak_duration_df %>% 
-  filter(type == "Full model") %>% 
   ggplot(aes(x = max_time, y = max_value)) +
   geom_pointdensity() +
   geom_point(
@@ -901,4 +926,7 @@ duration_peak_scatter_all <- outbreak_duration_df %>%
   )
 
 duration_peak_scatter_all
-ggsave("./figures/SuppFigure1.png", duration_peak_scatter_all, width = 9, height = 4, units = "in")
+
+ggsave("./figures/SuppFigure1.png", duration_peak_scatter_all, width = 9, height = 4, units = "in", dpi = 600)
+ggsave("./figures/SuppFigure1.eps", duration_peak_scatter_all, width = 9, height = 4, units = "in", dpi = 600)
+ggsave("./figures/SuppFigure1.tif", duration_peak_scatter_all, width = 9, height = 4, units = "in", dpi = 600)
