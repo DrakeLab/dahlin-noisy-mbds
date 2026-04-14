@@ -1,12 +1,9 @@
 # Numerical simulation of a Ross-Macdonald reflected SDE
 
 # Load libraries
-
 using OrdinaryDiffEq
 using StochasticDiffEq
-# using Plots
 using DataFrames
-# using DifferentialEquations.EnsembleAnalysis
 using Main.Threads
 using CSV
 using ProgressBars
@@ -14,7 +11,7 @@ using Statistics
 
 # using DiffEqMonteCarlo
 
-# [] Later set this up as a function to parameters can be varied
+# [] Later set this up as a function so parameters can be varied
 
 # Set simulation parameters 
 
@@ -26,10 +23,10 @@ const timespan = (0.0f0, maxtime)
 const noise_rate_prototype = [0.0f0 0.0f0 0.0f0; 0.0f0 0.0f0 0.0f0] # prototype for noise
 
 # Define the parameters
-const b = 0.3f0 # biting rate
-const Tvh = 0.5f0 # to vector transmission probability
-const Nh = 10_000f0 # total number of humans
-const Nv = 100_000f0 # total number of vectors
+const b = 0.3f0 # biting rate (SA)
+const Tvh = 0.5f0 # to vector transmission probability (SA)
+const Nh = 10_000f0 # total number of humans (SA)
+const Nv = 100_000f0 # total number of vectors (SA)
 const muv = 0.1f0 # vector mortality rate
 const gammah = 0.1f0 # human recovery rate
 const alphab = 1 # toggle: environmental stochasticity in b
@@ -70,9 +67,6 @@ function end_eqs(q, R0)
     end_vec = [H_end, V_end]
     return(end_vec)
 end
-
-# Initialize dataframes, if necessary
-
 
 # Define the Ross-Macdonald Reflected SDE 
 
